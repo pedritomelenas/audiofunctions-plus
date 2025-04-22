@@ -1,6 +1,6 @@
 import './App.css'
 import { KBarProvider, useKBar } from 'kbar'
-import CommandBar from './assets/components/ui/af_kbar'
+import CommandBar from './components/ui/af_kbar'
 
 import {ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Contrast, Sun, Moon,
