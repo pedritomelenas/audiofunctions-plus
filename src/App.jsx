@@ -147,8 +147,8 @@ function App() {
     <>
       <KBarProvider actions={actions}>
         <CommandBar/>
-        <h1 className='text-3xl font-bold underline'>Under Construction</h1>
-        {/* <OpenCommandBarButton /> */}
+        <h1 className='text-3xl font-bold underline'>In development</h1>
+        <OpenCommandBarButton />
       </KBarProvider>
     </>
   )
