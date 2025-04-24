@@ -5,6 +5,7 @@ import CommandBar from './components/ui/af_kbar'
 import {ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Contrast, Sun, Moon,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
+import Graph from './components/graph/graph'
 
 function App() {
 
@@ -149,6 +150,7 @@ function App() {
         <CommandBar/>
         <h1 className='text-3xl font-bold underline'>In development</h1>
         <OpenCommandBarButton />
+        <Graph/>
       </KBarProvider>
     </>
   )
