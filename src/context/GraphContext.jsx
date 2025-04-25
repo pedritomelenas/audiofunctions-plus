@@ -6,6 +6,17 @@ export const GraphContextProvider = ({ children }) => {
   const [functionInput, setFunctionInput] = useState("sin(x)");
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+
+  ///////// currently missing features //////////
+  // boundingBox
+  // speed
+  // stepSize
+  // gridVisibility
+  // markers - setByUser
+  // axisTickResolution?
+  // min and max frequency
+  // functionFilter
 
   return (
     <GraphContext.Provider
@@ -16,6 +27,8 @@ export const GraphContextProvider = ({ children }) => {
         setCursorCoords,
         error,
         setError,
+        isAudioEnabled,
+        setIsAudioEnabled,
       }}
     >
       {children}

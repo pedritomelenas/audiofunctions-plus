@@ -6,6 +6,7 @@ import React from "react";
 import { GraphContextProvider } from "./context/GraphContext";
 import GraphControls from "./components/graph/GraphControls";
 import { useKBarActions } from './components/ui/kbarActions';
+import GraphSonification from './components/graph/GraphSonification';
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
 }
 
 const KBarWrapper = () => {
-  const actions = useKBarActions(); // Wird innerhalb des GraphContextProvider-Kontexts aufgerufen
+  const actions = useKBarActions();
 
   return (
     <KBarProvider actions={actions}>
@@ -28,6 +29,7 @@ const KBarWrapper = () => {
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
         <GraphControls />
         <Graph />
+        <GraphSonification />
       </div>
     </KBarProvider>
   );
