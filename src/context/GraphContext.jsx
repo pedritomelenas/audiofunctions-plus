@@ -5,7 +5,7 @@ const GraphContext = createContext();
 export const GraphContextProvider = ({ children }) => {
   const [functionInput, setFunctionInput] = useState("sin(x)");
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
-  const [error, setError] = useState(null);
+  const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
 
   ///////// currently missing features //////////
@@ -25,8 +25,8 @@ export const GraphContextProvider = ({ children }) => {
         setFunctionInput,
         cursorCoords,
         setCursorCoords,
-        error,
-        setError,
+        inputErrorMes,
+        setInputErrorMes,
         isAudioEnabled,
         setIsAudioEnabled,
       }}

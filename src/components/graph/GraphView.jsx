@@ -2,9 +2,9 @@ import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 
-const Graph = () => {
+const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setError } = useGraphContext();
+  const { functionInput, setCursorCoords, setInputErrorMes } = useGraphContext();
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -18,9 +18,9 @@ const Graph = () => {
     let graphFormula;
     try {
       graphFormula = board.jc.snippet(functionInput, true, "x", true);
-      setError(null);
+      setInputErrorMes(null);
     } catch (err) {
-      setError("Invalid function. Please check your input.");
+      setInputErrorMes("Invalid function. Please check your input.");
       graphFormula = () => 0;
     }
 
@@ -47,9 +47,9 @@ const Graph = () => {
       board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, setCursorCoords, setError]);
+  }, [functionInput, setCursorCoords, setInputErrorMes]);
 
   return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
 };
 
-export default Graph;
+export default GraphView;

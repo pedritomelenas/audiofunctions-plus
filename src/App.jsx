@@ -1,7 +1,7 @@
 import './App.css';
 import { KBarProvider, useKBar } from 'kbar';
 import CommandBar from './components/ui/af_kbar';
-import Graph from './components/graph/GraphView';
+import GraphView from './components/graph/GraphView';
 import React from "react";
 import { GraphContextProvider } from "./context/GraphContext";
 import GraphControls from "./components/graph/GraphControls";
@@ -28,7 +28,7 @@ const KBarWrapper = () => {
       <OpenCommandBarButton />
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
         <GraphControls />
-        <Graph />
+        <GraphView />
         <GraphSonification />
       </div>
     </KBarProvider>
