@@ -6,20 +6,6 @@ const CustomDialogAnimator = ({ children, className }) => {
 
     const dialogRef = useRef(null);
   
-    useEffect(() => {
-      const dialog = dialogRef.current;
-  
-      if (dialog) {
-        dialog.showModal();
-      }
-  
-      return () => {
-        if (dialog && dialog.open) {
-          dialog.close();
-        }
-      };
-    }, []);
-  
     return (
       <dialog
         role='dialog'                // needed for my aria-checker browser plugin
