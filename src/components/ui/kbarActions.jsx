@@ -3,11 +3,22 @@ import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut,
   SwatchBook, Contrast, Sun, Moon,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
+import { useDialog } from "../../context/DialogContext";
+
 
 export const useKBarActions = () => {
+  const { openDialog } = useDialog();
   const { setFunctionInput } = useGraphContext();
 
   return [
+    {
+      id: "dialog",
+      name: "Dialog Test",
+      shortcut: ["d"],
+      keywords: "dialog",
+      perform: () => openDialog("edit-function"), // Öffnet den Dialog
+      icon: <List className="size-5 shrink-0 opacity-70" />,
+    },
     {
       id: "quick-options",
       name: "Quick Options",

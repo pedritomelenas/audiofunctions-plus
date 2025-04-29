@@ -7,18 +7,22 @@ import { GraphContextProvider } from "./context/GraphContext";
 import GraphControls from "./components/graph/GraphControls";
 import { useKBarActions } from './components/ui/kbarActions';
 import GraphSonification from './components/graph/GraphSonification';
+import { DialogProvider } from './context/DialogContext';
 
 function App() {
   return (
     <>
       <GraphContextProvider>
-        <KBarWrapper />
+        <DialogProvider>
+          <KBarWrapper />
+        </DialogProvider>
       </GraphContextProvider>
     </>
   );
 }
 
 const KBarWrapper = () => {
+  // needed to wrap actions into GraphContextProvider
   const actions = useKBarActions();
 
   return (
