@@ -4,16 +4,18 @@ import { useGraphContext } from "../../context/GraphContext";
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes } = useGraphContext();
+  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds } = useGraphContext();
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
-      boundingbox: [-10, 10, 10, -10],
+      boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       axis: true,
       zoom: { enabled: true, needShift: false },
       pan: { enabled: true, needShift: false },
       showCopyright: false,
     });
+
+    boardRef.current = board;
 
     let graphFormula;
     try {
@@ -48,6 +50,18 @@ const GraphView = () => {
       JXG.JSXGraph.freeBoard(board);
     };
   }, [functionInput, setCursorCoords, setInputErrorMes]);
+
+  useEffect(() => {
+    if (boardRef.current) {
+      boardRef.current.setBoundingBox([
+        graphBounds.xMin,
+        graphBounds.yMax,
+        graphBounds.xMax,
+        graphBounds.yMin,
+      ]);
+      boardRef.current.update();
+    }
+  }, [graphBounds]);
 
   return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
 };

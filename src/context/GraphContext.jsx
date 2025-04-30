@@ -7,6 +7,12 @@ export const GraphContextProvider = ({ children }) => {
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
   const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [graphBounds, setGraphBounds] = useState({
+    xMin: -10,
+    xMax: 10,
+    yMin: -10,
+    yMax: 10,
+  });
 
   ///////// currently missing features //////////
   // boundingBox
@@ -29,6 +35,8 @@ export const GraphContextProvider = ({ children }) => {
         setInputErrorMes,
         isAudioEnabled,
         setIsAudioEnabled,
+        graphBounds,
+        setGraphBounds,
       }}
     >
       {children}

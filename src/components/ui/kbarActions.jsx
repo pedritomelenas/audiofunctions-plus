@@ -3,8 +3,11 @@ import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut,
   SwatchBook, Contrast, Sun, Moon,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
+import { useDialog } from "../../context/DialogContext";
+
 
 export const useKBarActions = () => {
+  const { openDialog } = useDialog();
   const { setFunctionInput } = useGraphContext();
 
   return [
@@ -18,7 +21,7 @@ export const useKBarActions = () => {
     },
     {
       id: "switch-function",
-      name: "Switch Function",
+      name: "Switch Function to tan(x)",
       // shortcut: ["s"],
       keywords: "switch, switch function",
       parent: "quick-options",
@@ -86,7 +89,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "view",
       parent: "diagram-options",
-      perform: () => {},
+      perform: () => openDialog("change-graph-bound"),
       icon: <ChartArea className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -99,7 +102,7 @@ export const useKBarActions = () => {
       shortcut: ["f"],
       keywords: "function, change function, change graph, graph, edit function, edit graph",
       //  section: "",
-      perform: () => {},
+      perform: () => openDialog("edit-function"),
       icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
     },
 
