@@ -12,14 +12,6 @@ export const useKBarActions = () => {
 
   return [
     {
-      id: "dialog",
-      name: "Dialog Test",
-      shortcut: ["d"],
-      keywords: "dialog",
-      perform: () => openDialog("edit-function"), // Öffnet den Dialog
-      icon: <List className="size-5 shrink-0 opacity-70" />,
-    },
-    {
       id: "quick-options",
       name: "Quick Options",
       shortcut: ["q"],
@@ -29,7 +21,7 @@ export const useKBarActions = () => {
     },
     {
       id: "switch-function",
-      name: "Switch Function",
+      name: "Switch Function to tan(x)",
       // shortcut: ["s"],
       keywords: "switch, switch function",
       parent: "quick-options",
@@ -110,7 +102,7 @@ export const useKBarActions = () => {
       shortcut: ["f"],
       keywords: "function, change function, change graph, graph, edit function, edit graph",
       //  section: "",
-      perform: () => {},
+      perform: () => openDialog("edit-function"),
       icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
     },
 
