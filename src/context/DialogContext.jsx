@@ -1,6 +1,7 @@
 // DialogContext.js
 import React, { createContext, useContext, useState } from "react";
-import ExampleDialog from "../components/ui/dialogs/EditFunctionDialog";
+import EditFunctionDialog from "../components/ui/dialogs/EditFunctionDialog";
+import ChangeGraphBoundDialog from "../components/ui/dialogs/ChangeGraphBoundDialog";
 
 const DialogContext = createContext();
 
@@ -16,8 +17,14 @@ export function DialogProvider({ children }) {
     <DialogContext.Provider value={{ openDialog, closeDialog }}>
       {children}
 
-      <ExampleDialog
+      <EditFunctionDialog
         isOpen={dialog.type === "edit-function"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+      
+      <ChangeGraphBoundDialog
+        isOpen={dialog.type === "change-graph-bound"}
         onClose={closeDialog}
         {...dialog.props}
       />

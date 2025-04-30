@@ -97,7 +97,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "view",
       parent: "diagram-options",
-      perform: () => {},
+      perform: () => openDialog("change-graph-bound"),
       icon: <ChartArea className="size-5 shrink-0 opacity-70" />,
     },
 
