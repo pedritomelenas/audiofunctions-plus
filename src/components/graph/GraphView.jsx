@@ -59,7 +59,6 @@ function createEndPoints(txtraw,board){
                     endpoints.push(p);
                     if (ineq.op == "=="){
                         xisolated.push(p.X());
-                        console.log("found isolated point at ",p.X());
                     }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate();
@@ -67,7 +66,6 @@ function createEndPoints(txtraw,board){
                     endpoints.push(p);
                     if (ineq.op == "=="){
                         xisolated.push(p.X());
-                        console.log("found isolated point at ",p.X());
                     }
                 }
             }
@@ -128,9 +126,7 @@ const GraphView = () => {
 
     let graphFormula;
     try {
-      console.log("functionInput", functionInput);
       const expr = parsePiecewise(functionInput);
-      console.log("expr", expr);
       graphFormula = board.jc.snippet(expr, true, "x", true);
       setInputErrorMes(null);
     } catch (err) {
@@ -142,8 +138,6 @@ const GraphView = () => {
 
     if (graphFormula != 0){
       [endpoints,xisolated] = createEndPoints(functionInput, board);
-      console.log("endpoints", endpoints);
-      console.log("xisolated", xisolated[0]);
     }else{
       endpoints = [];
       xisolated = [];
@@ -161,10 +155,7 @@ const GraphView = () => {
       var x = coords[0];
       const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy});
       if (l.length>0){
-        console.log("isolated point");
         x=l[0];
-        console.log("x",x);
-        console.log("y",graphFormula(x)+1);
       }
       const y = graphFormula(x);
       cursor.setPositionDirectly(JXG.COORDS_BY_USER, [x, y]);
