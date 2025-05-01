@@ -55,14 +55,14 @@ function createEndPoints(txtraw,board){
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
                     v=ineq.args[0].evaluate();
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue'});
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});
                     endpoints.push(p);
                     if (ineq.op == "=="){
                         xisolated.push(p.X());
                     }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate();
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue'});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
                     if (ineq.op == "=="){
                         xisolated.push(p.X());
@@ -72,11 +72,11 @@ function createEndPoints(txtraw,board){
             if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white
                 if ("name" in ineq.args[1]){
                     v=ineq.args[0].evaluate();
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue'});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
                 }else{
                     v=ineq.args[1].evaluate();
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue'});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
                 }
             }
@@ -86,17 +86,17 @@ function createEndPoints(txtraw,board){
             b=ineq.params[2].evaluate();
             // we should check here that conditionals are in the form smaller, smallerEq 
             if (ineq.conditionals[0]=="smaller"){ // this is a smaller or equal "smallerEq"
-                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue'});   
+                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }else{ 
-                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue'});   
+                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }
             if (ineq.conditionals[1]=="smaller"){
-                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue'});   
+                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }else{
-                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue'});   
+                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }
         }

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState } from "react";
 const GraphContext = createContext();
 
 export const GraphContextProvider = ({ children }) => {
-  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
+  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
   const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
