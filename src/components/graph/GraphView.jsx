@@ -11,21 +11,19 @@ const math = create(all, config)
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 
 function parsePiecewise(txtraw){
-    var parsed = math.parse(txtraw);
+    const parsed = math.parse(txtraw);
     if (!("items" in parsed)){ // not a piecewise function
       return txtraw;
     }
-    var l = parsed.items;
-    var v,a,b,i;
-    var result= "";
-    var items2expr = function(its){
-        var it,ineq,fn,cond;
+    const l = parsed.items;
+    function items2expr(its){
         if (its.length==0){
             return "NaN";
         }
-        it=its[0];
-        fn = it.items[0];
-        ineq=it.items[1];
+        const it=its[0];
+        const fn = it.items[0];
+        const ineq=it.items[1];
+        let cond;
         if ("op" in ineq){ //that is a single inequality or an equality
             cond = ineq.toString();
         }else{
@@ -41,12 +39,12 @@ function parsePiecewise(txtraw){
 };
 
 function createEndPoints(txtraw,board){
-    var parsed = math.parse(txtraw);
+    const parsed = math.parse(txtraw);
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
-    var l = parsed.items;
-    var ineq,v,a,b,p,i;
+    const l = parsed.items;
+    let ineq,v,a,b,p,i;
     const endpoints = [];
     const xisolated = [];
     for (i=0;i< l.length;i++){
@@ -108,9 +106,9 @@ function createEndPoints(txtraw,board){
 const GraphView = () => {
   const boardRef = useRef(null);
   const { functionInput, setCursorCoords, setInputErrorMes, graphBounds } = useGraphContext();
-  var endpoints = [];
-  var xisolated = [];
-  var snapaccuracy;
+  let endpoints;
+  let xisolated;
+  let snapaccuracy;
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
