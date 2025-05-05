@@ -167,7 +167,7 @@ const GraphView = () => {
       board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, setCursorCoords, setInputErrorMes]);
+  }, [functionInput]);
 
   useEffect(() => {
     if (boardRef.current) {
