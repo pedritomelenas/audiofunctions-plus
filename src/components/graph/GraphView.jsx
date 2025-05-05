@@ -11,18 +11,17 @@ const math = create(all, config)
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 
 function parsePiecewise(txtraw){
-    const parsed = math.parse(txtraw);
+    const parsed = math.parse(txtraw); // we parse the string txtraw
     if (!("items" in parsed)){ // not a piecewise function
       return txtraw;
     }
-    const l = parsed.items;
-    function items2expr(its){
+    function items2expr(its){ //its is a list of items, each item is a pair [expr,ineq]
         if (its.length==0){
             return "NaN";
         }
-        const it=its[0];
-        const fn = it.items[0];
-        const ineq=it.items[1];
+        const it=its[0]; // the first item
+        const fn = it.items[0]; // the expression of the function
+        const ineq=it.items[1]; // the inequality or equality where the function is defined
         let cond;
         if ("op" in ineq){ //that is a single inequality or an equality
             cond = ineq.toString();
@@ -35,7 +34,7 @@ function parsePiecewise(txtraw){
         } 
         return cond + " ? (" + fn.toString() + ") : (" + items2expr(its.slice(1)) + ")";
     }
-    return items2expr(l);
+    return items2expr(parsed.items);
 };
 
 function createEndPoints(txtraw,board){
@@ -43,12 +42,12 @@ function createEndPoints(txtraw,board){
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
-    const l = parsed.items;
+    const l = parsed.items; //list of items, each item is a pair [expr,ineq]
     let ineq,v,a,b,p,i;
-    const endpoints = [];
-    const xisolated = [];
+    const endpoints = []; // the endpoints of the intervals
+    const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
-        ineq = l[i].items[1];
+        ineq = l[i].items[1]; // the inequality or equality of ith item
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
@@ -151,8 +150,8 @@ const GraphView = () => {
     const updateCursor = (event) => {
       const coords = board.getUsrCoordsOfMouse(event);
       var x = coords[0];
-      const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy});
-      if (l.length>0){
+      const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy}); // x coordinates of the isolated points close to x
+      if (l.length>0){ // if there are isolated points whose first coordinate is close to x, we redefine x to be the first one
         x=l[0];
       }
       const y = graphFormula(x);
