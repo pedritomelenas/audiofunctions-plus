@@ -121,7 +121,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {},
+      perform: () => {setTheme("light")},
       icon: <Sun className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -130,7 +130,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {},
+      perform: () => {setTheme("dark")},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -144,3 +144,18 @@ export const useKBarActions = () => {
     },
   ];
 };
+
+
+
+function setTheme(theme) {
+  console.log("Setting theme to:", theme);
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  } else if (theme === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+  } else {
+    console.warn('Unknown theme:', theme);
+  }
+}

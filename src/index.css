@@ -1,13 +1,116 @@
 @import "tailwindcss";
 
+@theme {
+  /* theme Colors */
+  --color-primary: #32cb32; 
+  --color-light-blue: #4e95d9; 
+  --color-dark-blue: #104862;
+  --color-dark-green: #275317;
+
+  /* text colors */
+  --color-titles: var(--color-gray-900); 
+  --color-descriptions: var(--color-gray-700);
+
+  --color-btn-text: var(--color-gray-900);
+
+  /* icons */
+  --color-icon: var(--color-gray-800);
+
+  /* dialog */
+  --color-dialog: var(--color-white); 
+
+  /* overlay */
+  --color-overlay: color-mix(in srgb, var(--color-black), transparent 30%);
+
+  /* text input */
+  --color-text-input: var(--color-white);
+  --color-text-input-border: var(--color-gray-300); 
+  /* --color-text-input-border-focus: var(--color-primary); */
+  --color-text-input-label: var(--color-gray-600); 
+  --color-text-input-placeholder: var(--color-gray-400); 
+  --color-text-input-content: var(--color-gray-900); 
+
+  /* buttons */
+  --color-primary-button: var(--color-primary);
+  --color-primary-button-border: var(--color-primary);
+
+  --color-secondary-button: var(--color-white);
+  --color-secondary-button-border: var(--color-gray-300);
+  
+  --color-neutral-button: var(--color-gray-100);
+  --color-neutral-button-border: var(--color-gray-100);
+
+
+
+  
+  /* --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); */
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  
+  [data-theme="dark"] {
+    color-scheme: dark;
+    /* theme Colors */
+    --color-primary: #32cb32; 
+    --color-light-blue: #4e95d9; 
+    --color-dark-blue: #104862;
+    --color-dark-green: #275317;
+
+    /* text colors */
+    --color-titles: var(--color-gray-100); 
+    --color-descriptions: var(--color-gray-300);
+
+    --color-btn-text: var(--color-gray-100);
+
+    /* icons */
+    --color-icon: var(--color-gray-200);
+
+    /* dialog */
+    --color-dialog: var(--color-gray-800); 
+
+    /* overlay */
+    --color-overlay: color-mix(in srgb, var(--color-black), transparent 45%);
+
+    /* text input */
+    --color-text-input: var(--color-gray-700);
+    --color-text-input-border: var(--color-gray-600); 
+    /* --color-text-input-border-focus: var(--color-primary); */
+    --color-text-input-label: var(--color-gray-300); 
+    --color-text-input-placeholder: var(--color-gray-600); 
+    --color-text-input-content: var(--color-gray-100); 
+
+    /* buttons */
+    --color-primary-button: var(--color-dark-green);
+    --color-primary-button-border: var(--color-dark-green);
+
+    --color-secondary-button: var(--color-gray-700);
+    --color-secondary-button-border: var(--color-gray-600);
+
+    --color-neutral-button: var(--color-gray-950);
+    --color-neutral-button-border: var(--color-gray-950);
+    
+    /* --btn-bg-primary: color-mix(in srgb, var(--color-primary), #000 20%);
+    --btn-bg-secondary: color-mix(in srgb, var(--color-secondary), #000 20%); */
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  }
+
+}
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* color-scheme: light dark; */
+  /* color: rgba(255, 255, 255, 0.87); */
+  /* background-color: #242424; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -37,34 +140,102 @@ h1 {
   line-height: 1.1;
 }
 
+
+
+/* -------------------------- */
+/* -------- Buttons --------- */
+/* -------------------------- */
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
   padding: 0.6em 1.2em;
+  border-style: var(--tw-border-style);
+  border-width: 1px;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  @apply opacity-80 scale-105;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.btn-primary {
+  background-color: var(--color-primary-button);
+  color: var(--color-btn-text);
+  border-color: var(--color-primary-button-border);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.btn-secondary {
+  background-color: var(--color-secondary-button);
+  color: var(--color-btn-text);
+  border-color: var(--color-secondary-button-border);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.btn-secondary:focus{
+  outline-width: 2px;
+  outline-style: var(--tw-outline-style);
+  outline-color: var(--color-primary);
+}
+
+.btn-neutral {
+  background-color: var(--color-neutral-button);
+  color: var(--color-btn-text);
+  border-color: var(--color-neutral-button-border);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.btn-neutral:hover {
+  @apply opacity-100 scale-100;
+  outline-width: 2px;
+  outline-style: var(--tw-outline-style);
+  outline-color: var(--color-primary);
+}
+.btn-neutral:focus{
+  outline-width: 2px;
+  outline-style: var(--tw-outline-style);
+  outline-color: var(--color-primary);
+}
+
+
+/* -------------------------- */
+/* ------- text input ------- */
+/* -------------------------- */
+
+.text-input-outer {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-md); /* rounded-md */
+  padding-left: calc(var(--spacing) * 3); /* pl-3 */
+  background-color: var(--color-text-input);
+  outline-width: 1px;
+  outline-style: var(--tw-outline-style);
+  outline-color: var(--color-text-input-border);
+}
+.text-input-outer:has(input:focus-within) {
+  outline-width: 2px;
+  outline-color: var(--color-primary);
+}
+
+.text-input-inner {
+  width: calc(var(--spacing) * 18);
+  padding-block: calc(var(--spacing) * 1.5);
+  padding-right: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 1);
+  font-size: var(--text-base);
+  line-height: var(--tw-leading, var(--text-base--line-height));
+  color: var(--color-text-input-content); /* text-text-input-content */
+}
+.text-input-inner:focus {
+  outline: none;
+}
+
+.text-input-label {
+  font-size: var(--text-base);
+  line-height: var(--tw-leading, var(--text-base--line-height));
+  color: var(--color-text-input-label);
+  -webkit-user-select: none;
+  user-select: none;
 }
