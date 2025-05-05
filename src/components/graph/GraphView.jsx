@@ -9,7 +9,8 @@ const math = create(all, config)
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
-
+// it can also be a single expression in the variable x, for instance sin(x)
+// the output is a translation of the input string into a javascript expression "C ? A : B"
 function parsePiecewise(txtraw){
     const parsed = math.parse(txtraw); // we parse the string txtraw
     if (!("items" in parsed)){ // not a piecewise function
@@ -22,7 +23,8 @@ function parsePiecewise(txtraw){
         const it=its[0]; // the first item
         const fn = it.items[0]; // the expression of the function
         const ineq=it.items[1]; // the inequality or equality where the function is defined
-        let cond;
+        let cond; // the condition of "C ? A : B"
+        // inequalities of the form a op1 x op2 b are translatete into a op1 x && x op2 b 
         if ("op" in ineq){ //that is a single inequality or an equality
             cond = ineq.toString();
         }else{
@@ -51,48 +53,48 @@ function createEndPoints(txtraw,board){
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
-                    v=ineq.args[0].evaluate();
+                    v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});
                     endpoints.push(p);
-                    if (ineq.op == "=="){
+                    if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
                         xisolated.push(p.X());
                     }
                 }else{ // we have x op a, with op in {<=, >=, ==}
-                    v=ineq.args[1].evaluate();
+                    v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
-                    if (ineq.op == "=="){
+                    if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
                         xisolated.push(p.X());
                     }
                 }
             }
-            if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white
-                if ("name" in ineq.args[1]){
-                    v=ineq.args[0].evaluate();
+            if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white, since it is an strict inequality
+                if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
+                    v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
-                }else{
-                    v=ineq.args[1].evaluate();
+                }else{ // we have x op a, with op in {<, >}
+                    v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                     endpoints.push(p);
                 }
             }
         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
             // the values a and b are the first and last arguments of the inequality
-            a=ineq.params[0].evaluate();
-            b=ineq.params[2].evaluate();
+            a=ineq.params[0].evaluate(); // the value of a in a op x op b
+            b=ineq.params[2].evaluate(); // the value of b in a op x op b
             // we should check here that conditionals are in the form smaller, smallerEq 
-            if (ineq.conditionals[0]=="smaller"){ // this is a smaller or equal "smallerEq"
+            if (ineq.conditionals[0]=="smaller"){ // this is a smaller so we fill in white, since it is an strict inequality
                 p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
-            }else{ 
+            }else{  // this is a smallerEq so we fill in blue
                 p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }
-            if (ineq.conditionals[1]=="smaller"){
+            if (ineq.conditionals[1]=="smaller"){ // this is a smaller so we fill in white, since it is an strict inequality
                 p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
-            }else{
+            }else{ // this is a smallerEq so we fill in blue
                 p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
                 endpoints.push(p);
             }
