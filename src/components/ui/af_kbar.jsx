@@ -29,10 +29,10 @@ const CustomDialogAnimator = ({ children, className }) => {
 const CommandBar = () => {
     return (
         <KBarPortal>
-            <KBarPositioner className="bg-black/50 backdrop-blur-md">
-                <CustomDialogAnimator className='bg-white rounded-xl shadow-xl flex flex-col gap-4 w-[35rem] overflow-hidden'>
+            <KBarPositioner className="bg-overlay backdrop-blur-md">
+                <CustomDialogAnimator className='bg-background rounded-xl shadow-xl flex flex-col gap-4 w-[35rem] overflow-hidden'>
                     <KBarAnimator>
-                        <KBarSearch className='w-full outline-none px-6 py-4 text-black' aria-owns='kbar-listbox'/>
+                        <KBarSearch className='w-full outline-none px-6 py-4 text-txt' aria-owns='kbar-listbox'/>
                         <SearchResults aria-hi/>
                     </KBarAnimator>
                     <LiveRegion />
@@ -50,7 +50,7 @@ const SearchResults = () => {
             items={results}
             onRender={({ item, active }) => {
                 return typeof item === 'string' ? (
-                    // Section header
+                    // Section header -- not used right now
                     <div className='text-xm uppercase px-4 pt-3 pb-1 text-neutral-500 font-bold'
                     role="separator"
                     aria-hidden="true"
@@ -60,17 +60,17 @@ const SearchResults = () => {
                 ) : (
                     // Single action
                     <div 
-                        className={`text-black flex items-center px-4 py-3 ${active ? "bg-[#eeeeee]" : "bg-transparent"}`}
+                        className={`text-btn-text flex items-center px-4 py-3 ${active ? "bg-hover-full" : "bg-transparent"} select-none cursor-pointer`}
                         tabIndex={0}
                         role="option"
                     >
-                        {item.icon && <span className="mr-2">{item.icon}</span>}
+                        {item.icon && <span className="mr-2 text-txt">{item.icon}</span>}
                         <div className="flex flex-col">
                             <span>{item.name}</span>
-                            {item.subtitle && <span className="text-sm text-gray-500">{item.subtitle}</span>}
+                            {item.subtitle && <span className="text-sm text-txt">{item.subtitle}</span>}
                         </div>
                         {item.shortcut && (
-                            <span className="ml-auto text-xs text-gray-400" aria-label={`Shortcut: ${item.shortcut.join(", ")}`}>
+                            <span className="ml-auto text-xs text-txt-subtitle" aria-label={`Shortcut: ${item.shortcut.join(", ")}`}>
                                 {item.shortcut.join(", ")}
                             </span>
                         )}

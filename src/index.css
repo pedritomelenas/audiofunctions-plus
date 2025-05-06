@@ -2,49 +2,55 @@
 
 @theme {
   /* theme Colors */
-  --color-primary: #32cb32; 
+  --color-sag-green: #32cb32;
   --color-light-blue: #4e95d9; 
   --color-dark-blue: #104862;
   --color-dark-green: #275317;
+  --color-dark-green-2: #3d8124;
+  --color-dark-green-3: #2a8209;
 
-  /* text colors */
-  --color-titles: var(--color-gray-900); 
-  --color-descriptions: var(--color-gray-700);
+  --color-gray-li: #f3f4f6;
+  --color-gray-mdli: #d1d5dc;
 
-  --color-btn-text: var(--color-gray-900);
+  --color-gray-md: #6a7282;
 
-  /* icons */
-  --color-icon: var(--color-gray-800);
+  --color-gray-darker: #030712;
+  --color-gray-dk: #101828;
+  --color-gray-mddk: #364153;
 
-  /* dialog */
-  --color-dialog: var(--color-white); 
 
-  /* overlay */
+
+
+  /* --------------------- */
+  /* ---- Definitions ---- */
+  /* --------------------- */
+
+  /* General */
+  --color-primary: var(--color-sag-green);
+
+  --color-background: var(--color-white);
   --color-overlay: color-mix(in srgb, var(--color-black), transparent 30%);
 
-  /* text input */
-  --color-text-input: var(--color-white);
-  --color-text-input-border: var(--color-gray-300); 
-  /* --color-text-input-border-focus: var(--color-primary); */
-  --color-text-input-label: var(--color-gray-600); 
-  --color-text-input-placeholder: var(--color-gray-400); 
-  --color-text-input-content: var(--color-gray-900); 
 
-  /* buttons */
-  --color-primary-button: var(--color-primary);
-  --color-primary-button-border: var(--color-primary);
+  /* Text */
+  --color-txt: var(--color-gray-dk);
+  --color-txt-title: var(--color-gray-darker);
+  --color-txt-subtitle: var(--color-gray-mddk);
+  --color-txt-label: var(--color-gray-mddk);
 
-  --color-secondary-button: var(--color-white);
-  --color-secondary-button-border: var(--color-gray-300);
-  
-  --color-neutral-button: var(--color-gray-100);
-  --color-neutral-button-border: var(--color-gray-100);
+  /* Basic elements */
+  --color-elem-background: var(--color-gray-li);
+  --color-border: var(--color-gray-mdli);
+  --color-hover-border: var(--color-sag-green);
+  --color-hover-full: color-mix(in srgb, var(--color-primary), transparent 45%);
+  --color-focus-border: var(--color-sag-green);
+  --color-contrast-border: var(--color-transparent); /* For high-contrast */
 
 
+  /* special cases */
+  --color-text-input-background: var(--color-white);
 
-  
-  /* --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); */
+
 }
 
 @layer base {
@@ -54,47 +60,32 @@
   
   [data-theme="dark"] {
     color-scheme: dark;
-    /* theme Colors */
-    --color-primary: #32cb32; 
-    --color-light-blue: #4e95d9; 
-    --color-dark-blue: #104862;
-    --color-dark-green: #275317;
 
-    /* text colors */
-    --color-titles: var(--color-gray-100); 
-    --color-descriptions: var(--color-gray-300);
+    /* General */
+    --color-primary: var(--color-dark-green-3);
 
-    --color-btn-text: var(--color-gray-100);
-
-    /* icons */
-    --color-icon: var(--color-gray-200);
-
-    /* dialog */
-    --color-dialog: var(--color-gray-800); 
-
-    /* overlay */
+    --color-background: var(--color-gray-800);
     --color-overlay: color-mix(in srgb, var(--color-black), transparent 45%);
 
-    /* text input */
-    --color-text-input: var(--color-gray-700);
-    --color-text-input-border: var(--color-gray-600); 
-    /* --color-text-input-border-focus: var(--color-primary); */
-    --color-text-input-label: var(--color-gray-300); 
-    --color-text-input-placeholder: var(--color-gray-600); 
-    --color-text-input-content: var(--color-gray-100); 
 
-    /* buttons */
-    --color-primary-button: var(--color-dark-green);
-    --color-primary-button-border: var(--color-dark-green);
+    /* Text */
+    --color-txt: var(--color-gray-li);
+    --color-txt-title: var(--color-gray-white);
+    --color-txt-subtitle: var(--color-gray-mdli);
+    --color-txt-label: var(--color-gray-mdli);
 
-    --color-secondary-button: var(--color-gray-700);
-    --color-secondary-button-border: var(--color-gray-600);
+    /* Basic elements */
+    --color-elem-background: var(--color-gray-darker);
+    --color-border: var(--color-gray-md);
+    --color-hover-border: var(--color-sag-green);
+    --color-hover-full: color-mix(in srgb, var(--color-primary), transparent 40%);
+    --color-focus-border: var(--color-sag-green);
+    --color-contrast-border: var(--color-transparent); /* For high-contrast */
 
-    --color-neutral-button: var(--color-gray-950);
-    --color-neutral-button-border: var(--color-gray-950);
-    
-    /* --btn-bg-primary: color-mix(in srgb, var(--color-primary), #000 20%);
-    --btn-bg-secondary: color-mix(in srgb, var(--color-secondary), #000 20%); */
+
+    /* special cases */
+    --color-text-input-background: var(--color-gray-mddk);
+
     
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
@@ -148,7 +139,7 @@ h1 {
 button {
   border-radius: 8px;
   padding: 0.6em 1.2em;
-  border-style: var(--tw-border-style);
+  border-style: solid;
   border-width: 1px;
   font-size: 1em;
   font-weight: 500;
@@ -160,43 +151,40 @@ button:hover {
   @apply opacity-80 scale-105;
 }
 .btn-primary {
-  background-color: var(--color-primary-button);
-  color: var(--color-btn-text);
-  border-color: var(--color-primary-button-border);
+  background-color: var(--color-primary);
+  color: var(--color-txt-title);
+  border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 
 .btn-secondary {
-  background-color: var(--color-secondary-button);
-  color: var(--color-btn-text);
-  border-color: var(--color-secondary-button-border);
+  background-color: var(--color-background);
+  color: var(--color-txt);
+  border-color: var(--color-border);
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 .btn-secondary:focus{
   outline-width: 2px;
-  outline-style: var(--tw-outline-style);
-  outline-color: var(--color-primary);
+  outline-style: solid;
+  outline-color: var(--color-focus-border);
 }
 
 .btn-neutral {
-  background-color: var(--color-neutral-button);
-  color: var(--color-btn-text);
-  border-color: var(--color-neutral-button-border);
+  background-color: var(--color-elem-background);
+  color: var(--color-txt);
+  border-color: var(--color-elem-background);
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 .btn-neutral:hover {
   @apply opacity-100 scale-100;
   outline-width: 2px;
-  outline-style: var(--tw-outline-style);
-  outline-color: var(--color-primary);
+  outline-style: solid;
+  outline-color: var(--color-hover-border);
 }
 .btn-neutral:focus{
   outline-width: 2px;
-  outline-style: var(--tw-outline-style);
-  outline-color: var(--color-primary);
+  outline-style: solid;
+  outline-color: var(--color-focus-border);
 }
 
 
@@ -209,14 +197,14 @@ button:hover {
   align-items: center;
   border-radius: var(--radius-md); /* rounded-md */
   padding-left: calc(var(--spacing) * 3); /* pl-3 */
-  background-color: var(--color-text-input);
-  outline-width: 1px;
-  outline-style: var(--tw-outline-style);
-  outline-color: var(--color-text-input-border);
+  background-color: var(--color-text-input-background);
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: var(--color-border);
 }
 .text-input-outer:has(input:focus-within) {
   outline-width: 2px;
-  outline-color: var(--color-primary);
+  outline-color: var(--color-focus-border);
 }
 
 .text-input-inner {
@@ -226,7 +214,7 @@ button:hover {
   padding-left: calc(var(--spacing) * 1);
   font-size: var(--text-base);
   line-height: var(--tw-leading, var(--text-base--line-height));
-  color: var(--color-text-input-content); /* text-text-input-content */
+  color: var(--color-txt); /* text-text-input-content */
 }
 .text-input-inner:focus {
   outline: none;
@@ -234,8 +222,8 @@ button:hover {
 
 .text-input-label {
   font-size: var(--text-base);
-  line-height: var(--tw-leading, var(--text-base--line-height));
-  color: var(--color-text-input-label);
+  line-height: var(--tw-leading, var(--text-base --line-height));
+  color: var(--color-txt-label);
   -webkit-user-select: none;
   user-select: none;
 }
