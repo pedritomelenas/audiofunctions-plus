@@ -98,7 +98,7 @@ export const useKBarActions = () => {
 
     {
       id: "change-function",
-      name: "edit functions",
+      name: "Edit Functions",
       shortcut: ["f"],
       keywords: "function, change function, change graph, graph, edit function, edit graph",
       //  section: "",

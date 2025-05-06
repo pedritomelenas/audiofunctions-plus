@@ -23,9 +23,9 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onClose={onClose} aria-modal="true" role="dialog">
-          <div className="fixed inset-0 bg-black/50" aria-hidden="true" /> {/* Overlay - grey background */}
+          <div className="fixed inset-0 bg-overlay" aria-hidden="true" /> {/* Overlay - grey background */}
           <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
-            <DialogPanel className="w-full max-w-lg bg-dialog rounded-lg p-6 shadow-lg">
+            <DialogPanel className="w-full max-w-lg bg-background rounded-lg p-6 shadow-lg">
               <DialogTitle className="text-lg font-bold text-titles">
                 Change Graph-Bound
               </DialogTitle>
