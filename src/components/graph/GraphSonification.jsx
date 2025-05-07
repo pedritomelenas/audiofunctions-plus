@@ -3,7 +3,7 @@ import * as Tone from "tone";
 import { useGraphContext } from "../../context/GraphContext";
 
 const GraphSonification = () => {
-  const { cursorCoords, isAudioEnabled } = useGraphContext();
+  const { cursorCoords, isAudioEnabled, graphBounds } = useGraphContext();
   const oscillatorRef = useRef(null);
   const pannerRef = useRef(null);
   const lastTimeRef = useRef(null);
@@ -46,7 +46,7 @@ const GraphSonification = () => {
 
   const calculateFrequency = (y) => {
     if (y === null || y === undefined) return null;
-    const normalizedY = Math.max(0, Math.min(1, (y - -10) / (10 - -10)));
+    const normalizedY = (y- graphBounds.yMin)/(graphBounds.yMax-graphBounds.yMin); //Math.max(0, Math.min(1, (y - -10) / (10 - -10)));
     return minFrequency + normalizedY * (maxFrequency - minFrequency);
   };
 
