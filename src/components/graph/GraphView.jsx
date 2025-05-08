@@ -106,7 +106,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds } = useGraphContext();
+  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
   let endpoints;
   let xisolated;
   let snapaccuracy;
@@ -149,9 +149,10 @@ const GraphView = () => {
       highlight: false
     });
 
-    const updateCursor = (event) => {
-      const coords = board.getUsrCoordsOfMouse(event);
-      var x = coords[0];
+    // const updateCursor = (event) => {
+      // const coords = board.getUsrCoordsOfMouse(event);
+      // var x = coords[0];
+      const updateCursor = (x) => {
       const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy}); // x coordinates of the isolated points close to x
       if (l.length>0){ // if there are isolated points whose first coordinate is close to x, we redefine x to be the first one
         x=l[0];
@@ -162,13 +163,42 @@ const GraphView = () => {
       board.update();
     };
 
-    board.on("move", updateCursor, { passive: true });
+
+    if (PlayFunction.active) {                       //Start play function
+      console.log("Play mode activated!");
+      if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;     //set start position
+      PlayFunction.timer = setInterval(() => {       //Play function loop
+        PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (PlayFunction.speed / 100);     //speed means percent of view played per one second
+        updateCursor(PlayFunction.x);
+        if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin )) {      //if we got out from board, stop moving
+          PlayFunction.active = false;
+        }
+      }, PlayFunction.interval);
+    } else {                                         //Stop play function
+      if (PlayFunction.timer !== null) {             //clear timer if exists
+        clearInterval(PlayFunction.timer);
+        PlayFunction.timer = null;
+      }
+    }
+
+    const moveHandler = (event) => {
+      if (!PlayFunction.active) {
+        const coords = board.getUsrCoordsOfMouse(event);
+        const x = coords[0];
+        updateCursor(x);
+      }
+      //if (x < graphBounds.xMin || x > graphBounds.xMax) return;
+    };
+
+    board.on("move", moveHandler, { passive: true });
+
+    // board.on("move", updateCursor, { passive: true });
 
     return () => {
       board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput]);
+  }, [functionInput, PlayFunction.active]);
 
   useEffect(() => {
     if (boardRef.current) {

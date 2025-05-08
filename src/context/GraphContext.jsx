@@ -15,6 +15,7 @@ export const GraphContextProvider = ({ children }) => {
     yMin: -10,
     yMax: 10,
   });
+  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, timer: null });
 
   ///////// currently missing features //////////
   // boundingBox
@@ -43,6 +44,8 @@ export const GraphContextProvider = ({ children }) => {
         setIsAudioEnabled,
         graphBounds,
         setGraphBounds,
+        PlayFunction, 
+        setPlayFunction,
       }}
     >
       {children}
