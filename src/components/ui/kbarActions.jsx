@@ -1,10 +1,10 @@
 import React from "react";
 import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
-  SwatchBook, Contrast, Sun, Moon,
+  SwatchBook, Sun, Moon, SunMoon,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
-
+import { setTheme } from "../../utils/theme"; // Import the theme utility
 
 export const useKBarActions = () => {
   const { openDialog } = useDialog();
@@ -116,6 +116,15 @@ export const useKBarActions = () => {
       icon: <SwatchBook className="size-5 shrink-0 opacity-70" />,
     },
     {
+      id: "system-theme",
+      name: "Use System Theme",
+      // shortcut: [""],
+      keywords: "theme",
+      parent: "change-theme",
+      perform: () => {setTheme("system")},
+      icon: <SunMoon className="size-5 shrink-0 opacity-70" />,
+    },
+    {
       id: "light-theme",
       name: "Light Theme",
       // shortcut: [""],
@@ -133,29 +142,14 @@ export const useKBarActions = () => {
       perform: () => {setTheme("dark")},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
-    {
-      id: "high-contrast-theme",
-      name: "High Contrast Theme",
-      // shortcut: [""],
-      keywords: "theme",
-      parent: "change-theme",
-      perform: () => {},
-      icon: <Contrast className="size-5 shrink-0 opacity-70" />,
-    },
+    // {
+    //   id: "high-contrast-theme",
+    //   name: "High Contrast Theme",
+    //   // shortcut: [""],
+    //   keywords: "theme",
+    //   parent: "change-theme",
+    //   perform: () => {},
+    //   icon: <Contrast className="size-5 shrink-0 opacity-70" />,
+    // },
   ];
 };
-
-
-
-function setTheme(theme) {
-  console.log("Setting theme to:", theme);
-  if (theme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-  } else if (theme === 'light') {
-    document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
-  } else {
-    console.warn('Unknown theme:', theme);
-  }
-}
