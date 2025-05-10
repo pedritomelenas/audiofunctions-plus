@@ -1,11 +1,11 @@
 import './App.css';
 import { KBarProvider, useKBar } from 'kbar';
-import CommandBar from './components/ui/af_kbar';
+import CommandBar from './components/ui/CommandPalette';
 import GraphView from './components/graph/GraphView';
 import React from "react";
 import { GraphContextProvider } from "./context/GraphContext";
 import GraphControls from "./components/graph/GraphControls";
-import { useKBarActions } from './components/ui/kbarActions';
+import { useKBarActions } from './components/ui/PaletteActions';
 import GraphSonification from './components/graph/GraphSonification';
 import { DialogProvider } from './context/DialogContext';
 

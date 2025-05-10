@@ -29,8 +29,8 @@ const CustomDialogAnimator = ({ children, className }) => {
 const CommandBar = () => {
     return (
         <KBarPortal>
-            <KBarPositioner className="bg-overlay backdrop-blur-md">
-                <CustomDialogAnimator className='bg-background rounded-xl shadow-xl flex flex-col gap-4 w-[35rem] overflow-hidden'>
+            <KBarPositioner className="bg-overlay backdrop-blur-md">                
+                <CustomDialogAnimator className='bg-background rounded-xl shadow-xl flex flex-col gap-4 w-[95%] max-w-[35rem] overflow-hidden'>
                     <KBarAnimator>
                         <KBarSearch className='w-full outline-none px-6 py-4 text-txt' aria-owns='kbar-listbox'/>
                         <SearchResults aria-hi/>
