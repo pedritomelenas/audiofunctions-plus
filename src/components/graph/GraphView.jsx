@@ -129,7 +129,7 @@ const GraphView = () => {
       },
       // axis: true,
       zoom: { enabled: true, needShift: false },
-      pan: { enabled: true, needShift: false },
+      pan: { enabled: true, needShift: false, needTwoFingers: true},
       showCopyright: false,
     });
 
