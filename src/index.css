@@ -290,35 +290,27 @@ button:hover {
 /* -------------------------- */
 /* ------- graph view ------- */
 /* -------------------------- */
-/* Achse selbst */
-#jxgbox .axis {
+.axis {
   stroke: var(--color-axis);
   stroke-width: 2px;
   stroke-opacity: 0.3;
 }
-
-/* Ticks der Achse - basierend auf dem tatsächlichen DOM */
-#jxgbox path[id*="_ticks_"] {
+path[id*="_ticks_"] {
   stroke: var(--color-txt);
   stroke-width: 3px;
   stroke-opacity: 0.7;
 }
-
-/* Labels der Achse (Text-Elemente für Zahlen) */
-#jxgbox text[id*="_ticks_"] {
+text.JXGtext {
   fill: var(--color-txt);
-  font-family: sans-serif;
-  font-size: 3em;
+  /* font-family: sans-serif; */
+  dominant-baseline: middle;
+  text-anchor: end;
 }
-
-/* Pfeilspitzen der Achsen */
-/* #jxgbox polygon[id*="JXG_axis"],
-#jxgbox path[id*="JXG_axis"] {
-  fill: var(--color-primary);
-  stroke: var(--color-primary);
-  stroke-width: 8px;
-  stroke-opacity: 0.8;
-} */
+/* arrows */
+[id^="jxgbox_"][id$="TriangleEnd1"] {
+  fill: var(--color-axis);
+  stroke: var(--color-axis);
+}
 
 
 .grid {
@@ -326,6 +318,7 @@ button:hover {
   stroke-width: 2px;
   stroke-opacity: 0.3;
 }
+
 
 
 .curve {
