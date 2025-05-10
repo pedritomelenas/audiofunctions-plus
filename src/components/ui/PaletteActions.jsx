@@ -1,6 +1,6 @@
 import React from "react";
 import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
-  SwatchBook, Sun, Moon, SunMoon,
+  SwatchBook, Sun, Moon, SunMoon, Contrast,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
@@ -142,14 +142,14 @@ export const useKBarActions = () => {
       perform: () => {setTheme("dark")},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
-    // {
-    //   id: "high-contrast-theme",
-    //   name: "High Contrast Theme",
-    //   // shortcut: [""],
-    //   keywords: "theme",
-    //   parent: "change-theme",
-    //   perform: () => {},
-    //   icon: <Contrast className="size-5 shrink-0 opacity-70" />,
-    // },
+    {
+      id: "high-contrast-theme",
+      name: "High Contrast Theme",
+      // shortcut: [""],
+      keywords: "theme",
+      parent: "change-theme",
+      perform: () => {setTheme("high-contrast")},
+      icon: <Contrast className="size-5 shrink-0 opacity-70" />,
+    },
   ];
 };

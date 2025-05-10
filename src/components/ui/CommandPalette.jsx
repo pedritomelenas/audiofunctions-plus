@@ -60,9 +60,14 @@ const SearchResults = () => {
                 ) : (
                     // Single action
                     <div 
-                        className={`text-btn-text flex items-center px-4 py-3 ${active ? "bg-hover-full" : "bg-transparent"} select-none cursor-pointer`}
+                        className={`text-btn-text flex items-center px-4 py-3 ${
+                            active 
+                                ? "bg-hover-full high-contrast-highlight-border " 
+                                : "bg-transparent"
+                        } select-none cursor-pointer`}
                         tabIndex={0}
                         role="option"
+                        aria-selected={active ? "true" : "false"}
                     >
                         {item.icon && <span className="mr-2 text-txt">{item.icon}</span>}
                         <div className="flex flex-col">

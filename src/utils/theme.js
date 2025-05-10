@@ -13,6 +13,8 @@ export function initializeTheme() {
   // Apply the saved theme or use system preference as fallback
   if (savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (savedTheme === 'high-contrast') {
+    document.documentElement.setAttribute('data-theme', 'high-contrast');
   } else if (savedTheme === 'light') {
     document.documentElement.removeAttribute('data-theme');
   } else {
@@ -62,15 +64,22 @@ export function setTheme(theme) {
   if (theme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
-  } else if (theme === 'light') {
+  } 
+  else if (theme === 'high-contrast') {
+    document.documentElement.setAttribute('data-theme', 'high-contrast');
+    localStorage.setItem('theme', 'high-contrast');
+  } 
+  else if (theme === 'light') {
     document.documentElement.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
-  } else if (theme === 'system') {
+  } 
+  else if (theme === 'system') {
     // Remove the localStorage item first so handleSystemThemeChange will work
     localStorage.removeItem('theme');
     // Apply current system theme
     applySystemTheme();
-  } else {
+  } 
+  else {
     console.warn('Unknown theme:', theme);
   }
 }
