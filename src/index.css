@@ -93,7 +93,7 @@
 
     /* Text */
     --color-txt: var(--color-gray-li);
-    --color-txt-title: var(--color-gray-white);
+    --color-txt-title: var(--color-white);
     --color-txt-subtitle: var(--color-gray-mdli);
     --color-txt-label: var(--color-gray-mdli);
 
@@ -129,8 +129,8 @@
     --color-text-input-background: var(--color-gray-mddk);
 
     
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.7), 0 1px 3px -1px rgb(0 0 0 / 0.6);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.7), 0 2px 4px -2px rgb(0 0 0 / 0.6);
   }
 
 }
@@ -172,7 +172,7 @@ body {
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2em;
   line-height: 1.1;
 }
 
@@ -200,13 +200,6 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  @apply opacity-80 scale-105;
-}
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-txt-title);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
   @apply opacity-80 scale-105;
 }
 .btn-primary {
