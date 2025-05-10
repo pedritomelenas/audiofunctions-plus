@@ -32,7 +32,7 @@ const KBarWrapper = () => {
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
         <Header />
         <div className="flex-1 overflow-auto">
-          {/* <GraphControls /> */}
+          <GraphControls />
           <GraphView />
           <GraphSonification />
         </div>
