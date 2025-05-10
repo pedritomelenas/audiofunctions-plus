@@ -54,14 +54,14 @@ function createEndPoints(txtraw,board){
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
                         xisolated.push(p.X());
                     }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'isolated-point', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
                         xisolated.push(p.X());
@@ -71,11 +71,11 @@ function createEndPoints(txtraw,board){
             if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }else{ // we have x op a, with op in {<, >}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
+                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }
             }
@@ -85,17 +85,17 @@ function createEndPoints(txtraw,board){
             b=ineq.params[2].evaluate(); // the value of b in a op x op b
             // we should check here that conditionals are in the form smaller, smallerEq 
             if (ineq.conditionals[0]=="smaller"){ // this is a smaller so we fill in white, since it is an strict inequality
-                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
+                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                 endpoints.push(p);
             }else{  // this is a smallerEq so we fill in blue
-                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
+                p=board.create("point", [a,l[i].items[0].evaluate({x:a})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});   
                 endpoints.push(p);
             }
             if (ineq.conditionals[1]=="smaller"){ // this is a smaller so we fill in white, since it is an strict inequality
-                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'white', fillOpacity:0.1,strokeColor:'blue',highlight:false});   
+                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                 endpoints.push(p);
             }else{ // this is a smallerEq so we fill in blue
-                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {fixed:true,withLabel:false,fillColor:'blue',strokeColor:'blue',highlight:false});   
+                p=board.create("point", [b,l[i].items[0].evaluate({x:b})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});   
                 endpoints.push(p);
             }
         }
@@ -114,7 +114,20 @@ const GraphView = () => {
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
-      axis: true,
+      grid: {
+        cssClass: "grid",
+      },      
+      axis: {
+        cssClass: "axis", 
+        needsRegularUpdate: true,
+        highlight: false,
+        ticks: {
+          insertTicks: true,
+          majorHeight: 5,
+          minorHeight: 3,
+        },
+      },
+      // axis: true,
       zoom: { enabled: true, needShift: false },
       pan: { enabled: true, needShift: false },
       showCopyright: false,
@@ -133,7 +146,11 @@ const GraphView = () => {
       graphFormula = 0;
     }
 
-    const graphObject = board.create("functiongraph", [graphFormula],{fixed:true,highlight:false});
+    const graphObject = board.create("functiongraph", [graphFormula],{
+      cssClass: "curve",
+      fixed:true,
+      highlight:false,
+    });
 
     if (graphFormula != 0){
       [endpoints,xisolated] = createEndPoints(functionInput, board);
@@ -142,9 +159,9 @@ const GraphView = () => {
       xisolated = [];
     }
     const cursor = board.create("point", [0, 0], {
+      cssClass: "functionCursor",
       name: "",
-      size: 3,
-      color: "red",
+      size: 5,
       fixed: true,
       highlight: false
     });
@@ -199,6 +216,8 @@ const GraphView = () => {
       JXG.JSXGraph.freeBoard(board);
     };
   }, [functionInput, PlayFunction.active]);
+
+
 
   useEffect(() => {
     if (boardRef.current) {
