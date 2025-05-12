@@ -10,10 +10,10 @@ function isValidMathParse(expr){
         //math.parse(expr); this is not enough, since several variables can be involved
         const parsed = math.parse(expr); // we parse the string txt
         if (!("items" in parsed)){ // not a piecewise function
-            if(isNaN(math.compile(expr).evaluate({x:0}))){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
-            return false;
+            if(typeof math.compile(expr).evaluate({x:0})=='number'){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
+            return true;
             }else{
-                return true;
+                return false;
             }
         } 
     }
@@ -32,7 +32,20 @@ function isValidMathParse(expr){
         console.log("Invalid input, not a list of pairs");
         return false;
     }
-    return its.every((e)=> isValidMathParse(e.items[0].toString()) && isValidMathParse(e.items[1].toString()));  
+    let it; //single item
+    for (let i=0;i<its.length;i++){
+        it=its[i]; // the ith item
+        try{
+            if (!((typeof it.items[0].evaluate({x:0})=='number') && (typeof it.items[1].evaluate({x:0})=='boolean'))){
+                console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
+                return false;
+            }
+        }catch(ex){
+            console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
+            return false;
+        }
+    }
+    return true;
 }
 
 // function to check if 'expr' is a constant, for instance, -1 or 10+2
