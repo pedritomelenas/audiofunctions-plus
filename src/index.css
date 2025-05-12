@@ -166,7 +166,7 @@
     --color-elem-background: #0a0a0a; 
     --color-border: var(--color-hc-border);
     --color-hover-border: var(--color-hc-accent);
-    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 75%);
+    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 80%);
     --color-focus-border: var(--color-hc-accent);
     --color-contrast-border: var(--color-hc-link); 
     
@@ -178,8 +178,8 @@
     --color-curve-primary: var(--color-hc-accent);
     --color-curve-secondary: var(--color-hc-link);
     
-    --color-isolated-point: var(--color-hc-accent);
-    --color-isolated-point-border: var(--color-hc-accent);
+    --color-isolated-point: var(--color-hc-link);
+    --color-isolated-point-border: var(--color-hc-link);
     --color-endpoint-closed: var(--color-hc-link);
     --color-endpoint-closed-border: var(--color-hc-link);
     --color-endpoint-open: var(--color-hc-success);
