@@ -3,9 +3,28 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const CustomDialogAnimator = ({ children, className }) => {
     // needed, to trap the keyboard focus - kbar doesn't do this by default
-
     const dialogRef = useRef(null);
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
+    // Add keyboard detection
+    useEffect(() => {
+        // Use visual viewport API to detect keyboard
+        if (window.visualViewport) {
+            const handler = () => {
+            // If the visual viewport height is significantly less than the window inner height,
+            // we can assume the keyboard is open
+            const heightDiff = window.innerHeight - window.visualViewport.height;
+            setIsKeyboardOpen(heightDiff > 150);
+            };
+            
+            window.visualViewport.addEventListener('resize', handler);
+            return () => {
+            window.visualViewport.removeEventListener('resize', handler);
+            };
+        }
+        return () => {};
+    }, []);
+    
     return (
       <dialog
         role='dialog'                // needed for my aria-checker browser plugin
@@ -15,9 +34,11 @@ const CustomDialogAnimator = ({ children, className }) => {
         className={`${className}`}
         style={{
           position: "fixed",
-          top: "50%",
+          top: isKeyboardOpen ? "25%" : "50%", // Move up when keyboard is open
           left: "50%",
           transform: "translate(-50%, -50%)",
+          maxHeight: isKeyboardOpen ? "70vh" : "80vh", // Reduce height when keyboard is open
+          overflowY: "auto"
         }}
       >
         {children}
