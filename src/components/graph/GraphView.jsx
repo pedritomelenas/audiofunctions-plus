@@ -108,14 +108,20 @@ const GraphView = () => {
     snapaccuracy = 3/board.unitX;
 
     let graphFormula;
-    try {
-      const expr = checkMathSpell(functionInput);
-      graphFormula = board.jc.snippet(expr, true, "x", true);
-      setInputErrorMes(null);
-    } catch (err) {
-      setInputErrorMes("Invalid function. Please check your input.");
-      graphFormula = 0;
-    }
+    const expr = checkMathSpell(functionInput);
+    console.log("Parsed expression: ", expr);
+    graphFormula = board.jc.snippet(expr, true, "x", true);
+    console.log("Graph formula: ", graphFormula);
+    
+    // try {
+    //   const expr = checkMathSpell(functionInput);
+    //   console.log("Parsed expression: ", expr);
+    //   graphFormula = board.jc.snippet(expr, true, "x", true);
+    //   setInputErrorMes(null);
+    // } catch (err) {
+    //   setInputErrorMes("Invalid function. Please check your input.");
+    //   graphFormula = 0;
+    // }
 
     const graphObject = board.create("functiongraph", [graphFormula],{
       cssClass: "curve",
@@ -123,7 +129,7 @@ const GraphView = () => {
       highlight:false,
     });
 
-    if (graphFormula != 0){
+    if (expr != "0"){
       [endpoints,xisolated] = createEndPoints(functionInput, board);
     }else{
       endpoints = [];
