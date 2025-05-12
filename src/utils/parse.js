@@ -4,15 +4,35 @@ const config = { }
 const math = create(all, config)
 
 // function to check if 'expr' is a valid math expression
+// either single or piecewise
 function isValidMathParse(expr){
     try{
         //math.parse(expr); this is not enough, since several variables can be involved
-        math.compile(expr).evaluate({x:0}) // this parses and checks the expression at 0, if more variables are involved, an error is thrown
-        return true;
+        const parsed = math.parse(expr); // we parse the string txt
+        if (!("items" in parsed)){ // not a piecewise function
+            if(isNaN(math.compile(expr).evaluate({x:0}))){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
+            return false;
+            }else{
+                return true;
+            }
+        } 
     }
     catch(ex){
         return false;
     }
+    const parsed = math.parse(expr); // we parse the string txt
+    const its = parsed.items; //list of items, each item should be a pair [expr,ineq]
+    //console.log(its.length);
+    if (!its.every((e)=> "items" in e)){
+        console.log("Invalid input, not an array of arrays");
+        return false;
+    }
+    // so we check that all items are pairs 
+    if (!its.every((e)=> e.items.length==2)){
+        console.log("Invalid input, not a list of pairs");
+        return false;
+    }
+    return its.every((e)=> isValidMathParse(e.items[0].toString()) && isValidMathParse(e.items[1].toString()));  
 }
 
 // function to check if 'expr' is a constant, for instance, -1 or 10+2
@@ -77,13 +97,13 @@ function isPiecewise(txt){
                 return false;
             }
             if (ineq.args[0].type=="SymbolNode"){//equation of the form x op a
-                console.log("Variable first");
+                //console.log("Variable first");
                 if (!isMathConstant(ineq.args[1].toString())){
                     console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
                     return false;
                 }
             }else{//equation of the form a op x
-                console.log("variable second")
+                //console.log("variable second")
                 if (!isMathConstant(ineq.args[0].toString())){
                     console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
                     return false;
@@ -109,7 +129,7 @@ function isPiecewise(txt){
             }
             // we check that the arguments of the inequality are valid
             // the first and third must be constant and the second a variable
-            console.log(ineq.params);
+            //console.log(ineq.params);
             if (!(isMathConstant(ineq.params[0].toString()) && 
                   ineq.params[1].type=="SymbolNode") && 
                   isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
@@ -153,9 +173,10 @@ function parsePiecewise(txt){
 export function checkMathSpell(txt){
     // we first check that the input is a valid math expression
     if (!(isValidMathParse(txt))){
-        console.log("Invalid input: could not parse");
+        console.log("Invalid input: could not parse",txt);
         return "0";
     }
+    console.log("Valid input: could parse ",txt);
     const parsed = math.parse(txt); // we parse the string txt
     if (!("items" in parsed)){ // not a piecewise function
       return txt;
