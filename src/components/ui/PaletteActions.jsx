@@ -1,10 +1,10 @@
 import React from "react";
 import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
-  SwatchBook, Contrast, Sun, Moon,
+  SwatchBook, Sun, Moon, SunMoon, Contrast,
   ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
-
+import { setTheme } from "../../utils/theme"; // Import the theme utility
 
 export const useKBarActions = () => {
   const { openDialog } = useDialog();
@@ -98,7 +98,7 @@ export const useKBarActions = () => {
 
     {
       id: "change-function",
-      name: "edit functions",
+      name: "Edit Functions",
       shortcut: ["f"],
       keywords: "function, change function, change graph, graph, edit function, edit graph",
       //  section: "",
@@ -116,12 +116,21 @@ export const useKBarActions = () => {
       icon: <SwatchBook className="size-5 shrink-0 opacity-70" />,
     },
     {
+      id: "system-theme",
+      name: "Use System Theme",
+      // shortcut: [""],
+      keywords: "theme",
+      parent: "change-theme",
+      perform: () => {setTheme("system")},
+      icon: <SunMoon className="size-5 shrink-0 opacity-70" />,
+    },
+    {
       id: "light-theme",
       name: "Light Theme",
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {},
+      perform: () => {setTheme("light")},
       icon: <Sun className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -130,7 +139,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {},
+      perform: () => {setTheme("dark")},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -139,7 +148,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {},
+      perform: () => {setTheme("high-contrast")},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
   ];

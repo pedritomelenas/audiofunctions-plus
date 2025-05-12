@@ -20,7 +20,7 @@ const GraphControls = () => {
   }
 
   return (
-    <div style={{ padding: "10px" }}>
+    <div style={{ padding: "3px" }}>
       <label htmlFor="functionInput">Function: </label>
       <input
         type="text"
