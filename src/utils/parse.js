@@ -148,7 +148,9 @@ function isPiecewise(txt){
         const ineq=it.items[1]; // the inequality or equality of ith item
         if ("op" in ineq){ //that is a single inequality or an equality
             // we check if op is ==, <, >, <=, >=
-            if (ineq.op != "<" && ineq.op != ">" && ineq.op != "<=" && ineq.op != ">=" && ineq.op != "=="){
+            if (ineq.op != "<" && ineq.op != ">" && 
+                ineq.op != "<=" && ineq.op != ">=" && 
+                ineq.op != "==" && ineq.op != "!="){
                 console.log("Invalid input, not a valid inequality (wrong relations)", ineq.toString());
                 return false;
             }
@@ -226,7 +228,11 @@ function parsePiecewise(txt){
         let cond; // the condition of "C ? A : B"
         // inequalities of the form a op1 x op2 b are translate into a op1 x && x op2 b 
         if ("op" in ineq){ //that is a single inequality or an equality
-            cond = simplify(ineq);
+            if (ineq.op =="!="){ // this is a not equal
+                cond = "!("+simplify(ineq.args[0]) + "==" + simplify(ineq.args[1])+")";
+            }else{
+                cond = ineq.toString();
+            }
         }else{
             cond = simplify(ineq.params[0])
             cond += ineq.conditionals[0]=="smallerEq" ? "<=" : "<";
