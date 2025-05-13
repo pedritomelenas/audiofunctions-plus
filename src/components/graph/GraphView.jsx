@@ -39,7 +39,7 @@ function createEndPoints(txtraw,board){
                     }
                 }
             }
-            if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white, since it is an strict inequality
+            if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
