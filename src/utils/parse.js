@@ -157,23 +157,26 @@ function isPiecewise(txt){
 // the output is a translation of the input string into a javascript expression "C ? A : B"
 // the input has already been checked with isPiecewise
 function parsePiecewise(txt){
+    function simplify(it){
+        return math.simplifyConstant(it.toString()).toString();
+    }
     function items2expr(its){ //its is a list of items, each item is a pair [expr,ineq]
         if (its.length==0){
             return "NaN";
         }
         const it=its[0]; // the first item
-        const fn = it.items[0]; // the expression of the function
+        const fn = simplify(it.items[0]); // the expression of the function
         const ineq=it.items[1]; // the inequality or equality where the function is defined
         let cond; // the condition of "C ? A : B"
         // inequalities of the form a op1 x op2 b are translate into a op1 x && x op2 b 
         if ("op" in ineq){ //that is a single inequality or an equality
-            cond = ineq.toString();
+            cond = simplify(ineq);
         }else{
-            cond = ineq.params[0].toString()
+            cond = simplify(ineq.params[0])
             cond += ineq.conditionals[0]=="smallerEq" ? "<=" : "<";
-            cond += ineq.params[1].toString() + " && " + ineq.params[1].toString(); 
+            cond += ineq.params[1].toString() + " && " + simplify(ineq.params[1]); 
             cond += ineq.conditionals[1]=="smallerEq" ? "<=" : "<";
-            cond += ineq.params[2].toString();
+            cond += simplify(ineq.params[2]);
         } 
         return cond + " ? (" + fn.toString() + ") : (" + items2expr(its.slice(1)) + ")";
     }
