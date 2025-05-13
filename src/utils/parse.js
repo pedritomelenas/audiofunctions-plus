@@ -85,12 +85,14 @@ function isValidMathParse(expr){
     let it; //single item
     for (let i=0;i<its.length;i++){
         it=its[i]; // the ith item
+        // we check that the first item is a function 
         if(!(isOneVariableFunction(it.items[0].toString()))){
             console.log("Invalid input, not a valid function", it.items[0].toString());
             return false;
         }
+        // we check that the second item is an inequality (or chain of two inequalities)
         try{
-            if (!((typeof it.items[0].evaluate({x:0})=='number') && (typeof it.items[1].evaluate({x:0})=='boolean'))){
+            if (!(typeof it.items[1].evaluate({x:0})=='boolean')){
                 console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
                 return false;
             }
