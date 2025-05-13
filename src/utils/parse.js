@@ -3,6 +3,56 @@ import { create, all } from 'mathjs'
 const config = { }
 const math = create(all, config)
 
+
+// detects if expr is an expression of a function in one variable or a constant, for instance, "sin(x)+x^2" or "2"
+function isOneVariableFunction(expr){
+    const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh", "e", "pi", "phi"];
+    const allowed_op = ["+", "-", "*", "/", "^"];  
+    function removeItemAll(arr, value) {
+        var i = 0;
+        while (i < arr.length) {
+            if (arr[i] === value) {
+            arr.splice(i, 1);
+            } else {
+            ++i;
+            }
+        }
+        return arr;
+    }
+    try{
+        const parsed = math.parse(expr); // we parse the input string 
+        if ("items" in parsed){ // an array
+            return false;
+        } 
+        let snodes = [... new Set(parsed.filter((n) => n.isSymbolNode))]; // symbol nodes this includes functions and variables
+        const fnNodes = [... new Set(parsed.filter((n) => n.isFunctionNode))]; // function nodes
+        const opNodes = [... new Set(parsed.filter((n) => n.isOperatorNode))]; // operator nodes
+        console.log(snodes.map((n) => n.name));
+        console.log("fn ",fnNodes.map((n) => n.name));
+        console.log("op ",opNodes.map((n) => n.op));
+        if (!(fnNodes.every((n) => allowed_fn.includes(n.name)))){
+            console.log("Invalid function");
+            return false;
+        }
+        if (!(opNodes.every((n) => allowed_op.includes(n.op)))){
+            console.log("Invalid operator");
+            return false;
+        }
+        parsed.traverse(function (node, path, parent) {
+            if (node.isSymbolNode && parent?.name == node.name && allowed_fn.includes(node.name)){ 
+                removeItemAll(snodes,node);
+                console.log(node.name);
+            }
+        });
+        console.log(snodes.map((n) => n.name));
+        return snodes.every((n) => n.name=="x"); 
+    }
+    catch(ex){
+        return false;
+    }
+}
+
+
 // function to check if 'expr' is a valid math expression
 // either single or piecewise
 function isValidMathParse(expr){
@@ -35,6 +85,10 @@ function isValidMathParse(expr){
     let it; //single item
     for (let i=0;i<its.length;i++){
         it=its[i]; // the ith item
+        if(!(isOneVariableFunction(it.items[0].toString()))){
+            console.log("Invalid input, not a valid function", it.items[0].toString());
+            return false;
+        }
         try{
             if (!((typeof it.items[0].evaluate({x:0})=='number') && (typeof it.items[1].evaluate({x:0})=='boolean'))){
                 console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
