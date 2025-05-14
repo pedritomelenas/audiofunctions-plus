@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all } from 'mathjs'
-import {checkMathSpell} from "../../utils/parse";
+import {checkMathSpell,transformAssingnments} from "../../utils/parse";
 const config = { }
 const math = create(all, config)
 
@@ -20,7 +20,7 @@ function createEndPoints(txtraw,board){
     const endpoints = []; // the endpoints of the intervals
     const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
-        ineq = l[i].items[1]; // the inequality or equality of ith item
+        ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}

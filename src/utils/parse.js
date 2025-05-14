@@ -1,8 +1,18 @@
-import { create, all } from 'mathjs'
+import { create, all, re } from 'mathjs'
 
 const config = { }
 const math = create(all, config)
 
+// function to check if 'expr' is a constant, for instance, -1 or 10+2
+function isMathConstant(expr){
+    try{
+        math.compile(expr).evaluate() // when trying to evaluate without scope, if not a constant, throws error
+        return true;
+    }
+    catch(ex){
+        return false;
+    }
+}
 
 // detects if expr is an expression of a function in one variable or a constant, for instance, "sin(x)+x^2" or "2"
 function isOneVariableFunction(expr){
@@ -52,68 +62,39 @@ function isOneVariableFunction(expr){
     }
 }
 
-
 // function to check if 'expr' is a valid math expression
-// either single or piecewise
+// that is, passes the math parser
 function isValidMathParse(expr){
     try{
         //math.parse(expr); this is not enough, since several variables can be involved
         const parsed = math.parse(expr); // we parse the string txt
-        if (!("items" in parsed)){ // not a piecewise function
-            // if(typeof math.compile(expr).evaluate({x:0})=='number'){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
-            // return true;
-            // }else{
-            //     return false;
-            // }
-            return isOneVariableFunction(expr); // we check if the expression is a function of one variable
-        } 
-    }
-    catch(ex){
-        return false;
-    }
-    const parsed = math.parse(expr); // we parse the string txt
-    const its = parsed.items; //list of items, each item should be a pair [expr,ineq]
-    //console.log(its.length);
-    if (!its.every((e)=> "items" in e)){
-        console.log("Invalid input, not an array of arrays");
-        return false;
-    }
-    // so we check that all items are pairs 
-    if (!its.every((e)=> e.items.length==2)){
-        console.log("Invalid input, not a list of pairs");
-        return false;
-    }
-    let it; //single item
-    for (let i=0;i<its.length;i++){
-        it=its[i]; // the ith item
-        // we check that the first item is a function 
-        if(!(isOneVariableFunction(it.items[0].toString()))){
-            console.log("Invalid input, not a valid function", it.items[0].toString());
-            return false;
-        }
-        // we check that the second item is an inequality (or chain of two inequalities)
-        try{
-            if (!(typeof it.items[1].evaluate({x:0})=='boolean')){
-                console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
-                return false;
-            }
-        }catch(ex){
-            console.log("Invalid input, not a valid expression", it.items[0].toString(), it.items[1].toString());
-            return false;
-        }
-    }
-    return true;
-}
-
-// function to check if 'expr' is a constant, for instance, -1 or 10+2
-function isMathConstant(expr){
-    try{
-        math.compile(expr).evaluate() // when trying to evaluate without scope, if not a constant, throws error
+        // if (!("items" in parsed)){ // not a piecewise function
+        //     // if(typeof math.compile(expr).evaluate({x:0})=='number'){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
+        //     // return true;
+        //     // }else{
+        //     //     return false;
+        //     // }
+        //     return isOneVariableFunction(expr); // we check if the expression is a function of one variable
+        // } 
         return true;
     }
     catch(ex){
         return false;
     }
+
+}
+
+
+// we are allowing conditions of the form x=a; we translate them into x==a
+export function transformAssingnments(node) {
+  return node.transform(function (node, path, parent) {
+    if (node.type=='AssignmentNode') {
+      return new math.OperatorNode('==','equal',[node.object, node.value]);
+    }
+    else {
+      return node
+    }
+  })
 }
 
 // checks if txt is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
@@ -144,9 +125,13 @@ function isPiecewise(txt){
     let it; //single item
     for (let i=0;i<its.length;i++){
         it=its[i]; // the ith item
-        // the test isValidMathParse already checks that the first item is a function in x
+        // we check if the first item is a function in x
+        if (!(isOneVariableFunction(it.items[0].toString()))){
+            console.log("Invalid input, not a valid function", it.items[0].toString());
+            return false;
+        }
         // now we check that the second item is an inequality
-        const ineq=it.items[1]; // the inequality or equality of ith item
+        const ineq=transformAssingnments(it.items[1]); // we change the assignments into equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             // we check if op is ==, <, >, <=, >=
             if (ineq.op != "<" && ineq.op != ">" && 
@@ -228,7 +213,7 @@ function parsePiecewise(txt){
         }
         const it=its[0]; // the first item
         const fn = simplify(it.items[0]); // the expression of the function
-        const ineq=it.items[1]; // the inequality or equality where the function is defined
+        const ineq=transformAssingnments(it.items[1]); // the inequality or equality where the function is defined, we change assignments to equalities
         let cond; // the condition of "C ? A : B"
         // inequalities of the form a op1 x op2 b are translate into a op1 x && x op2 b 
         if ("op" in ineq){ //that is a single inequality or an equality
@@ -253,19 +238,14 @@ function parsePiecewise(txt){
 // either single or piecewise
 // if the txt is not a valid expression, it returns "0", otherwise it returns the input string
 export function checkMathSpell(txt){
-    // we first check that the input is a valid math expression
-    if (!(isValidMathParse(txt))){
-        console.log("Invalid input: could not parse",txt);
-        return "0";
+    // check if its a function of one variable
+    if(isOneVariableFunction(txt)){
+        return math.parse(txt).toString({implicit: 'show'});
     }
-    console.log("Valid input: could parse ",txt);
-    const parsed = math.parse(txt); // we parse the string txt
-    if (!("items" in parsed)){ // not a piecewise function
-      return txt;
+    // we check if the input is a piecewise function
+    if (isPiecewise(txt)){
+        return parsePiecewise(txt);
     }
-    if (!isPiecewise(txt)){
-        console.log("Invalid input: not a piecewise function");
-        return "0";
-    }
-    return parsePiecewise(txt);
+    //no more options
+    return "0";
 }
