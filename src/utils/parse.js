@@ -60,11 +60,12 @@ function isValidMathParse(expr){
         //math.parse(expr); this is not enough, since several variables can be involved
         const parsed = math.parse(expr); // we parse the string txt
         if (!("items" in parsed)){ // not a piecewise function
-            if(typeof math.compile(expr).evaluate({x:0})=='number'){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
-            return true;
-            }else{
-                return false;
-            }
+            // if(typeof math.compile(expr).evaluate({x:0})=='number'){ // this parses and checks the expression at 0, if more variables are involved, an error is thrown
+            // return true;
+            // }else{
+            //     return false;
+            // }
+            return isOneVariableFunction(expr); // we check if the expression is a function of one variable
         } 
     }
     catch(ex){
@@ -215,8 +216,11 @@ function isPiecewise(txt){
 // the output is a translation of the input string into a javascript expression "C ? A : B"
 // the input has already been checked with isPiecewise
 function parsePiecewise(txt){
+    // simplifyConstant is a function that simplifies the constants in the expression
+    // it also uses implicit multiplication  
+    // for instance, 2 x is translated into 2*x
     function simplify(it){
-        return math.simplifyConstant(it.toString()).toString();
+        return math.simplifyConstant(it.toString()).toString({implicit: 'show'});
     }
     function items2expr(its){ //its is a list of items, each item is a pair [expr,ineq]
         if (its.length==0){
