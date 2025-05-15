@@ -110,18 +110,17 @@ const GraphView = () => {
     let graphFormula;
     const expr = checkMathSpell(functionInput);
     console.log("Parsed expression: ", expr);
-    graphFormula = board.jc.snippet(expr, true, "x", true);
-    console.log("Graph formula: ", graphFormula);
     
-    // try {
-    //   const expr = checkMathSpell(functionInput);
-    //   console.log("Parsed expression: ", expr);
-    //   graphFormula = board.jc.snippet(expr, true, "x", true);
-    //   setInputErrorMes(null);
-    // } catch (err) {
-    //   setInputErrorMes("Invalid function. Please check your input.");
-    //   graphFormula = 0;
-    // }
+    try {
+      graphFormula = board.jc.snippet(expr, true, "x", true);
+      setInputErrorMes(null);
+    } catch (err) {
+      console.error("Error parsing expression (jc): ", err);
+      setInputErrorMes("Invalid function. Please check your input.");
+      graphFormula = 0;
+    }
+
+    console.log("Graph formula: ", graphFormula);
 
     const graphObject = board.create("functiongraph", [graphFormula],{
       cssClass: "curve",
