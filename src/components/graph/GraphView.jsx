@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all } from 'mathjs'
-import {checkMathSpell,transformAssingnments} from "../../utils/parse";
+import {checkMathSpell,transformAssingnments, transformMathConstants} from "../../utils/parse";
 const config = { }
 const math = create(all, config)
 
@@ -108,8 +108,10 @@ const GraphView = () => {
     snapaccuracy = 3/board.unitX;
 
     let graphFormula;
-    const expr = checkMathSpell(functionInput);
+    let expr = checkMathSpell(functionInput);
     console.log("Parsed expression: ", expr);
+    // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
+    expr = transformMathConstants(math.parse(expr)).toString();
     
     try {
       graphFormula = board.jc.snippet(expr, true, "x", true);

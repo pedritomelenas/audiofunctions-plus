@@ -17,7 +17,7 @@ function isMathConstant(expr){
 // detects if expr is an expression of a function in one variable or a constant, for instance, "sin(x)+x^2" or "2"
 function isOneVariableFunction(expr){
     const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh"];
-    const allowed_constants = ["EULER", "PI"];
+    const allowed_constants = ["PI","pi","e","E"];
     const allowed_op = ["+", "-", "*", "/", "^"];  
     function removeItemAll(arr, value) {
         var i = 0;
@@ -97,6 +97,31 @@ export function transformAssingnments(node) {
     }
   })
 }
+
+
+// pi -> math.pi, math.e, E -> math.e; jessicode does not understand these constants
+export function transformMathConstants(node) {
+  return node.transform(function (node, path, parent) {
+    if (node.type=='SymbolNode') {
+        switch (node.name) {
+            case 'pi':
+                return new math.ConstantNode(math.pi);
+            case 'PI':
+                return new math.ConstantNode(math.pi);
+            case 'e':
+                return new math.ConstantNode(math.e);
+            case 'E':
+                return new math.ConstantNode(math.e);
+            default:
+                return node;
+        }
+    }
+    else {
+      return node
+    }
+  })
+}
+
 
 // checks if txt is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
