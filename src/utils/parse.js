@@ -40,8 +40,8 @@ function isOneVariableFunction(expr){
         console.log(snodes.map((n) => n.name));
         console.log("fn ",fnNodes.map((n) => n.name));
         console.log("op ",opNodes.map((n) => n.op));
-        if (!(fnNodes.every((n) => allowed_fn.includes(n.name)))){
-            console.log("Invalid function");
+        if (!(fnNodes.every((n) => n.args.length==1 && allowed_fn.includes(n.name)))){
+            console.log("Invalid function or wrong number of arguments");
             return false;
         }
         if (!(opNodes.every((n) => allowed_op.includes(n.op)))){
