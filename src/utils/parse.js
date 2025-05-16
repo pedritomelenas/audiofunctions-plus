@@ -16,7 +16,8 @@ function isMathConstant(expr){
 
 // detects if expr is an expression of a function in one variable or a constant, for instance, "sin(x)+x^2" or "2"
 function isOneVariableFunction(expr){
-    const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh", "e", "pi", "phi"];
+    const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh"];
+    const allowed_constants = ["EULER", "PI"];
     const allowed_op = ["+", "-", "*", "/", "^"];  
     function removeItemAll(arr, value) {
         var i = 0;
@@ -55,7 +56,7 @@ function isOneVariableFunction(expr){
             }
         });
         console.log(snodes.map((n) => n.name));
-        return snodes.every((n) => n.name=="x"); 
+        return snodes.every((n) => allowed_constants.includes(n.name) || n.name=="x"); 
     }
     catch(ex){
         return false;
