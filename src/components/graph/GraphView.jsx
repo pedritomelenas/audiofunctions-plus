@@ -119,6 +119,7 @@ const GraphView = () => {
     } catch (err) {
       console.error("Error parsing expression (jc): ", err);
       setInputErrorMes("Invalid function. Please check your input.");
+      expr = "0";
       graphFormula = 0;
     }
 
@@ -130,7 +131,7 @@ const GraphView = () => {
       highlight:false,
     });
 
-    if (expr != "0"){
+    if (expr != "0"){ //expr == 0 means the the function is cero or it was not well defined (an error was thrown)
       [endpoints,xisolated] = createEndPoints(functionInput, board);
     }else{
       endpoints = [];

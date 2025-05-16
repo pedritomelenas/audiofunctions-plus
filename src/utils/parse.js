@@ -262,7 +262,7 @@ function parsePiecewise(txt){
 
 // this function checks that the input is a valid function expression
 // either single or piecewise
-// if the txt is not a valid expression, it returns "0", otherwise it returns the input string
+// if the txt is not a valid expression, it returns "0", otherwise it returns the input string parsed (if piecewise)
 export function checkMathSpell(txt){
     // check if its a function of one variable
     if(isOneVariableFunction(txt)){
