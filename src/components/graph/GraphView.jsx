@@ -110,9 +110,7 @@ const GraphView = () => {
     let graphFormula;
     let expr = checkMathSpell(functionInput);
     console.log("Parsed expression: ", expr);
-    // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-    expr = transformMathConstants(math.parse(expr)).toString();
-    
+
     try {
       graphFormula = board.jc.snippet(expr, true, "x", true);
       setInputErrorMes(null);

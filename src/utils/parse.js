@@ -266,11 +266,14 @@ function parsePiecewise(txt){
 export function checkMathSpell(txt){
     // check if its a function of one variable
     if(isOneVariableFunction(txt)){
-        return math.parse(txt).toString({implicit: 'show'});
+        // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
+        return transformMathConstants(math.parse(txt)).toString({implicit: 'show'});
     }
     // we check if the input is a piecewise function
     if (isPiecewise(txt)){
-        return parsePiecewise(txt);
+        // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
+        const expr = transformMathConstants(math.parse(txt)).toString();        
+        return parsePiecewise(expr);
     }
     //no more options
     return "0";
