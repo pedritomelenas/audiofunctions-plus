@@ -2,45 +2,16 @@ import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all } from 'mathjs'
-
+import {checkMathSpell,transformAssingnments, transformMathConstants} from "../../utils/parse";
 const config = { }
 const math = create(all, config)
 
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
-// it can also be a single expression in the variable x, for instance sin(x)
-// the output is a translation of the input string into a javascript expression "C ? A : B"
-function parsePiecewise(txtraw){
-    const parsed = math.parse(txtraw); // we parse the string txtraw
-    if (!("items" in parsed)){ // not a piecewise function
-      return txtraw;
-    }
-    function items2expr(its){ //its is a list of items, each item is a pair [expr,ineq]
-        if (its.length==0){
-            return "NaN";
-        }
-        const it=its[0]; // the first item
-        const fn = it.items[0]; // the expression of the function
-        const ineq=it.items[1]; // the inequality or equality where the function is defined
-        let cond; // the condition of "C ? A : B"
-        // inequalities of the form a op1 x op2 b are translatete into a op1 x && x op2 b 
-        if ("op" in ineq){ //that is a single inequality or an equality
-            cond = ineq.toString();
-        }else{
-            cond = ineq.params[0].toString()
-            cond += ineq.conditionals[0]=="smallerEq" ? "<=" : "<";
-            cond += ineq.params[1].toString() + " && " + ineq.params[1].toString(); 
-            cond += ineq.conditionals[1]=="smallerEq" ? "<=" : "<";
-            cond += ineq.params[2].toString();
-        } 
-        return cond + " ? (" + fn.toString() + ") : (" + items2expr(its.slice(1)) + ")";
-    }
-    return items2expr(parsed.items);
-};
-
+// it should be previusly checked that it is a valid piecewise function or a math expression
 function createEndPoints(txtraw,board){
-    const parsed = math.parse(txtraw);
+    const parsed = transformMathConstants(math.parse(txtraw));
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
@@ -49,7 +20,7 @@ function createEndPoints(txtraw,board){
     const endpoints = []; // the endpoints of the intervals
     const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
-        ineq = l[i].items[1]; // the inequality or equality of ith item
+        ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
@@ -68,7 +39,7 @@ function createEndPoints(txtraw,board){
                     }
                 }
             }
-            if (ineq.op == "<" || ineq.op ==">"){ // this we fill in white, since it is an strict inequality
+            if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
@@ -137,14 +108,20 @@ const GraphView = () => {
     snapaccuracy = 3/board.unitX;
 
     let graphFormula;
+    let expr = checkMathSpell(functionInput);
+    console.log("Parsed expression: ", expr);
+
     try {
-      const expr = parsePiecewise(functionInput);
       graphFormula = board.jc.snippet(expr, true, "x", true);
       setInputErrorMes(null);
     } catch (err) {
+      console.error("Error parsing expression (jc): ", err);
       setInputErrorMes("Invalid function. Please check your input.");
+      expr = "0";
       graphFormula = 0;
     }
+
+    console.log("Graph formula: ", graphFormula);
 
     const graphObject = board.create("functiongraph", [graphFormula],{
       cssClass: "curve",
@@ -152,7 +129,7 @@ const GraphView = () => {
       highlight:false,
     });
 
-    if (graphFormula != 0){
+    if (expr != "0"){ //expr == 0 means the the function is cero or it was not well defined (an error was thrown)
       [endpoints,xisolated] = createEndPoints(functionInput, board);
     }else{
       endpoints = [];
