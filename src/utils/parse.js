@@ -149,6 +149,11 @@ function isPiecewise(txt){
     }
     // now we check that the first item is a function and the second is an inequality
     let it; //single item
+    let intervals = []; // we will store the intervals of the inequalities
+    // each interval will be of the form [a,b,o1,o2] where a and b are the bounds of the interval,
+    // o1 and o2 are 0 or 1 depending on if a and b are included in the interval, respectively
+    // for instance, [1,2,0,1] means 1 < x <= 2
+    // we will also check that the intervals are disjoint
     for (let i=0;i<its.length;i++){
         it=its[i]; // the ith item
         // we check if the first item is a function in x
@@ -185,12 +190,48 @@ function isPiecewise(txt){
                     console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
                     return false;
                 }
+                switch (ineq.op) {
+                    case "<":
+                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+                        break;
+                    case "<=": 
+                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 1]);
+                        break;   
+                    case ">":
+                        intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+                        break;
+                    case ">=":
+                        intervals.push([ineq.args[1].evaluate(), Infinity, 1, 0]);
+                        break;
+                    case "==":  
+                        intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+                        break;
+                }
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
             }else{//equation of the form a op x
                 //console.log("variable second")
                 if (!isMathConstant(ineq.args[0].toString())){
                     console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
                     return false;
                 }
+                switch (ineq.op) {
+                    case "<":
+                        intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
+                        break;
+                    case "<=": 
+                        intervals.push([ineq.args[0].evaluate(), Infinity, 1, 0]);
+                        break;   
+                    case ">":
+                        intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 0]);
+                        break;
+                    case ">=":
+                        intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
+                        break;
+                    case "==":  
+                        intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+                        break;
+                }
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             // need to check now that the other argument is constant
         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
@@ -219,8 +260,41 @@ function isPiecewise(txt){
                 console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
                 return false;
             }
+            if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smallerEq"){ // a<=x<=b
+                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 1]);
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
+            }
+            if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smallerEq"){ // a<x<=b
+                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 1]);
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
+            }
+            if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smaller"){ // a<=x<b
+                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 0]);
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
+            }
+            if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smaller"){ // a<x<b
+                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 0]);
+                console.log("Added interval: ", intervals[intervals.length-1].toString());
+            }
         }
-    }        
+    } 
+    console.log("Intervals: ", intervals.map((e)=> e.toString()));    
+    // now it remans to check that the intervals are disjoint     
+    // first we sort the intervals by their first element
+    intervals.sort((a,b)=> a[0]-b[0]);
+    console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
+    for (let i=0;i<intervals.length-1;i++){
+        const a = intervals[i];
+        const b = intervals[i+1];
+        if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
+            console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            return false;
+        }
+        if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
+            console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            return false;
+        }
+    }
     return true;
 }
 
