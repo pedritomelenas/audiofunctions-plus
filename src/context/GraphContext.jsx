@@ -64,7 +64,8 @@ const initFunctionsObject = {
           "functionName": "Function 1",
           "type": "function",
           "functionString": "sin(x)",
-          "instrument": "guitar",
+          "isActive": true,
+          "instrument": "flute",
           "color": "#0000FF",
           "pointOfInterests": [
               {
@@ -101,6 +102,7 @@ const initFunctionsObject = {
           "functionName": "Pieces",
           "type": "piecewise_function",
           "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
+          "isActive": true,
           "instrument": "clarinet",
           "color": "#FF0000",
           "pointOfInterests": [],
