@@ -2,6 +2,13 @@ import React, { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { useGraphContext } from "../../context/GraphContext";
 import { useInstruments } from "../../context/InstrumentsContext";
+import { 
+  getActiveFunctions,
+  getFunctionById,
+  isFunctionActiveN,
+  getFunctionInstrumentN,
+  getFunctionIndexById
+} from "../../utils/graphObjectOperations";
 
 const GraphSonification = () => {
   const { 
@@ -18,12 +25,12 @@ const GraphSonification = () => {
   // Initialize channels for all functions
   useEffect(() => {
     // Create or update channels for each function
-    functionDefinitions.forEach(func => {
+    functionDefinitions.forEach((func, index) => {
       const functionId = func.id;
       if (!channelsRef.current.has(functionId)) {
         const channel = new Tone.Channel({
           pan: 0,
-          mute: !func.isActive,
+          mute: !isFunctionActiveN(functionDefinitions, index),
           volume: 0
         }).toDestination();
         
@@ -32,14 +39,14 @@ const GraphSonification = () => {
         // Update existing channel's mute state
         const channel = channelsRef.current.get(functionId);
         if (channel) {
-          channel.mute = !func.isActive;
+          channel.mute = !isFunctionActiveN(functionDefinitions, index);
         }
       }
     });
 
     // Clean up unused channels
     Array.from(channelsRef.current.keys()).forEach(functionId => {
-      if (!functionDefinitions.find(func => func.id === functionId)) {
+      if (!getFunctionById(functionDefinitions, functionId)) {
         if (channelsRef.current.get(functionId)) {
           channelsRef.current.get(functionId).dispose();
         }
@@ -55,11 +62,11 @@ const GraphSonification = () => {
 
   // Manage instruments and their connections
   useEffect(() => {
-    const activeFunctions = functionDefinitions.filter(func => func.isActive);
+    const activeFunctions = getActiveFunctions(functionDefinitions);
     
     // Clean up unused instruments
     Array.from(instrumentsRef.current.keys()).forEach(functionId => {
-      if (!functionDefinitions.find(func => func.id === functionId)) {
+      if (!getFunctionById(functionDefinitions, functionId)) {
         if (instrumentsRef.current.get(functionId)) {
           instrumentsRef.current.get(functionId).dispose();
         }
@@ -70,7 +77,8 @@ const GraphSonification = () => {
     // Set up instruments for active functions
     activeFunctions.forEach(func => {
       if (!instrumentsRef.current.has(func.id)) {
-        const instrument = getInstrumentByName(func.instrument);
+        const functionIndex = getFunctionIndexById(functionDefinitions, func.id);
+        const instrument = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
         if (instrument) {
           instrumentsRef.current.set(func.id, instrument.instrument);
           
@@ -80,7 +88,7 @@ const GraphSonification = () => {
             instrument.instrument.connect(channel);
             
             // Special case for organ
-            if (func.instrument === 'organ') {
+            if (getFunctionInstrumentN(functionDefinitions, functionIndex) === 'organ') {
               instrument.instrument.start();
             }
           }
@@ -100,29 +108,40 @@ const GraphSonification = () => {
     };
   }, [functionDefinitions, getInstrumentByName]);
 
-  // Handle sound generation based on cursor position
+  // Handle sound generation based on cursor positions
   useEffect(() => {
     if (!isAudioEnabled) {
       stopAllTones();
       return;
     }
 
-    const activeFunctions = functionDefinitions.filter(func => func.isActive);
+    const activeFunctions = getActiveFunctions(functionDefinitions);
     if (activeFunctions.length === 0) return;
 
-    const { x, y } = cursorCoords;
-    const pan = calculatePan(x);
+    // Create a map of function IDs to their cursor coordinates
+    const coordsMap = new Map(cursorCoords.map(coord => [coord.functionId, coord]));
 
+    // Process each active function
     activeFunctions.forEach(func => {
+      const coords = coordsMap.get(func.id);
       const instrument = instrumentsRef.current.get(func.id);
       const channel = channelsRef.current.get(func.id);
-      const instrumentConfig = getInstrumentByName(func.instrument);
+      const functionIndex = getFunctionIndexById(functionDefinitions, func.id);
+      const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
       
       if (instrument && channel && instrumentConfig) {
-        const frequency = calculateFrequency(y, instrumentConfig);
-        if (frequency) {
-          startTone(func.id, frequency, pan);
+        if (coords) {
+          // We have coordinates for this function
+          const frequency = calculateFrequency(parseFloat(coords.y), instrumentConfig);
+          const pan = calculatePan(parseFloat(coords.x));
+          
+          if (frequency) {
+            startTone(func.id, frequency, pan);
+          } else {
+            stopTone(func.id);
+          }
         } else {
+          // No coordinates for this function, stop its sound
           stopTone(func.id);
         }
       }

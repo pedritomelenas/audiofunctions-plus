@@ -2,7 +2,9 @@ import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all } from 'mathjs'
-import {checkMathSpell,transformAssingnments, transformMathConstants} from "../../utils/parse";
+import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
+import { getActiveFunctions } from "../../utils/graphObjectOperations";
+
 const config = { }
 const math = create(all, config)
 
@@ -74,13 +76,15 @@ function createEndPoints(txtraw,board){
     return [endpoints,xisolated];
 }
 
-
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
-  let endpoints;
-  let xisolated;
+  const { functionDefinitions, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
+  let endpoints = [];
+  let xisolated = [];
   let snapaccuracy;
+  const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
+  const cursorsRef = useRef(new Map()); // Store cursors for each function
+  const parsedExpressionsRef = useRef(new Map()); // Store parsed expressions
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -98,7 +102,6 @@ const GraphView = () => {
           minorHeight: 3,
         },
       },
-      // axis: true,
       zoom: { enabled: true, needShift: false },
       pan: { enabled: true, needShift: false, needTwoFingers: true},
       showCopyright: false,
@@ -107,69 +110,112 @@ const GraphView = () => {
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
 
-    let graphFormula;
-    let expr = checkMathSpell(functionInput);
-    console.log("Parsed expression: ", expr);
+    // Get active functions
+    const activeFunctions = getActiveFunctions(functionDefinitions);
 
-    try {
-      graphFormula = board.jc.snippet(expr, true, "x", true);
-      setInputErrorMes(null);
-    } catch (err) {
-      console.error("Error parsing expression (jc): ", err);
-      setInputErrorMes("Invalid function. Please check your input.");
-      expr = "0";
-      graphFormula = 0;
-    }
+    // Clear old objects and cursors
+    graphObjectsRef.current.clear();
+    cursorsRef.current.clear();
+    parsedExpressionsRef.current.clear();
 
-    console.log("Graph formula: ", graphFormula);
-
-    const graphObject = board.create("functiongraph", [graphFormula],{
-      cssClass: "curve",
-      fixed:true,
-      highlight:false,
-    });
-
-    if (expr != "0"){ //expr == 0 means the the function is cero or it was not well defined (an error was thrown)
-      [endpoints,xisolated] = createEndPoints(functionInput, board);
-    }else{
-      endpoints = [];
-      xisolated = [];
-    }
-    const cursor = board.create("point", [0, 0], {
-      cssClass: "functionCursor",
-      name: "",
-      size: 5,
-      fixed: true,
-      highlight: false
-    });
-
-    // const updateCursor = (event) => {
-      // const coords = board.getUsrCoordsOfMouse(event);
-      // var x = coords[0];
-      const updateCursor = (x) => {
-      const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy}); // x coordinates of the isolated points close to x
-      if (l.length>0){ // if there are isolated points whose first coordinate is close to x, we redefine x to be the first one
-        x=l[0];
+    // Create graph objects and cursors for each active function
+    activeFunctions.forEach(func => {
+      let graphFormula;
+      let expr = checkMathSpell(func.functionString);
+      
+      try {
+        graphFormula = board.jc.snippet(expr, true, "x", true);
+        setInputErrorMes(null);
+      } catch (err) {
+        console.error(`Error parsing expression for function ${func.id}: `, err);
+        setInputErrorMes(`Invalid function ${func.functionName}. Please check your input.`);
+        expr = "0";
+        graphFormula = 0;
       }
-      const y = graphFormula(x);
-      cursor.setPositionDirectly(JXG.COORDS_BY_USER, [x, y]);
-      setCursorCoords({ x: x.toFixed(2), y: y.toFixed(2) });
+
+      // Store the parsed expression
+      parsedExpressionsRef.current.set(func.id, expr);
+
+      // Create graph object with function's color
+      const graphObject = board.create("functiongraph", [graphFormula], {
+        cssClass: "curve",
+        fixed: true,
+        highlight: false,
+        strokeColor: func.color || "#0000FF", // Use function's color or default to blue
+      });
+
+      // Create endpoints for piecewise functions
+      if (expr !== "0") {
+        const [funcEndpoints, funcXisolated] = createEndPoints(func.functionString, board);
+        endpoints = [...endpoints, ...funcEndpoints];
+        xisolated = [...xisolated, ...funcXisolated];
+      }
+
+      // Create cursor for this function
+      const cursor = board.create("point", [0, 0], {
+        cssClass: "functionCursor",
+        name: "",
+        size: 5,
+        fixed: true,
+        highlight: false,
+        fillColor: func.color || "#0000FF",
+        strokeColor: func.color || "#0000FF"
+      });
+
+      // Store references
+      graphObjectsRef.current.set(func.id, graphObject);
+      cursorsRef.current.set(func.id, cursor);
+    });
+
+    const updateCursors = (x) => {
+      const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
+      const snappedX = l.length > 0 ? l[0] : x;
+      
+      // Update all active cursors
+      const cursorPositions = [];
+      activeFunctions.forEach(func => {
+        const cursor = cursorsRef.current.get(func.id);
+        const graphObject = graphObjectsRef.current.get(func.id);
+        const parsedExpr = parsedExpressionsRef.current.get(func.id);
+        
+        if (cursor && graphObject && parsedExpr) {
+          try {
+            const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
+            // Check if y is a valid number
+            if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
+              cursorPositions.push({
+                functionId: func.id,
+                x: snappedX.toFixed(2),
+                y: y.toFixed(2)
+              });
+            } else {
+              console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              cursor.hide();
+            }
+          } catch (err) {
+            console.error(`Error updating cursor for function ${func.id}:`, err);
+            cursor.hide();
+          }
+        }
+      });
+      
+      setCursorCoords(cursorPositions);
       board.update();
     };
 
-
-    if (PlayFunction.active) {                       //Start play function
+    if (PlayFunction.active) {
       console.log("Play mode activated!");
-      if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;     //set start position
-      PlayFunction.timer = setInterval(() => {       //Play function loop
-        PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (PlayFunction.speed / 100);     //speed means percent of view played per one second
-        updateCursor(PlayFunction.x);
-        if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin )) {      //if we got out from board, stop moving
+      if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;
+      PlayFunction.timer = setInterval(() => {
+        PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (PlayFunction.speed / 100);
+        updateCursors(PlayFunction.x);
+        if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
           PlayFunction.active = false;
         }
       }, PlayFunction.interval);
-    } else {                                         //Stop play function
-      if (PlayFunction.timer !== null) {             //clear timer if exists
+    } else {
+      if (PlayFunction.timer !== null) {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
       }
@@ -179,22 +225,17 @@ const GraphView = () => {
       if (!PlayFunction.active) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
-        updateCursor(x);
+        updateCursors(x);
       }
-      //if (x < graphBounds.xMin || x > graphBounds.xMax) return;
     };
 
     board.on("move", moveHandler, { passive: true });
 
-    // board.on("move", updateCursor, { passive: true });
-
     return () => {
-      board.off("move", updateCursor);
+      board.off("move", moveHandler);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, PlayFunction.active]);
-
-
+  }, [functionDefinitions, PlayFunction.active]);
 
   useEffect(() => {
     if (boardRef.current) {
