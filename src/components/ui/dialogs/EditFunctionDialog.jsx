@@ -2,37 +2,75 @@ import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Delete, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
+import { 
+  getFunctionCount, 
+  getFunctionStringN, 
+  getFunctionTypeN,
+  addFunction,
+  removeFunctionN,
+  updateFunctionN
+} from "../../../utils/graphObjectOperations";
 
 const EditFunctionDialog = ({ isOpen, onClose }) => {
-  const { functionInput, setFunctionInput } = useGraphContext();
-  const [containers, setContainers] = useState([{ type: 'function', id: 0 }]);
-  const functionInputBackup = useRef(null);
+  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const functionDefinitionsBackup = useRef(null);
+  // Generate unique ID for new functions
+  const generateUniqueId = () => {
+    const existingIds = (functionDefinitions || []).map(f => f.id);
+    let counter = 1;
+    while (existingIds.includes(`f${counter}`)) {
+      counter++;
+    }
+    return `f${counter}`;
+  };
 
   const addFunctionContainer = () => {
-    setContainers((prev) => [...prev, { type: 'function', id: prev.length }]);
+    const newFunction = {
+      id: generateUniqueId(),
+      functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
+      type: "function",
+      functionString: "",
+      isActive: true,
+      instrument: "guitar",
+      pointOfInterests: [],
+      landmarks: []
+    };
+    setFunctionDefinitions(addFunction(functionDefinitions, newFunction));
   };
 
   const addPiecewiseFunctionContainer = () => {
-    setContainers((prev) => [...prev, { type: 'piecewise', id: prev.length }]);
+    const newFunction = {
+      id: generateUniqueId(),
+      functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
+      type: "piecewise_function",
+      functionString: "[[,]]",
+      isActive: true,
+      instrument: "guitar",
+      pointOfInterests: [],
+      landmarks: []
+    };
+    setFunctionDefinitions(addFunction(functionDefinitions, newFunction));
   };
 
   const removeContainer = (index) => {
-    setContainers((prev) => prev.filter((_, i) => i !== index));
+    setFunctionDefinitions(removeFunctionN(functionDefinitions, index));
   };
 
-  // TODO adjust functionContainers on isOpen change --- if other function-changes need to be addressed
+  const updateFunctionString = (index, newFunctionString) => {
+    setFunctionDefinitions(updateFunctionN(functionDefinitions, index, { functionString: newFunctionString }));
+  };
+
   useEffect(() => {
     if (isOpen) {
-      functionInputBackup.current = functionInput; // backup current functionValues
-      console.log("Open: ", functionInputBackup.current);
+      functionDefinitionsBackup.current = functionDefinitions; // backup current function definitions
+      console.log("Open: ", functionDefinitionsBackup.current);
     }
-  }, [isOpen]);
-
+  }, [isOpen, functionDefinitions]);
 
   const handleCancel = () => {
-    console.log("Cancel: ", functionInputBackup.current);
-    if (functionInputBackup.current !== null) {
-      setFunctionInput(functionInputBackup.current); // reuse old function values
+    console.log("Cancel: ", functionDefinitionsBackup.current);
+    if (functionDefinitionsBackup.current !== null) {
+      setFunctionDefinitions(functionDefinitionsBackup.current); // restore old function definitions
     }
     onClose();
   };
@@ -49,21 +87,21 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
               Here you can edit all active and inactive functions
             </Description>
           </div>          <div className="flex-1 overflow-y-auto px-6" aria-live="polite">
-            {containers.map((container, index) => (
-              container.type === 'function' ? (
-                <FunctionContainer
-                  key={`${container.type}-${container.id}`}
+            {(functionDefinitions || []).map((functionDef, index) => (
+              getFunctionTypeN(functionDefinitions, index) === 'piecewise_function' ? (
+                <PiecewiseFunctionContainer
+                  key={functionDef.id}
                   index={index}
-                  value={functionInput}
-                  onChange={setFunctionInput}
+                  value={getFunctionStringN(functionDefinitions, index)}
+                  onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
                 />
               ) : (
-                <PiecewiseFunctionContainer
-                  key={`${container.type}-${container.id}`}
+                <FunctionContainer
+                  key={functionDef.id}
                   index={index}
-                  value={functionInput}
-                  onChange={setFunctionInput}
+                  value={getFunctionStringN(functionDefinitions, index)}
+                  onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
                 />
               )
@@ -234,7 +272,7 @@ const PiecewiseFunctionContainer = ({ index, value, onChange, onDelete }) => {  
     });
   };
 
-  
+
   return (
     <div className="mb-4">      <label
         htmlFor={`piecewise-function-${index}`}
