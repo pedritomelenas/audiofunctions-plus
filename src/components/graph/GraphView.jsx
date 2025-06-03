@@ -77,7 +77,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
+  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, setUpdateCursor } = useGraphContext();
   let endpoints;
   let xisolated;
   let snapaccuracy;
@@ -146,7 +146,7 @@ const GraphView = () => {
     // const updateCursor = (event) => {
       // const coords = board.getUsrCoordsOfMouse(event);
       // var x = coords[0];
-      const updateCursor = (x) => {
+    const updateCursor = (x) => {
       const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy}); // x coordinates of the isolated points close to x
       if (l.length>0){ // if there are isolated points whose first coordinate is close to x, we redefine x to be the first one
         x=l[0];
@@ -156,7 +156,7 @@ const GraphView = () => {
       setCursorCoords({ x: x.toFixed(2), y: y.toFixed(2) });
       board.update();
     };
-
+    setUpdateCursor(() => updateCursor);
 
     if (PlayFunction.active) {                       //Start play function
       console.log("Play mode activated!");
@@ -192,7 +192,7 @@ const GraphView = () => {
       board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, PlayFunction.active]);
+  }, [functionInput, PlayFunction.active, setUpdateCursor]);
 
 
 
@@ -207,6 +207,10 @@ const GraphView = () => {
       boardRef.current.update();
     }
   }, [graphBounds]);
+
+  /*useEffect(() => {
+    setUpdateCursor(() => updateCursor);
+  }, [setUpdateCursor]);*/
 
   return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
 };

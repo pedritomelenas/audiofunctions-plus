@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useRef } from "react";
 
 const GraphContext = createContext();
 
@@ -16,6 +16,11 @@ export const GraphContextProvider = ({ children }) => {
     yMax: 10,
   });
   const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, timer: null });
+  const [updateCursor, setUpdateCursor] = useState(null);
+  const inputRefs = {
+    function: useRef(null),
+    speed: useRef(null),
+  };
 
   ///////// currently missing features //////////
   // boundingBox
@@ -46,6 +51,9 @@ export const GraphContextProvider = ({ children }) => {
         setGraphBounds,
         PlayFunction, 
         setPlayFunction,
+        inputRefs,
+        updateCursor,
+        setUpdateCursor,
       }}
     >
       {children}
