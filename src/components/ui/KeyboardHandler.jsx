@@ -131,6 +131,7 @@ export default function KeyboardHandler() {
 
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keyup", handleKeyUp);
       };
     }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs]);
   
