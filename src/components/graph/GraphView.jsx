@@ -77,7 +77,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, setUpdateCursor } = useGraphContext();
+  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints;
   let xisolated;
   let snapaccuracy;
@@ -135,6 +135,7 @@ const GraphView = () => {
       endpoints = [];
       xisolated = [];
     }
+    
     const cursor = board.create("point", [0, 0], {
       cssClass: "functionCursor",
       name: "",
@@ -158,7 +159,7 @@ const GraphView = () => {
     };
     setUpdateCursor(() => updateCursor);
 
-    if (PlayFunction.active) {                       //Start play function
+    /*if (PlayFunction.active) {                       //Start play function
       console.log("Play mode activated!");
       if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;     //set start position
       PlayFunction.timer = setInterval(() => {       //Play function loop
@@ -173,7 +174,7 @@ const GraphView = () => {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
       }
-    }
+    }*/
 
     const moveHandler = (event) => {
       if (!PlayFunction.active) {
@@ -185,14 +186,15 @@ const GraphView = () => {
     };
 
     board.on("move", moveHandler, { passive: true });
-
     // board.on("move", updateCursor, { passive: true });
 
     return () => {
-      board.off("move", updateCursor);
+      board.off("move", moveHandler);
+      //board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, PlayFunction.active, setUpdateCursor]);
+  //}, [functionInput, PlayFunction.active, setUpdateCursor]);
+    }, [functionInput]);
 
 
 
@@ -208,9 +210,47 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
-  /*useEffect(() => {
-    setUpdateCursor(() => updateCursor);
-  }, [setUpdateCursor]);*/
+// Play function was moved to a separate useEffect to avoid issues with the boardRef and updateCursor dependencies
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board || !updateCursor) return;
+  
+    if (PlayFunction.active) {                     //Start play function
+      let startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;   // set start position
+      setPlayFunction(prev => ({ ...prev, x: startX }));
+  
+      timerRef.current = setInterval(() => {      //Play function loop
+        setPlayFunction(prev => {
+          const deltaX = ((graphBounds.xMax - graphBounds.xMin) / (1000 / prev.interval)) * (prev.speed / 100);
+          const newX = prev.x + deltaX;
+  
+          updateCursor(newX);
+  
+          // if we got out from board, stop moving
+          if (newX > graphBounds.xMax || newX < graphBounds.xMin) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+            return { ...prev, active: false };
+          }
+  
+          return { ...prev, x: newX };
+        });
+      }, PlayFunction.interval);
+    } else {                                       //Stop play function
+      if (timerRef.current !== null) {             //clear timer if exists
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [PlayFunction.active, graphBounds, updateCursor]);
+
 
   return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
 };

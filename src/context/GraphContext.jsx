@@ -15,7 +15,8 @@ export const GraphContextProvider = ({ children }) => {
     yMin: -10,
     yMax: 10,
   });
-  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, timer: null });
+  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10 });
+  const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
   const inputRefs = {
     function: useRef(null),
@@ -51,6 +52,7 @@ export const GraphContextProvider = ({ children }) => {
         setGraphBounds,
         PlayFunction, 
         setPlayFunction,
+        timerRef,
         inputRefs,
         updateCursor,
         setUpdateCursor,
