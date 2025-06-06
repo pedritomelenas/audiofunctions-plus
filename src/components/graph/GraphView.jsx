@@ -77,7 +77,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
+  const { functionInput, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints;
   let xisolated;
   let snapaccuracy;
@@ -177,7 +177,7 @@ const GraphView = () => {
     }*/
 
     const moveHandler = (event) => {
-      if (!PlayFunction.active) {
+      if (!playActiveRef.current) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
         updateCursor(x);
@@ -215,13 +215,25 @@ const GraphView = () => {
     const board = boardRef.current;
     if (!board || !updateCursor) return;
   
+    playActiveRef.current = PlayFunction.active;
     if (PlayFunction.active) {                     //Start play function
-      let startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;   // set start position
+      let startX;
+      if (PlayFunction.source === "play") {
+        startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;    // if whole function is played, set start position to left or right edge
+      } else {
+        startX = cursorCoords ? parseFloat(cursorCoords.x) : 0;                   // if arrow keys are used, set start position to current cursor position
+        if (startX > graphBounds.xMax) startX = graphBounds.xMax;  // if cursor is out of bounds, set it to the edge
+        if (startX < graphBounds.xMin) startX = graphBounds.xMin; 
+      }
       setPlayFunction(prev => ({ ...prev, x: startX }));
-  
+
       timerRef.current = setInterval(() => {      //Play function loop
         setPlayFunction(prev => {
-          const deltaX = ((graphBounds.xMax - graphBounds.xMin) / (1000 / prev.interval)) * (prev.speed / 100);
+          let actual_speed = prev.speed;
+          if (prev.source === "keyboard") {
+            actual_speed = Math.abs(prev.speed) * prev.direction;        // if arrow keys are used, the direction is set by prev.direction (otherwise it is set by prev.speed only)
+          }
+          const deltaX = ((graphBounds.xMax - graphBounds.xMin) / (1000 / prev.interval)) * (actual_speed / 100);
           const newX = prev.x + deltaX;
   
           updateCursor(newX);

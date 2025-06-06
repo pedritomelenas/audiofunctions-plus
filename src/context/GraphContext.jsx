@@ -15,7 +15,8 @@ export const GraphContextProvider = ({ children }) => {
     yMin: -10,
     yMax: 10,
   });
-  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10 });
+  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, source: null, direction: 1 });
+  const playActiveRef = useRef(false);   // reference to track if the play function is active, used in mouse move handler 
   const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
   const inputRefs = {
@@ -52,6 +53,7 @@ export const GraphContextProvider = ({ children }) => {
         setGraphBounds,
         PlayFunction, 
         setPlayFunction,
+        playActiveRef,
         timerRef,
         inputRefs,
         updateCursor,

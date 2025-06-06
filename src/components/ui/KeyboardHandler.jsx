@@ -59,6 +59,7 @@ export default function KeyboardHandler() {
 
             case "r": // Reset graph bounds to default
                 setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+                updateCursor(0);
                 break;
 
             case "g": // Tohggle grid visibility - not sure how to do and if we really need this
@@ -87,7 +88,7 @@ export default function KeyboardHandler() {
 
             //B - play function
             case "b":
-                setPlayFunction(prev => ({ ...prev, active: !prev.active }));
+                setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
                 break;
             //Shift-B - activate speed input
             case "B":
@@ -97,21 +98,23 @@ export default function KeyboardHandler() {
 
             //Arrows
             case "ArrowLeft":
-                updateCursor(parseFloat(cursorCoords.x) - 0.1);
+                //updateCursor(parseFloat(cursorCoords.x) - 0.1);                                        // one step move left
+                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 })); // smooth move left
                 break;
             case "ArrowRight":
-                updateCursor(parseFloat(cursorCoords.x) + 0.1);
+                //updateCursor(parseFloat(cursorCoords.x) + 0.1);                                        // one step move right
+                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));  // smooth move right
                 break;
             case "ArrowUp":
                 if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed + 10 })); // Increase speed with Ctrl + Up
+                    setPlayFunction(prev => ({ ...prev, speed: prev.speed + (Math.abs(prev.speed+0.5) >= 10 ? 10 : 1) })); // Increase speed with Ctrl + Up
                     break;
                 }
                 console.log("Up arrow pressed");
                 break;
             case "ArrowDown":
                 if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed - 10 })); // Decrease speed with Ctrl + Down
+                    setPlayFunction(prev => ({ ...prev, speed: prev.speed - (Math.abs(prev.speed-0.5) >= 10 ? 10 : 1) })); // Decrease speed with Ctrl + Down
                     break;
                 }
                 console.log("Down arrow pressed");
@@ -124,6 +127,10 @@ export default function KeyboardHandler() {
 
       const handleKeyUp = (e) => {
         pressedKeys.current.delete(e.key.toLowerCase());
+        // If the arrow keys are released, stop move
+        if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+          setPlayFunction(prev => prev.source === "keyboard" ? { ...prev, active: false } : prev);
+        }
       };
   
       document.addEventListener("keydown", handleKeyDown);
