@@ -151,5 +151,13 @@ export const useKBarActions = () => {
       perform: () => {setTheme("high-contrast")},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
+    {
+      id: "toggle-function",
+      name: "Toggle Functions",
+      shortcut: ["t"],
+      keywords: "toggle, activate, deactivate, function, enable, disable",
+      perform: () => openDialog("showHide-functions"),
+      icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
+    },
   ];
 };
