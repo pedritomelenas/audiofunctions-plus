@@ -9,11 +9,13 @@ import { useKBarActions } from './components/ui/PaletteActions';
 import GraphSonification from './components/graph/GraphSonification';
 import { DialogProvider } from './context/DialogContext';
 import Header from './components/ui/Header';
+import KeyboardHandler from "./components/ui/KeyboardHandler";
 
 function App() {
   return (
     <>
       <GraphContextProvider>
+        <KeyboardHandler />
         <DialogProvider>
           <KBarWrapper />
         </DialogProvider>

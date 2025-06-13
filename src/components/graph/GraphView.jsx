@@ -77,7 +77,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionInput, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
+  const { functionInput, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints;
   let xisolated;
   let snapaccuracy;
@@ -135,6 +135,7 @@ const GraphView = () => {
       endpoints = [];
       xisolated = [];
     }
+    
     const cursor = board.create("point", [0, 0], {
       cssClass: "functionCursor",
       name: "",
@@ -146,7 +147,7 @@ const GraphView = () => {
     // const updateCursor = (event) => {
       // const coords = board.getUsrCoordsOfMouse(event);
       // var x = coords[0];
-      const updateCursor = (x) => {
+    const updateCursor = (x) => {
       const l=xisolated.filter(function(e){return Math.abs(e-x)<snapaccuracy}); // x coordinates of the isolated points close to x
       if (l.length>0){ // if there are isolated points whose first coordinate is close to x, we redefine x to be the first one
         x=l[0];
@@ -156,9 +157,9 @@ const GraphView = () => {
       setCursorCoords({ x: x.toFixed(2), y: y.toFixed(2) });
       board.update();
     };
+    setUpdateCursor(() => updateCursor);
 
-
-    if (PlayFunction.active) {                       //Start play function
+    /*if (PlayFunction.active) {                       //Start play function
       console.log("Play mode activated!");
       if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;     //set start position
       PlayFunction.timer = setInterval(() => {       //Play function loop
@@ -173,10 +174,10 @@ const GraphView = () => {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
       }
-    }
+    }*/
 
     const moveHandler = (event) => {
-      if (!PlayFunction.active) {
+      if (!playActiveRef.current) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
         updateCursor(x);
@@ -185,14 +186,15 @@ const GraphView = () => {
     };
 
     board.on("move", moveHandler, { passive: true });
-
     // board.on("move", updateCursor, { passive: true });
 
     return () => {
-      board.off("move", updateCursor);
+      board.off("move", moveHandler);
+      //board.off("move", updateCursor);
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionInput, PlayFunction.active]);
+  //}, [functionInput, PlayFunction.active, setUpdateCursor]);
+    }, [functionInput]);
 
 
 
@@ -207,6 +209,60 @@ const GraphView = () => {
       boardRef.current.update();
     }
   }, [graphBounds]);
+
+// Play function was moved to a separate useEffect to avoid issues with the boardRef and updateCursor dependencies
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board || !updateCursor) return;
+  
+    playActiveRef.current = PlayFunction.active;
+    if (PlayFunction.active) {                     //Start play function
+      let startX;
+      if (PlayFunction.source === "play") {
+        startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;    // if whole function is played, set start position to left or right edge
+      } else {
+        startX = cursorCoords ? parseFloat(cursorCoords.x) : 0;                   // if arrow keys are used, set start position to current cursor position
+        if (startX > graphBounds.xMax) startX = graphBounds.xMax;  // if cursor is out of bounds, set it to the edge
+        if (startX < graphBounds.xMin) startX = graphBounds.xMin; 
+      }
+      setPlayFunction(prev => ({ ...prev, x: startX }));
+
+      timerRef.current = setInterval(() => {      //Play function loop
+        setPlayFunction(prev => {
+          let actual_speed = prev.speed;
+          if (prev.source === "keyboard") {
+            actual_speed = Math.abs(prev.speed) * prev.direction;        // if arrow keys are used, the direction is set by prev.direction (otherwise it is set by prev.speed only)
+          }
+          const deltaX = ((graphBounds.xMax - graphBounds.xMin) / (1000 / prev.interval)) * (actual_speed / 100);
+          const newX = prev.x + deltaX;
+  
+          updateCursor(newX);
+  
+          // if we got out from board, stop moving
+          if (newX > graphBounds.xMax || newX < graphBounds.xMin) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+            return { ...prev, active: false };
+          }
+  
+          return { ...prev, x: newX };
+        });
+      }, PlayFunction.interval);
+    } else {                                       //Stop play function
+      if (timerRef.current !== null) {             //clear timer if exists
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [PlayFunction.active, graphBounds, updateCursor]);
+
 
   return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
 };
