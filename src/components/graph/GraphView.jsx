@@ -78,7 +78,7 @@ function createEndPoints(txtraw,board){
 
 const GraphView = () => {
   const boardRef = useRef(null);
-  const { functionDefinitions, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints = [];
   let xisolated = [];
   let snapaccuracy;
@@ -203,6 +203,7 @@ const GraphView = () => {
       setCursorCoords(cursorPositions);
       board.update();
     };
+    setUpdateCursor(() => updateCursors);
 
     if (PlayFunction.active) {
       console.log("Play mode activated!");
@@ -222,7 +223,7 @@ const GraphView = () => {
     }
 
     const moveHandler = (event) => {
-      if (!PlayFunction.active) {
+      if (!playActiveRef.current) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
         updateCursors(x);
@@ -232,10 +233,10 @@ const GraphView = () => {
     board.on("move", moveHandler, { passive: true });
 
     return () => {
-      board.off("move", moveHandler);
+      board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, PlayFunction.active]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active]);
 
   useEffect(() => {
     if (boardRef.current) {
@@ -249,7 +250,7 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
-  return <div id="jxgbox" style={{ flex: 1, width: "100%", height: "100%" }}></div>;
+  return <div id="jxgbox" style={{ width: "100%", height: "100%" }} />;
 };
 
 export default GraphView;
