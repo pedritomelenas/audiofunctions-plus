@@ -151,8 +151,15 @@ const GraphView = () => {
         xisolated = [...xisolated, ...funcXisolated];
       }
 
-      // Create cursor for this function
-      const cursor = board.create("point", [0, 0], {
+      // Find last known position for this function's cursor
+      let lastPos = cursorCoords && Array.isArray(cursorCoords)
+        ? cursorCoords.find(c => c.functionId === func.id)
+        : undefined;
+      let initialX = lastPos ? parseFloat(lastPos.x) : 0;
+      let initialY = lastPos ? parseFloat(lastPos.y) : 0;
+
+      // Create cursor for this function at last known position (or [0,0])
+      const cursor = board.create("point", [initialX, initialY], {
         cssClass: "functionCursor",
         name: "",
         size: 5,
@@ -207,9 +214,30 @@ const GraphView = () => {
 
     if (PlayFunction.active) {
       console.log("Play mode activated!");
-      if (PlayFunction.speed > 0) PlayFunction.x = graphBounds.xMin; else PlayFunction.x = graphBounds.xMax;
+      let startX;
+      if (PlayFunction.source === "play") {
+        startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
+      } else if (PlayFunction.source === "keyboard") {
+        // Use the current cursor position if available, otherwise default to edge
+        if (cursorCoords && cursorCoords.length > 0 && cursorCoords[0].x !== undefined) {
+          startX = parseFloat(cursorCoords[0].x);
+          // Clamp to bounds
+          if (startX > graphBounds.xMax) startX = graphBounds.xMax;
+          if (startX < graphBounds.xMin) startX = graphBounds.xMin;
+        } else {
+          startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
+        }
+      } else {
+        startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
+      }
+      PlayFunction.x = startX;
       PlayFunction.timer = setInterval(() => {
-        PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (PlayFunction.speed / 100);
+        // Use direction to determine movement direction
+        const actualSpeed = PlayFunction.source === "keyboard" 
+          ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
+          : PlayFunction.speed;
+        
+        PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         updateCursors(PlayFunction.x);
         if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
           PlayFunction.active = false;
@@ -219,6 +247,10 @@ const GraphView = () => {
       if (PlayFunction.timer !== null) {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
+      }
+      // Ensure cursors remain at their last position when playback stops
+      if (PlayFunction.x !== undefined) {
+        updateCursors(PlayFunction.x);
       }
     }
 
