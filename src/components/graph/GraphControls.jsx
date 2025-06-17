@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useGraphContext } from "../../context/GraphContext";
 import { Play } from "lucide-react";
 
@@ -12,9 +12,11 @@ const GraphControls = () => {
     isAudioEnabled,
     setIsAudioEnabled,
     PlayFunction,
-    setPlayFunction
+    setPlayFunction,
+    inputRefs
   } = useGraphContext();
 
+  
   const PlayButtonClick = () => {
     setPlayFunction(prev => ({ ...prev, active: !prev.active }));
   }
@@ -23,6 +25,7 @@ const GraphControls = () => {
     <div style={{ padding: "3px" }}>
       <label htmlFor="functionInput">Function: </label>
       <input
+        ref={inputRefs.function}
         type="text"
         id="functionInput"
         value={functionInput}
@@ -62,8 +65,9 @@ const GraphControls = () => {
       </button>
       <label htmlFor="speedInput"> speed: </label>
       <input
+        ref={inputRefs.speed}
         type="text"
-        id="functionInput"
+        id="speedInput"
         value={PlayFunction.speed}
         onChange={(e) => setPlayFunction(prev => ({ ...prev, speed: e.target.value }))}
         style={{ marginLeft: "10px", width: "50px" }}

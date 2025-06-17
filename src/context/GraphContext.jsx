@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useRef } from "react";
 
 const GraphContext = createContext();
 
@@ -6,7 +6,7 @@ export const GraphContextProvider = ({ children }) => {
   const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
   const [functionDefinitions, setFunctionDefinitions] = useState(initGraphObject.functions);
   const [graphSettings, setGraphSettings] = useState(initGraphObject.graphSettings);
-  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
+  const [cursorCoords, setCursorCoords] = useState([]);
   const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [graphBounds, setGraphBounds] = useState({
@@ -15,7 +15,14 @@ export const GraphContextProvider = ({ children }) => {
     yMin: -10,
     yMax: 10,
   });
-  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, timer: null });
+  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, source: null, direction: 1 });
+  const playActiveRef = useRef(false);   // reference to track if the play function is active, used in mouse move handler 
+  const timerRef = useRef(null);
+  const [updateCursor, setUpdateCursor] = useState(null);
+  const inputRefs = {
+    function: useRef(null),
+    speed: useRef(null),
+  };
 
   ///////// currently missing features //////////
   // boundingBox
@@ -46,6 +53,11 @@ export const GraphContextProvider = ({ children }) => {
         setGraphBounds,
         PlayFunction, 
         setPlayFunction,
+        playActiveRef,
+        timerRef,
+        inputRefs,
+        updateCursor,
+        setUpdateCursor,
       }}
     >
       {children}
@@ -66,7 +78,7 @@ const initGraphObject = {
       "type": "function",
       "functionString": "sin(x)",
       "isActive": true,
-      "instrument": "guitar",
+      "instrument": "flute",
       "color": "#0000FF",           // optional
       "pointOfInterests": [
         {
@@ -98,18 +110,13 @@ const initGraphObject = {
       "functionName": "Pieces",
       "type": "piecewise_function",
       "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
-      "isActive": false,
+      "isActive": true,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
       "pointOfInterests": [],
       "landmarks": []
     }
   ],
-
-
-
-
-
 
   "graphSettings": {
       "defaultView": [-10, 10, 10, -10],
