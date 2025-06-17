@@ -180,14 +180,14 @@ export const createInstruments = () => [
       max: 2500,
     },
   },
-  {
-    name: "guitar",
-    instrument: new Tone.PluckSynth({
-      attackNoise: 1,
-      dampening: 500,
-      resonance: 0.99,
-    }),
-    instrumentType: InstrumentFrequencyType.discretePitchClassBased,
-    availablePitchClasses: getPitchClasses("C3", "C6"),
-  },
+  // {
+  //   name: "guitar",
+  //   instrument: new Tone.PluckSynth({
+  //     attackNoise: 1,
+  //     dampening: 500,
+  //     resonance: 0.99,
+  //   }),
+  //   instrumentType: InstrumentFrequencyType.discretePitchClassBased,
+  //   availablePitchClasses: getPitchClasses("C3", "C6"),
+  // },
 ]; 
