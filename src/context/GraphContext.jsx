@@ -6,7 +6,7 @@ export const GraphContextProvider = ({ children }) => {
   const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
   const [functionDefinitions, setFunctionDefinitions] = useState(initGraphObject.functions);
   const [graphSettings, setGraphSettings] = useState(initGraphObject.graphSettings);
-  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
+  const [cursorCoords, setCursorCoords] = useState([]);
   const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [graphBounds, setGraphBounds] = useState({
@@ -78,7 +78,7 @@ const initGraphObject = {
       "type": "function",
       "functionString": "sin(x)",
       "isActive": true,
-      "instrument": "guitar",
+      "instrument": "flute",
       "color": "#0000FF",           // optional
       "pointOfInterests": [
         {
@@ -110,18 +110,13 @@ const initGraphObject = {
       "functionName": "Pieces",
       "type": "piecewise_function",
       "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
-      "isActive": false,
+      "isActive": true,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
       "pointOfInterests": [],
       "landmarks": []
     }
   ],
-
-
-
-
-
 
   "graphSettings": {
       "defaultView": [-10, 10, 10, -10],

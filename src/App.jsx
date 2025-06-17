@@ -9,18 +9,19 @@ import { useKBarActions } from './components/ui/PaletteActions';
 import GraphSonification from './components/graph/GraphSonification';
 import { DialogProvider } from './context/DialogContext';
 import Header from './components/ui/Header';
+import { InstrumentsProvider } from './context/InstrumentsContext';
 import KeyboardHandler from "./components/ui/KeyboardHandler";
 
 function App() {
   return (
-    <>
+    <InstrumentsProvider>
       <GraphContextProvider>
         <KeyboardHandler />
         <DialogProvider>
           <KBarWrapper />
         </DialogProvider>
       </GraphContextProvider>
-    </>
+    </InstrumentsProvider>
   );
 }
 
