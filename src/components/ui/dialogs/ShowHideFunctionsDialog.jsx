@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { Check, X, Guitar } from "lucide-react";
+import { Check, X, Guitar, Music } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
+import { useInstruments } from "../../../context/InstrumentsContext";
 import { 
   getFunctionCount, 
   getFunctionNameN,
   isFunctionActiveN,
   updateFunctionN,
-  getFunctionInstrumentN
+  getFunctionInstrumentN,
+  setFunctionInstrumentN
 } from "../../../utils/graphObjectOperations";
 
 const ShowHideFunctionsDialog = ({ isOpen, onClose }) => {
@@ -77,7 +79,7 @@ const ShowHideFunctionsDialog = ({ isOpen, onClose }) => {
               Toggle Functions
             </DialogTitle>
             <Description id="dialog-description" className="text-descriptions">
-              Activate or deactivate functions. Click on a function or press Enter to toggle its state.
+              Activate or deactivate functions. Click on a function or press Enter to toggle its state. Use the instrument button to cycle through available instruments.
             </Description>
           </div>
           
@@ -105,7 +107,7 @@ const ShowHideFunctionsDialog = ({ isOpen, onClose }) => {
                 name={getFunctionNameN(functionDefinitions, index)}
                 isActive={isFunctionActiveN(functionDefinitions, index)}
                 onToggle={() => toggleFunctionState(index)}
-                
+                announceStatus={announceStatus}
               />
             ))}
           </div>
@@ -133,8 +135,9 @@ const ShowHideFunctionsDialog = ({ isOpen, onClose }) => {
   );
 };
 
-const FunctionToggleItem = ({ index, name, isActive, onToggle }) => {
+const FunctionToggleItem = ({ index, name, isActive, onToggle, announceStatus }) => {
   const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { availableInstruments } = useInstruments();
   
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -145,7 +148,29 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle }) => {
 
   const handleInstrumentChange = (e) => {
     e.stopPropagation(); // Prevent triggering the toggle
-    console.log(`Instrument change requested for function ${index + 1} (${name || `Function ${index + 1}`})`);
+    
+    const currentInstrument = getFunctionInstrumentN(functionDefinitions, index) || "clarinet"; // Default to clarinet instead of guitar
+    const instrumentNames = availableInstruments.map(inst => inst.name);
+    
+    // Handle case where current instrument is not found in available instruments
+    let currentIndex = instrumentNames.indexOf(currentInstrument);
+    if (currentIndex === -1) {
+      currentIndex = 0; // Default to first instrument if current not found
+    }
+    
+    const nextIndex = (currentIndex + 1) % instrumentNames.length;
+    const nextInstrument = instrumentNames[nextIndex];
+
+    console.log(`Changing instrument for function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
+    console.log(`Available instruments: ${instrumentNames.join(', ')}`);
+    
+    // Important: We should dispose of old instruments when switching
+    // This should be handled in the audio engine, not here
+    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
+    setFunctionDefinitions(updatedDefinitions);
+    
+    const displayName = name || `Function ${index + 1}`;
+    announceStatus(`${displayName} instrument changed to ${nextInstrument}`);
   };
 
   const handleInstrumentKeyDown = (e) => {
@@ -158,6 +183,20 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle }) => {
 
   const displayName = name || `Function ${index + 1}`;
   const currentInstrument = getFunctionInstrumentN(functionDefinitions, index) || "guitar";
+
+  // Get appropriate icon based on instrument
+  const getInstrumentIcon = (instrumentName) => {
+    switch (instrumentName) {
+      case 'guitar':
+        return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
+      case 'flute':
+      case 'clarinet':
+      case 'organ':
+        return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
+      default:
+        return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
+    }
+  };
 
   return (
     <div 
@@ -203,18 +242,30 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle }) => {
           </div>
           
           <div className="flex items-center gap-2">
+            <span 
+              id={`function-toggle-${index}-status`}
+              className="sr-only"
+            >
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
             
-
+            <span 
+              id={`function-toggle-${index}-instrument`}
+              className="sr-only"
+            >
+              Current instrument: {currentInstrument}
+            </span>
             
             <button
               type="button"
               className="btn-neutral"
               onClick={handleInstrumentChange}
               onKeyDown={handleInstrumentKeyDown}
-              title={`Change instrument for ${displayName}. Current instrument: ${currentInstrument}. Click to change.`}
+              aria-label={`Change instrument for ${displayName}. Current instrument: ${currentInstrument}. Click to cycle to next instrument.`}
+              title={`Change instrument for ${displayName}. Current: ${currentInstrument}`}
               tabIndex={0}
             >
-              <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />
+              {getInstrumentIcon(currentInstrument)}
               <span className="sr-only">{currentInstrument}</span>
             </button>
           </div>
