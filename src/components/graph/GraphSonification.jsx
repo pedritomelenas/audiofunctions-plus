@@ -23,6 +23,22 @@ const GraphSonification = () => {
   const instrumentsRef = useRef(new Map()); // Map to store instrument references
   const channelsRef = useRef(new Map()); // Map to store channel references
   const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
+  const pinkNoiseRef = useRef(null); // Reference to pink noise synthesizer
+
+  // Initialize pink noise synthesizer
+  useEffect(() => {
+    if (!pinkNoiseRef.current) {
+      pinkNoiseRef.current = new Tone.Noise("pink").toDestination();
+      pinkNoiseRef.current.volume.value = -36; // dB - low volume background sound
+    }
+
+    return () => {
+      if (pinkNoiseRef.current) {
+        pinkNoiseRef.current.dispose();
+        pinkNoiseRef.current = null;
+      }
+    };
+  }, []);
 
   // Initialize channels for all functions
   useEffect(() => {
@@ -115,14 +131,34 @@ const GraphSonification = () => {
   useEffect(() => {
     if (!isAudioEnabled) {
       stopAllTones();
+      stopPinkNoise();
       return;
     }
 
     const activeFunctions = getActiveFunctions(functionDefinitions);
-    if (activeFunctions.length === 0) return;
+    if (activeFunctions.length === 0) {
+      stopPinkNoise();
+      return;
+    }
 
     // Create a map of function IDs to their cursor coordinates
     const coordsMap = new Map(cursorCoords.map(coord => [coord.functionId, coord]));
+
+    // Check if any active function has a value below 0
+    let hasNegativeValue = false;
+    activeFunctions.forEach(func => {
+      const coords = coordsMap.get(func.id);
+      if (coords && parseFloat(coords.y) < 0) {
+        hasNegativeValue = true;
+      }
+    });
+
+    // Control pink noise based on negative values
+    if (hasNegativeValue) {
+      startPinkNoise();
+    } else {
+      stopPinkNoise();
+    }
 
     // Process each active function
     activeFunctions.forEach(func => {
@@ -231,6 +267,18 @@ const GraphSonification = () => {
     instrumentsRef.current.forEach((instrument, functionId) => {
       stopTone(functionId);
     });
+  };
+
+  const startPinkNoise = () => {
+    if (pinkNoiseRef.current && pinkNoiseRef.current.state === "stopped") {
+      pinkNoiseRef.current.start();
+    }
+  };
+
+  const stopPinkNoise = () => {
+    if (pinkNoiseRef.current && pinkNoiseRef.current.state === "started") {
+      pinkNoiseRef.current.stop();
+    }
   };
 
   return null;
