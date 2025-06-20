@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { useGraphContext } from "../../context/GraphContext";
 import { useInstruments } from "../../context/InstrumentsContext";
-import { GLOBAL_FREQUENCY_RANGE } from "../../config/instruments";
+import { GLOBAL_FREQUENCY_RANGE, InstrumentFrequencyType } from "../../config/instruments";
 import { 
   getActiveFunctions,
   getFunctionById,
@@ -22,6 +22,7 @@ const GraphSonification = () => {
   const { getInstrumentByName } = useInstruments();
   const instrumentsRef = useRef(new Map()); // Map to store instrument references
   const channelsRef = useRef(new Map()); // Map to store channel references
+  const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
 
   // Initialize channels for all functions
   useEffect(() => {
@@ -134,13 +135,19 @@ const GraphSonification = () => {
       if (instrument && channel && instrumentConfig) {
         if (coords) {
           // We have coordinates for this function
-          const frequency = calculateFrequency(parseFloat(coords.y));
           const pan = calculatePan(parseFloat(coords.x));
           
-          if (frequency) {
-            startTone(func.id, frequency, pan);
+          if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
+            // Handle discrete pitch class-based sonification
+            handleDiscreteSonification(func.id, parseFloat(coords.y), pan, instrumentConfig);
           } else {
-            stopTone(func.id);
+            // Handle continuous frequency-based sonification
+            const frequency = calculateFrequency(parseFloat(coords.y));
+            if (frequency) {
+              startTone(func.id, frequency, pan);
+            } else {
+              stopTone(func.id);
+            }
           }
         } else {
           // No coordinates for this function, stop its sound
@@ -164,6 +171,36 @@ const GraphSonification = () => {
     if (pan > 1) return 1;
     if (pan < -1) return -1;
     return pan;
+  };
+
+  const handleDiscreteSonification = (functionId, y, pan, instrumentConfig) => {
+    if (!instrumentConfig.availablePitchClasses || instrumentConfig.availablePitchClasses.length === 0) {
+      return;
+    }
+
+    // Map y value to pitch class index
+    const normalizedY = (y - graphBounds.yMin) / (graphBounds.yMax - graphBounds.yMin);
+    const pitchClassIndex = Math.floor(normalizedY * instrumentConfig.availablePitchClasses.length);
+    const clampedIndex = Math.max(0, Math.min(pitchClassIndex, instrumentConfig.availablePitchClasses.length - 1));
+    const currentPitchClass = instrumentConfig.availablePitchClasses[clampedIndex];
+
+    // Get the last pitch class for this function
+    const lastPitchClass = lastPitchClassesRef.current.get(functionId);
+
+    // Only trigger sound if pitch class has changed
+    if (currentPitchClass !== lastPitchClass) {
+      // Convert pitch class to frequency
+      const frequency = Tone.Frequency(currentPitchClass).toFrequency();
+      
+      // Stop any current sound
+      stopTone(functionId);
+      
+      // Start new sound
+      startTone(functionId, frequency, pan);
+      
+      // Update the last pitch class
+      lastPitchClassesRef.current.set(functionId, currentPitchClass);
+    }
   };
 
   const startTone = (functionId, frequency, pan) => {

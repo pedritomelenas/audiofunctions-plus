@@ -235,14 +235,15 @@ export const createInstruments = () => [
     createInstrument: () => createOrganInstrument(),
     instrumentType: InstrumentFrequencyType.continuous,
   },
-  // {
-  //   name: "guitar",
-  //   createInstrument: () => new Tone.PluckSynth({
-  //     attackNoise: 1,
-  //     dampening: 500,
-  //     resonance: 0.99,
-  //   }),
-  //   instrumentType: InstrumentFrequencyType.discretePitchClassBased,
-  //   availablePitchClasses: getPitchClasses("C3", "C6"),
-  // },
+  {
+    name: "guitar",
+    createInstrument: () => new Tone.PluckSynth({
+      volume: -12,
+      attackNoise: 1,
+      dampening: 500,
+      resonance: 0.99,
+    }),
+    instrumentType: InstrumentFrequencyType.discretePitchClassBased,
+    availablePitchClasses: getPitchClasses("C3", "C6"),
+  },
 ]; 

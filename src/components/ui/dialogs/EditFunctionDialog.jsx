@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { Delete, Music, Wind, Zap } from "lucide-react";
+import { Delete, Music, Wind, Zap, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
 import { 
   getFunctionCount, 
@@ -212,6 +212,8 @@ const getInstrumentIcon = (instrumentName) => {
       return <Wind className="w-4 h-4 text-icon" aria-hidden="true" />;
     case 'organ':
       return <Zap className="w-4 h-4 text-icon" aria-hidden="true" />;
+    case 'guitar':
+      return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
     default:
       return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
   }
