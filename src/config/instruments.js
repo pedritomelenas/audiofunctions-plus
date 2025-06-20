@@ -238,12 +238,12 @@ export const createInstruments = () => [
   {
     name: "guitar",
     createInstrument: () => new Tone.PluckSynth({
-      volume: -12,
+      volume: -6,
       attackNoise: 1,
       dampening: 500,
       resonance: 0.99,
     }),
     instrumentType: InstrumentFrequencyType.discretePitchClassBased,
-    availablePitchClasses: getPitchClasses("C3", "C6"),
+    availablePitchClasses: getPitchClasses("C3", "C5"),
   },
 ]; 
