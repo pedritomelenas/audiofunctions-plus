@@ -85,6 +85,8 @@ const GraphView = () => {
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
   const cursorsRef = useRef(new Map()); // Store cursors for each function
   const parsedExpressionsRef = useRef(new Map()); // Store parsed expressions
+  const lastCursorPositionRef = useRef(null); // Store the last known cursor position
+  const pendingStateUpdateRef = useRef(null); // Store pending state update
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -178,6 +180,9 @@ const GraphView = () => {
       const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
       const snappedX = l.length > 0 ? l[0] : x;
       
+      // Store the current position immediately
+      lastCursorPositionRef.current = { x: snappedX };
+      
       // Update all active cursors
       const cursorPositions = [];
       activeFunctions.forEach(func => {
@@ -207,7 +212,18 @@ const GraphView = () => {
         }
       });
       
+      // Update audio immediately by calling setCursorCoords right away
       setCursorCoords(cursorPositions);
+      
+      // Clear any pending state update
+      if (pendingStateUpdateRef.current) {
+        clearTimeout(pendingStateUpdateRef.current);
+      }
+      
+      // The delayed state update is no longer needed since we update immediately
+      // But we keep the ref for potential future use
+      pendingStateUpdateRef.current = null;
+      
       board.update();
     };
     setUpdateCursor(() => updateCursors);
@@ -236,7 +252,6 @@ const GraphView = () => {
         const actualSpeed = PlayFunction.source === "keyboard" 
           ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
           : PlayFunction.speed;
-        
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         updateCursors(PlayFunction.x);
         if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
@@ -248,13 +263,11 @@ const GraphView = () => {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
       }
-      // Ensure cursors remain at their last position when playback stops
-      // Only update if we have a valid x position and it's different from current cursor positions
-      if (PlayFunction.x !== undefined) {
-        const currentX = cursorCoords && cursorCoords.length > 0 ? parseFloat(cursorCoords[0].x) : undefined;
-        if (currentX === undefined || Math.abs(currentX - PlayFunction.x) > 0.01) {
-          updateCursors(PlayFunction.x);
-        }
+      // Use the last known position immediately
+      if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+        updateCursors(lastCursorPositionRef.current.x);
+      } else if (PlayFunction.x !== undefined) {
+        updateCursors(PlayFunction.x);
       }
     }
 
