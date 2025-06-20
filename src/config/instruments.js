@@ -5,63 +5,129 @@ export const InstrumentFrequencyType = {
   discretePitchClassBased: 'discretePitchClassBased'
 };
 
+// Global frequency range for all instruments
+// export const GLOBAL_FREQUENCY_RANGE = {
+//   min: 250,  // Hz - Common minimum (flute's minimum)
+//   max: 2000  // Hz - Common maximum (clarinet's maximum)
+// };
+
+export const GLOBAL_FREQUENCY_RANGE = { // from third to fifth octave approximately
+  min: 100,  
+  max: 1000  
+};
+
 // Create a function to set up the organ components
 const createOrganInstrument = () => {
-  const trem = new Tone.Tremolo({
-    frequency: 3,
-    depth: 0.2,
-    spread: 0
-  }).start();
+  // 1) FM Synth with different characteristics from clarinet/flute
+  const fmSynth = new Tone.FMSynth({
+    volume: -8,
+    detune: -5,
+    portamento: 0.1,
+    harmonicity: 4.5,  // Higher harmonicity for more complex timbre
+    modulationIndex: 1.5,  // Higher modulation for more metallic sound
+    oscillator: {
+      type: "square",  // Different from clarinet's sine
+      phase: 90
+    },
+    envelope: {
+      attack: 0.05,
+      decay: 0.3,
+      sustain: 0.7,
+      release: 0.8
+    },
+    modulation: {
+      type: "sawtooth",  // Different from clarinet's triangle
+      phase: 45
+    },
+    modulationEnvelope: {
+      attack: 0.1,
+      decay: 0.4,
+      sustain: 0.6,
+      release: 0.3
+    }
+  });
 
-  const saxPartials = [1, 0.7, 0.5, 0.4, 0.3, 0.2];
-  
-  const saxFilter = new Tone.Filter({
-    type: "bandpass",
+  // 2) Chorus for richness
+  const chorus = new Tone.Chorus({
+    frequency: 1.5,
+    delayTime: 3.5,
+    depth: 0.6,
+    wet: 0.8
+  });
+
+  // 3) Reverb for space
+  const reverb = new Tone.Reverb({
+    decay: 2,
+    preDelay: 0.1,
+    wet: 0.6
+  });
+
+  // 4) Filter for tone shaping
+  const filter = new Tone.Filter({
+    type: "lowpass",
     frequency: 1000,
-    rolloff: -12,
-    Q: 1
+    rolloff: -12
   });
 
-  const saxEnv = new Tone.AmplitudeEnvelope({
-    attack: 0.02,
-    decay: 0.1,
-    sustain: 0.8,
-    release: 0.3
-  });
+  // Connect the effects chain
+  fmSynth
+    .connect(filter)
+    .connect(chorus)
+    .connect(reverb);
 
-  const saxOsc = new Tone.FatOscillator({
-    type: "custom",
-    partials: saxPartials,
-    count: 3,
-    spread: 20
-  });
+  let isStarted = false;
 
-  // Wire up the components
-  saxOsc.connect(trem).connect(saxFilter).connect(saxEnv);
-  
-  // Return an object that includes all components for proper cleanup
   return {
-    oscillator: saxOsc,
-    envelope: saxEnv,
-    tremolo: trem,
-    filter: saxFilter,
-    start: () => saxOsc.start(),
-    stop: () => saxOsc.stop(),
+    voices: [fmSynth], // Keep for compatibility
+    voiceIndex: 0,
+    fmSynth: fmSynth,
+    chorus: chorus,
+    reverb: reverb,
+    filter: filter,
+    start: () => {
+      // Start effects when needed
+      if (!isStarted) {
+        try {
+          chorus.start();
+          isStarted = true;
+        } catch (e) {
+          console.log("Effects start error:", e.message);
+        }
+      }
+    },
+    stop: () => {
+      fmSynth.triggerRelease();
+    },
     dispose: () => {
-      saxOsc.dispose();
-      saxEnv.dispose();
-      trem.dispose();
-      saxFilter.dispose();
+      fmSynth.dispose();
+      chorus.dispose();
+      reverb.dispose();
+      filter.dispose();
     },
     triggerAttack: (freq) => {
-      saxOsc.frequency.setValueAtTime(freq, Tone.now());
-      saxEnv.triggerAttack();
+      try {
+        // Start effects on first note trigger
+        if (!isStarted) {
+          chorus.start();
+          isStarted = true;
+        }
+        fmSynth.triggerAttack(freq);
+      } catch (e) {
+        console.log("Trigger attack error:", e.message);
+      }
     },
     triggerRelease: () => {
-      saxEnv.triggerRelease();
+      fmSynth.triggerRelease();
     },
-    connect: (dest) => saxEnv.connect(dest),
-    disconnect: () => saxEnv.disconnect()
+    connect: (dest) => {
+      reverb.connect(dest);
+    },
+    disconnect: () => {
+      fmSynth.disconnect();
+      chorus.disconnect();
+      reverb.disconnect();
+      filter.disconnect();
+    }
   };
 };
 
@@ -102,8 +168,8 @@ export const getPitchClasses = (from, to) => {
 export const createInstruments = () => [
   {
     name: "clarinet",
-    instrument: new Tone.FMSynth({
-      volume: 0,
+    createInstrument: () => new Tone.FMSynth({
+      volume: -6,
       detune: 3,
       portamento: 0,
       harmonicity: 2,
@@ -140,14 +206,11 @@ export const createInstruments = () => [
       modulationIndex: 1,
     }),
     instrumentType: InstrumentFrequencyType.continuous,
-    frequencyRange: {
-      min: 150,
-      max: 2000,
-    },
   },
   {
     name: "flute",
-    instrument: new Tone.FMSynth({
+    createInstrument: () => new Tone.FMSynth({
+      volume: -8,
       harmonicity: 1.0,
       modulationIndex: 0.5,
       oscillator: { type: "sine" },
@@ -166,23 +229,15 @@ export const createInstruments = () => [
       }
     }),
     instrumentType: InstrumentFrequencyType.continuous,
-    frequencyRange: {
-      min: 250,
-      max: 2300,  // Flute typically has a higher range than clarinet
-    },
   },
   {
     name: "organ",
-    instrument: createOrganInstrument(),
+    createInstrument: () => createOrganInstrument(),
     instrumentType: InstrumentFrequencyType.continuous,
-    frequencyRange: {
-      min: 100,
-      max: 2500,
-    },
   },
   // {
   //   name: "guitar",
-  //   instrument: new Tone.PluckSynth({
+  //   createInstrument: () => new Tone.PluckSynth({
   //     attackNoise: 1,
   //     dampening: 500,
   //     resonance: 0.99,

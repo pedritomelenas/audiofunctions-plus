@@ -836,7 +836,7 @@ export function createFunction(id, name, functionString, type = "function", opti
     type,
     functionString,
     isActive: options.isActive ?? true,
-    instrument: options.instrument || "guitar",
+    instrument: options.instrument || "clarinet",
     color: options.color || "#0000FF",
     pointOfInterests: options.pointOfInterests || [],
     landmarks: options.landmarks || [],

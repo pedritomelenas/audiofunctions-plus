@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { useGraphContext } from "../../context/GraphContext";
 import { useInstruments } from "../../context/InstrumentsContext";
+import { GLOBAL_FREQUENCY_RANGE } from "../../config/instruments";
 import { 
   getActiveFunctions,
   getFunctionById,
@@ -78,18 +79,19 @@ const GraphSonification = () => {
     activeFunctions.forEach(func => {
       if (!instrumentsRef.current.has(func.id)) {
         const functionIndex = getFunctionIndexById(functionDefinitions, func.id);
-        const instrument = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
-        if (instrument) {
-          instrumentsRef.current.set(func.id, instrument.instrument);
+        const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
+        if (instrumentConfig && instrumentConfig.createInstrument) {
+          const instrument = instrumentConfig.createInstrument();
+          instrumentsRef.current.set(func.id, instrument);
           
           // Connect to channel
           const channel = channelsRef.current.get(func.id);
           if (channel) {
-            instrument.instrument.connect(channel);
+            instrument.connect(channel);
             
             // Special case for organ
             if (getFunctionInstrumentN(functionDefinitions, functionIndex) === 'organ') {
-              instrument.instrument.start();
+              instrument.start();
             }
           }
         }
@@ -132,7 +134,7 @@ const GraphSonification = () => {
       if (instrument && channel && instrumentConfig) {
         if (coords) {
           // We have coordinates for this function
-          const frequency = calculateFrequency(parseFloat(coords.y), instrumentConfig);
+          const frequency = calculateFrequency(parseFloat(coords.y));
           const pan = calculatePan(parseFloat(coords.x));
           
           if (frequency) {
@@ -149,12 +151,11 @@ const GraphSonification = () => {
 
   }, [cursorCoords, isAudioEnabled, functionDefinitions, getInstrumentByName]);
 
-  const calculateFrequency = (y, instrumentConfig) => {
-    if (y === null || y === undefined || !instrumentConfig) return null;
+  const calculateFrequency = (y) => {
+    if (y === null || y === undefined) return null;
     
-    const { frequencyRange } = instrumentConfig;
     const normalizedY = (y - graphBounds.yMin)/(graphBounds.yMax-graphBounds.yMin);
-    return frequencyRange.min + normalizedY * (frequencyRange.max - frequencyRange.min);
+    return GLOBAL_FREQUENCY_RANGE.min + normalizedY * (GLOBAL_FREQUENCY_RANGE.max - GLOBAL_FREQUENCY_RANGE.min);
   };
 
   const calculatePan = (x) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { Check, X, Guitar, Music } from "lucide-react";
+import { Check, X, Music, Wind, Zap } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
 import { useInstruments } from "../../../context/InstrumentsContext";
 import { 
@@ -182,19 +182,19 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle, announceStatus })
   };
 
   const displayName = name || `Function ${index + 1}`;
-  const currentInstrument = getFunctionInstrumentN(functionDefinitions, index) || "guitar";
+  const currentInstrument = getFunctionInstrumentN(functionDefinitions, index) || "clarinet";
 
   // Get appropriate icon based on instrument
   const getInstrumentIcon = (instrumentName) => {
     switch (instrumentName) {
-      case 'guitar':
-        return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
-      case 'flute':
       case 'clarinet':
-      case 'organ':
         return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
+      case 'flute':
+        return <Wind className="w-4 h-4 text-icon" aria-hidden="true" />;
+      case 'organ':
+        return <Zap className="w-4 h-4 text-icon" aria-hidden="true" />;
       default:
-        return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
+        return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
     }
   };
 

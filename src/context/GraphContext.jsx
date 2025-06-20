@@ -78,7 +78,7 @@ const initGraphObject = {
       "type": "function",
       "functionString": "sin(x)",
       "isActive": true,
-      "instrument": "flute",
+      "instrument": "organ",
       "color": "#0000FF",           // optional
       "pointOfInterests": [
         {
