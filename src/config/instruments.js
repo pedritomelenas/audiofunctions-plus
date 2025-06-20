@@ -20,7 +20,7 @@ export const GLOBAL_FREQUENCY_RANGE = { // from third to fifth octave approximat
 const createOrganInstrument = () => {
   // 1) FM Synth with different characteristics from clarinet/flute
   const fmSynth = new Tone.FMSynth({
-    volume: -8,
+    volume: -18,
     detune: -5,
     portamento: 0.1,
     harmonicity: 4.5,  // Higher harmonicity for more complex timbre
@@ -169,7 +169,7 @@ export const createInstruments = () => [
   {
     name: "clarinet",
     createInstrument: () => new Tone.FMSynth({
-      volume: -6,
+      volume: -8,
       detune: 3,
       portamento: 0,
       harmonicity: 2,
@@ -210,7 +210,7 @@ export const createInstruments = () => [
   {
     name: "flute",
     createInstrument: () => new Tone.FMSynth({
-      volume: -8,
+      volume: -6,
       harmonicity: 1.0,
       modulationIndex: 0.5,
       oscillator: { type: "sine" },

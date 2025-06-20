@@ -249,8 +249,12 @@ const GraphView = () => {
         PlayFunction.timer = null;
       }
       // Ensure cursors remain at their last position when playback stops
+      // Only update if we have a valid x position and it's different from current cursor positions
       if (PlayFunction.x !== undefined) {
-        updateCursors(PlayFunction.x);
+        const currentX = cursorCoords && cursorCoords.length > 0 ? parseFloat(cursorCoords[0].x) : undefined;
+        if (currentX === undefined || Math.abs(currentX - PlayFunction.x) > 0.01) {
+          updateCursors(PlayFunction.x);
+        }
       }
     }
 
@@ -268,7 +272,7 @@ const GraphView = () => {
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, graphBounds, PlayFunction.active]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source]);
 
   useEffect(() => {
     if (boardRef.current) {

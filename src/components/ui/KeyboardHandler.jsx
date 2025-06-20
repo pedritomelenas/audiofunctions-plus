@@ -127,9 +127,15 @@ export default function KeyboardHandler() {
 
       const handleKeyUp = (e) => {
         pressedKeys.current.delete(e.key.toLowerCase());
-        // If the arrow keys are released, stop move
+        // If the arrow keys are released, stop move but maintain the last cursor position
         if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
-          setPlayFunction(prev => prev.source === "keyboard" ? { ...prev, active: false } : prev);
+          setPlayFunction(prev => {
+            if (prev.source === "keyboard") {
+              // Keep the current x position and just set active to false
+              return { ...prev, active: false };
+            }
+            return prev;
+          });
         }
       };
   
