@@ -1,14 +1,14 @@
 import React from "react";
 import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
+  ChartArea, FileChartLine, Grid3X3, Volume2, VolumeX } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
 
 export const useKBarActions = () => {
   const { openDialog } = useDialog();
-  const { setFunctionInput } = useGraphContext();
+  const { setFunctionInput, isAudioEnabled, setIsAudioEnabled } = useGraphContext();
 
   return [
     {
@@ -20,6 +20,17 @@ export const useKBarActions = () => {
       icon: <List className="size-5 shrink-0 opacity-70" />,
     },
     {
+      id: "toggle-audio",
+      name: "Start/Stop Audio",
+      shortcut: [""],
+      keywords: "audio, sound, enable, disable, start, stop, toggle",
+      parent: "quick-options",
+      perform: () => setIsAudioEnabled(prev => !prev),
+      icon: isAudioEnabled 
+        ? <VolumeX className="size-5 shrink-0 opacity-70" /> 
+        : <Volume2 className="size-5 shrink-0 opacity-70" />,
+    },
+    {
       id: "switch-function",
       name: "Switch Function to tan(x)",
       // shortcut: ["s"],
@@ -27,15 +38,6 @@ export const useKBarActions = () => {
       parent: "quick-options",
       perform: () => setFunctionInput("tan(x)"),
       icon: <ChartSpline  className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "play-audio",
-      name: "Play Audio",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => console.log("Play Audio triggered"),
-      icon: <Play className="size-5 shrink-0 opacity-70" />,
     },
     {
       id: "change-audio-speed",
