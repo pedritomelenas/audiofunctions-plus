@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from "react";
 import EditFunctionDialog from "../components/ui/dialogs/EditFunctionDialog";
 import ChangeGraphBoundDialog from "../components/ui/dialogs/ChangeGraphBoundDialog";
 import ShowHideFunctionsDialog from "../components/ui/dialogs/ShowHideFunctionsDialog";
+import MovementAdjustmentsDialog from "../components/ui/dialogs/MovementAdjustmentsDialog";
 
 const DialogContext = createContext();
 
@@ -32,6 +33,12 @@ export function DialogProvider({ children }) {
 
       <ShowHideFunctionsDialog
         isOpen={dialog.type === "showHide-functions"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <MovementAdjustmentsDialog
+        isOpen={dialog.type === "movement-adjustments"}
         onClose={closeDialog}
         {...dialog.props}
       />

@@ -159,5 +159,13 @@ export const useKBarActions = () => {
       perform: () => openDialog("showHide-functions"),
       icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
     },
+    {
+      id: "movement-adjustments",
+      name: "Movement Adjustments",
+      shortcut: ["m"],
+      keywords: "movement, speed, step, navigation, adjustments",
+      perform: () => openDialog("movement-adjustments"),
+      icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
+    },
   ];
 };
