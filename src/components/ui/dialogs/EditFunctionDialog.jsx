@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { Delete, Guitar } from "lucide-react";
+import { Delete, Music, Wind, Zap, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
 import { 
   getFunctionCount, 
   getFunctionStringN, 
   getFunctionTypeN,
+  getFunctionInstrumentN,
   addFunction,
   removeFunctionN,
   updateFunctionN
@@ -40,7 +41,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       type: "function",
       functionString: "",
       isActive: true,
-      instrument: "guitar",
+      instrument: "clarinet",
       pointOfInterests: [],
       landmarks: []
     };
@@ -56,7 +57,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       type: "piecewise_function",
       functionString: "[[,]]",
       isActive: true,
-      instrument: "guitar",
+      instrument: "clarinet",
       pointOfInterests: [],
       landmarks: []
     };
@@ -148,6 +149,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                   key={functionDef.id}
                   index={index}
                   value={getFunctionStringN(functionDefinitions, index)}
+                  instrument={getFunctionInstrumentN(functionDefinitions, index)}
                   onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
                   onAccept={onClose}
@@ -157,6 +159,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                   key={functionDef.id}
                   index={index}
                   value={getFunctionStringN(functionDefinitions, index)}
+                  instrument={getFunctionInstrumentN(functionDefinitions, index)}
                   onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
                   onAccept={onClose}
@@ -200,9 +203,23 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
   );
 };
 
+// Helper function to get instrument icon
+const getInstrumentIcon = (instrumentName) => {
+  switch (instrumentName) {
+    case 'clarinet':
+      return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
+    case 'flute':
+      return <Wind className="w-4 h-4 text-icon" aria-hidden="true" />;
+    case 'organ':
+      return <Zap className="w-4 h-4 text-icon" aria-hidden="true" />;
+    case 'guitar':
+      return <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />;
+    default:
+      return <Music className="w-4 h-4 text-icon" aria-hidden="true" />;
+  }
+};
 
-
-const FunctionContainer = ({ index, value, onChange, onDelete, onAccept }) => {
+const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -252,7 +269,7 @@ const FunctionContainer = ({ index, value, onChange, onDelete, onAccept }) => {
             className="btn-neutral"
             aria-label={`Change instrument for function ${index + 1}`}
           >
-            <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />
+            {getInstrumentIcon(instrument)}
           </button>
           <button
             type="button"
@@ -269,7 +286,7 @@ const FunctionContainer = ({ index, value, onChange, onDelete, onAccept }) => {
 };
 
 
-const PiecewiseFunctionContainer = ({ index, value, onChange, onDelete, onAccept }) => {
+const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -477,7 +494,7 @@ const PiecewiseFunctionContainer = ({ index, value, onChange, onDelete, onAccept
             className="btn-neutral"
             aria-label={`Change instrument for piecewise function ${index + 1}`}
           >
-            <Guitar className="w-4 h-4 text-icon" aria-hidden="true" />
+            {getInstrumentIcon(instrument)}
           </button>
           
           <button
