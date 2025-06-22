@@ -1,9 +1,27 @@
 import { useRegisterActions, Priority } from "kbar";
-import { Volume2, VolumeX } from "lucide-react"
+import { Volume2, VolumeX, MapPin } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
+import { getFunctionNameN } from "../../utils/graphObjectOperations";
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions } = useGraphContext();
+
+  const showCoordinatesAlert = () => {
+    console.log("Showing coordinates alert");
+    if (!cursorCoords || cursorCoords.length === 0) {
+        alert("No cursor position available");
+        return;
+    }
+
+    const messages = cursorCoords.map(coord => {
+        const functionIndex = functionDefinitions.findIndex(f => f.id === coord.functionId);
+        const functionName = getFunctionNameN(functionDefinitions, functionIndex) || `Function ${functionIndex + 1}`;
+        return `${functionName}: x = ${coord.x}, y = ${coord.y}`;
+    });
+
+    const message = messages.join('\n');
+    alert(`Current Coordinates:\n\n${message}`);
+  };
 
   // toggle audio
   useRegisterActions([
@@ -21,6 +39,19 @@ export const useDynamicKBarActions = () => {
     }
   ], [isAudioEnabled]);
 
+  // show coordinates alert
+  useRegisterActions([
+    {
+      id: "show-coordinates",
+      name: "Show Current Coordinates",
+      shortcut: ["c"],
+      keywords: "coordinates, position, cursor, show alert accessibility",
+      parent: "quick-options",
+      priority: Priority.HIGH,
+      perform: showCoordinatesAlert,
+      icon: <MapPin className="size-5 shrink-0 opacity-70" />,
+    }
+  ], [cursorCoords, functionDefinitions]);
 
   return null;
 };
