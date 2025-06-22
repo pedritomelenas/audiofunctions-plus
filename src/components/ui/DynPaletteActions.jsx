@@ -1,10 +1,12 @@
 import { useRegisterActions, Priority } from "kbar";
-import { Volume2, VolumeX, MapPin } from "lucide-react"
+import { Volume2, VolumeX, MapPin, Eye, EyeOff, Settings, ChartSpline } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
-import { getFunctionNameN } from "../../utils/graphObjectOperations";
+import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
+import { useDialog } from "../../context/DialogContext";
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { openDialog } = useDialog();
 
   const showCoordinatesAlert = () => {
     console.log("Showing coordinates alert");
@@ -38,6 +40,7 @@ export const useDynamicKBarActions = () => {
         : <Volume2 className="size-5 shrink-0 opacity-70" />,
     }
   ], [isAudioEnabled]);
+
   // show coordinates alert
   useRegisterActions([
     {
@@ -50,6 +53,51 @@ export const useDynamicKBarActions = () => {
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     }
   ], [cursorCoords]);
+
+  // Create parent element for Functions section and function toggle actions
+  const functionsActions = [
+    // Parent element for Functions
+    {
+      id: "show/hide-functions",
+      name: "Show/hide Functions",
+      shortcut: ["f"],
+      keywords: "functions, toggle, show, hide, manage",
+      priority: Priority.NORMAL,
+      icon: <Settings className="size-5 shrink-0 opacity-70" />,
+    },
+
+    {
+      id: "toggle-function",
+      name: "Visibility Menu",
+      shortcut: ["t"],
+      keywords: "toggle, activate, deactivate, function, enable, disable",
+      parent: "show/hide-functions",
+      perform: () => openDialog("showHide-functions"),
+      icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
+    },
+    // Individual function toggle actions
+    ...(functionDefinitions || []).map((func, index) => {
+      const functionName = getFunctionNameN(functionDefinitions, index) || `Function ${index + 1}`;
+      const isActive = func.isActive;
+      
+      return {
+        id: `toggle-function-${func.id}`,
+        name: isActive ? `Hide ${functionName}` : `Show ${functionName}`,
+        keywords: `function, toggle, ${functionName}, ${isActive ? 'hide, disable, deactivate' : 'show, enable, activate'}`,
+        parent: "show/hide-functions",
+        priority: Priority.NORMAL,
+        perform: () => {
+          const updatedDefinitions = updateFunctionN(functionDefinitions, index, { isActive: !isActive });
+          setFunctionDefinitions(updatedDefinitions);
+        },
+        icon: isActive 
+          ? <EyeOff className="size-5 shrink-0 opacity-70" /> 
+          : <Eye className="size-5 shrink-0 opacity-70" />,
+      };
+    })
+  ];
+
+  useRegisterActions(functionsActions, [functionDefinitions]);
 
   return null;
 };
