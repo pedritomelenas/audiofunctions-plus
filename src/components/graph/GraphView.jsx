@@ -194,17 +194,17 @@ const GraphView = () => {
           try {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
-            if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+            //if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
                 y: y.toFixed(2)
               });
-            } else {
-              console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
-              cursor.hide();
-            }
+            //} else {
+            //  console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              //cursor.hide();
+            //}
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
             cursor.hide();
