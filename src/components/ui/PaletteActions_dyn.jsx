@@ -105,7 +105,7 @@ export const useDynamicKBarActions = () => {
     {
       id: "show/hide-functions",
       name: "Show/hide Functions",
-      shortcut: ["f"],
+      shortcut: ["h"],
       keywords: "functions, toggle, show, hide, manage",
       icon: <Settings className="size-5 shrink-0 opacity-70" />,
     },
