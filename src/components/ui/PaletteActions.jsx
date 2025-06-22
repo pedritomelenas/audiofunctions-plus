@@ -5,10 +5,14 @@ import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut,
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
+import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
 
 export const useKBarActions = () => {
   const { openDialog } = useDialog();
   const { setFunctionInput, isAudioEnabled, setIsAudioEnabled } = useGraphContext();
+
+  // Import the zoom function
+  const ZoomBoard = useZoomBoard();
 
   return [
     {
@@ -18,26 +22,6 @@ export const useKBarActions = () => {
       keywords: "quick, quickoptions",
       // perform: () => {},
       icon: <List className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "toggle-audio",
-      name: "Start/Stop Audio",
-      shortcut: [""],
-      keywords: "audio, sound, enable, disable, start, stop, toggle",
-      parent: "quick-options",
-      perform: () => setIsAudioEnabled(prev => !prev),
-      icon: isAudioEnabled 
-        ? <VolumeX className="size-5 shrink-0 opacity-70" /> 
-        : <Volume2 className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "switch-function",
-      name: "Switch Function to tan(x)",
-      // shortcut: ["s"],
-      keywords: "switch, switch function",
-      parent: "quick-options",
-      perform: () => setFunctionInput("tan(x)"),
-      icon: <ChartSpline  className="size-5 shrink-0 opacity-70" />,
     },
     {
       id: "change-audio-speed",
@@ -54,7 +38,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       // keywords: ", ",
       parent: "quick-options",
-      perform: () => {},
+      perform: () => ZoomBoard(false),
       icon: <ZoomIn className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -63,7 +47,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       // keywords: ", ",
       parent: "quick-options",
-      perform: () => {},
+      perform: () => ZoomBoard(true),
       icon: <ZoomOut className="size-5 shrink-0 opacity-70" />,
     },
 

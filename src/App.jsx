@@ -11,6 +11,7 @@ import { DialogProvider } from './context/DialogContext';
 import Header from './components/ui/Header';
 import { InstrumentsProvider } from './context/InstrumentsContext';
 import KeyboardHandler from "./components/ui/KeyboardHandler";
+import { DynamicPaletteActions } from './components/ui/DynPaletteActions';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ const KBarWrapper = () => {
 
   return (
     <KBarProvider actions={actions}>
+      <DynamicPaletteActions />
       <CommandBar />
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
         <Header />
