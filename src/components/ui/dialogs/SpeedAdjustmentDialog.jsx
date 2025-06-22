@@ -2,29 +2,21 @@ import React, { useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { useGraphContext } from "../../../context/GraphContext";
 
-const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
+const SpeedAdjustmentDialog = ({ isOpen, onClose }) => {
   const { PlayFunction, setPlayFunction } = useGraphContext();
   const speedBackup = useRef(null);
-  const stepSizeBackup = useRef(null);
-  
-  // Temporary state for stepSize (no functionality yet)
-  const [tempStepSize, setTempStepSize] = React.useState(1);
 
   useEffect(() => {
     if (isOpen) {
       speedBackup.current = PlayFunction.speed;
-      stepSizeBackup.current = tempStepSize;
-      console.log("Open: speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
+      console.log("Open: speed =", speedBackup.current);
     }
-  }, [isOpen, PlayFunction.speed, tempStepSize]);
+  }, [isOpen, PlayFunction.speed]);
 
   const handleCancel = () => {
-    console.log("Cancel: restoring speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
+    console.log("Cancel: restoring speed =", speedBackup.current);
     if (speedBackup.current !== null) {
       setPlayFunction(prev => ({ ...prev, speed: speedBackup.current }));
-    }
-    if (stepSizeBackup.current !== null) {
-      setTempStepSize(stepSizeBackup.current);
     }
     onClose();
   };
@@ -33,7 +25,6 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      // Call the accept function directly
       if (onClose) {
         onClose();
       }
@@ -51,11 +42,8 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="w-full max-w-lg bg-background rounded-lg p-6 shadow-lg">
           <DialogTitle className="text-lg font-bold text-titles">
-            Movement Adjustments
+            Speed Adjustment
           </DialogTitle>
-          <Description className="text-descriptions">
-            Adjust movement and navigation settings for the graph.
-          </Description>
 
           <br />
 
@@ -75,24 +63,6 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
                 onKeyDown={handleKeyDown}
                 className="text-input-inner"
                 aria-label="Audio playback speed"
-              />
-            </div>
-
-            {/* Step Size Input */}
-            <div className="text-input-outer">
-              <div className="text-input-label">
-                Step Size:
-              </div>
-              <input
-                id="stepsize-input"
-                type="number"
-                value={tempStepSize}
-                onChange={(e) =>
-                  setTempStepSize(parseFloat(e.target.value))
-                }
-                onKeyDown={handleKeyDown}
-                className="text-input-inner"
-                aria-label="Navigation step size"
               />
             </div>
           </div>
@@ -120,4 +90,4 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
   );
 };
 
-export default MovementAdjustmentsDialog;
+export default SpeedAdjustmentDialog;

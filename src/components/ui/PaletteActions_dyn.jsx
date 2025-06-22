@@ -74,7 +74,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       // keywords: ", ",
       parent: "quick-options",
-      perform: () => console.log("Change Audio Speed triggered"),
+      perform: () => openDialog("speed-adjustment"),
       icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
     },
     {
