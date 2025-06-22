@@ -38,20 +38,18 @@ export const useDynamicKBarActions = () => {
         : <Volume2 className="size-5 shrink-0 opacity-70" />,
     }
   ], [isAudioEnabled]);
-
   // show coordinates alert
   useRegisterActions([
     {
       id: "show-coordinates",
       name: "Show Current Coordinates",
       shortcut: ["c"],
-      keywords: "coordinates, position, cursor, show alert accessibility",
-      parent: "quick-options",
-      priority: Priority.HIGH,
+      keywords: "coordinates position cursor show alert accessibility",
+      priority: Priority.High,
       perform: showCoordinatesAlert,
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     }
-  ], [cursorCoords, functionDefinitions]);
+  ], [cursorCoords]);
 
   return null;
 };
