@@ -170,6 +170,12 @@ const GraphSonification = () => {
       
       if (instrument && channel && instrumentConfig) {
         if (coords) {
+          if(parseFloat(coords.y) < graphBounds.yMin || parseFloat(coords.y) > graphBounds.yMax) {
+            // If y coordinate is out of bounds, stop the sound
+            // we should play an earcon here
+            stopTone(func.id);
+            return;
+          }
           // We have coordinates for this function
           const pan = calculatePan(parseFloat(coords.x));
           
