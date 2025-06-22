@@ -77,6 +77,8 @@ function createEndPoints(txtraw,board){
 }
 
 const GraphView = () => {
+  const wrapperRef = useRef(null);
+  const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
   const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints = [];
@@ -299,7 +301,63 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
-  return <div id="jxgbox" style={{ width: "100%", height: "100%" }} />;
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const handleKeyDown = (e) => {
+      // only handle key events when the wrapper is focused
+      if (document.activeElement !== wrapper) return;
+
+      // ESCAPE to exit the application
+      if (e.key === 'Escape') {
+        wrapper.blur(); // Focus entfernen
+        return;
+      }
+      
+      // TAB to allow normal tabbing through elements
+      if (e.key === 'Tab') {
+        return; // Not preventing default to allow normal tabbing
+      }
+
+      // Only intercept graph-specific keys
+      const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
+      if (!graphKeys.includes(e.key)) {
+        return; // Other keys are passed through normally
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
+          break;
+        case 'ArrowRight':
+          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
+          break;
+      }
+    };
+
+    wrapper.addEventListener('keydown', handleKeyDown);
+    return () => wrapper.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <div 
+      ref={wrapperRef}
+      role="application"
+      tabIndex={0}
+      aria-label="Interactive graph."
+      style={{ outline: 'none', width: "100%", height: "100%" }}
+    >
+      <div 
+        ref={graphContainerRef}
+        id="jxgbox" 
+        style={{ width: "100%", height: "100%", outline: 'none' }}
+      />
+    </div>
+  );
 };
 
 export default GraphView;
