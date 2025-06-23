@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Delete, Music, Wind, Zap, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
+import { useInstruments } from "../../../context/InstrumentsContext"; // Add this import
 import { 
   getFunctionCount, 
   getFunctionStringN, 
@@ -9,7 +10,8 @@ import {
   getFunctionInstrumentN,
   addFunction,
   removeFunctionN,
-  updateFunctionN
+  updateFunctionN,
+  setFunctionInstrumentN // Add this import
 } from "../../../utils/graphObjectOperations";
 
 const EditFunctionDialog = ({ isOpen, onClose }) => {
@@ -220,6 +222,9 @@ const getInstrumentIcon = (instrumentName) => {
 };
 
 const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
+  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { availableInstruments } = useInstruments();
+  
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -230,6 +235,37 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
       }
     }
   };
+
+  const handleInstrumentChange = (e) => {
+    e.stopPropagation(); // Prevent triggering other events
+    
+    const currentInstrument = instrument || "clarinet"; // Default to clarinet
+    const instrumentNames = availableInstruments.map(inst => inst.name);
+    
+    // Handle case where current instrument is not found in available instruments
+    let currentIndex = instrumentNames.indexOf(currentInstrument);
+    if (currentIndex === -1) {
+      currentIndex = 0; // Default to first instrument if current not found
+    }
+    
+    const nextIndex = (currentIndex + 1) % instrumentNames.length;
+    const nextInstrument = instrumentNames[nextIndex];
+
+    console.log(`Changing instrument for function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
+    console.log(`Available instruments: ${instrumentNames.join(', ')}`);
+    
+    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
+  const handleInstrumentKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleInstrumentChange(e);
+    }
+  };
+
   return (
     <div 
       className="mb-4" 
@@ -267,9 +303,13 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
           <button
             type="button"
             className="btn-neutral"
-            aria-label={`Change instrument for function ${index + 1}`}
+            onClick={handleInstrumentChange}
+            onKeyDown={handleInstrumentKeyDown}
+            aria-label={`Change instrument for function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
+            title={`Change instrument for function ${index + 1}. Current: ${instrument}`}
           >
             {getInstrumentIcon(instrument)}
+            <span className="sr-only">{instrument}</span>
           </button>
           <button
             type="button"
@@ -285,8 +325,10 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
   );
 };
 
-
 const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
+  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { availableInstruments } = useInstruments();
+  
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -295,6 +337,36 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       if (onAccept) {
         onAccept();
       }
+    }
+  };
+
+  const handleInstrumentChange = (e) => {
+    e.stopPropagation(); // Prevent triggering other events
+    
+    const currentInstrument = instrument || "clarinet"; // Default to clarinet
+    const instrumentNames = availableInstruments.map(inst => inst.name);
+    
+    // Handle case where current instrument is not found in available instruments
+    let currentIndex = instrumentNames.indexOf(currentInstrument);
+    if (currentIndex === -1) {
+      currentIndex = 0; // Default to first instrument if current not found
+    }
+    
+    const nextIndex = (currentIndex + 1) % instrumentNames.length;
+    const nextInstrument = instrumentNames[nextIndex];
+
+    console.log(`Changing instrument for piecewise function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
+    console.log(`Available instruments: ${instrumentNames.join(', ')}`);
+    
+    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
+  const handleInstrumentKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleInstrumentChange(e);
     }
   };
 
@@ -492,9 +564,13 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
           <button
             type="button"
             className="btn-neutral"
-            aria-label={`Change instrument for piecewise function ${index + 1}`}
+            onClick={handleInstrumentChange}
+            onKeyDown={handleInstrumentKeyDown}
+            aria-label={`Change instrument for piecewise function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
+            title={`Change instrument for piecewise function ${index + 1}. Current: ${instrument}`}
           >
             {getInstrumentIcon(instrument)}
+            <span className="sr-only">{instrument}</span>
           </button>
           
           <button
