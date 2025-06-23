@@ -109,7 +109,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       console.log("Open: ", functionDefinitionsBackup.current);
       announceStatus(`Edit functions dialog opened. ${getFunctionCount(functionDefinitions)} functions available.`);
     }
-  }, [isOpen, functionDefinitions]);
+  }, [isOpen]);
 
   const handleCancel = () => {
     console.log("Cancel: ", functionDefinitionsBackup.current);
@@ -444,6 +444,12 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     if (parts.length > 1) {
       setParts(prev => {
         const newParts = prev.filter((_, i) => i !== partIndex);
+        
+        // Convert back to the required format and call onChange
+        const partsArray = newParts.map(part => `[${part.function},${part.condition}]`);
+        const formatted = `[${partsArray.join(',')}]`;
+        onChange(formatted);
+        
         // Announce the removal
         setTimeout(() => {
           const statusDiv = document.querySelector('[aria-live="polite"]');
