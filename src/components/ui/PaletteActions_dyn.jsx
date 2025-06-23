@@ -49,7 +49,7 @@ export const useDynamicKBarActions = () => {
     {
       id: "toggle-audio",
       name: isAudioEnabled ? "Stop Audio" : "Start Audio",
-      shortcut: ["a"],
+      shortcut: [""],
       keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
       perform: () => setIsAudioEnabled(prev => !prev),
