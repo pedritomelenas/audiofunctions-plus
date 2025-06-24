@@ -1,163 +1,54 @@
-import './App.css'
-import { KBarProvider, useKBar } from 'kbar'
-import CommandBar from './assets/components/ui/af_kbar'
-
-import {ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
-  SwatchBook, Contrast, Sun, Moon,
-  ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
+import './App.css';
+import { KBarProvider, useKBar } from 'kbar';
+import CommandBar from './components/ui/CommandPalette';
+import GraphView from './components/graph/GraphView';
+import React from "react";
+import { GraphContextProvider } from "./context/GraphContext";
+import GraphControls from "./components/graph/GraphControls";
+import { useKBarActions } from './components/ui/PaletteActions';
+import GraphSonification from './components/graph/GraphSonification';
+import { DialogProvider } from './context/DialogContext';
+import Header from './components/ui/Header';
+import { InstrumentsProvider } from './context/InstrumentsContext';
+import KeyboardHandler from "./components/ui/KeyboardHandler";
+import { DynamicPaletteActions } from './components/ui/DynPaletteActions';
+import { PaletteActions } from './components/ui/PaletteActions_dyn';
 
 function App() {
+  return (
+    <InstrumentsProvider>
+      <GraphContextProvider>
+        <KeyboardHandler />
+        <DialogProvider>
+          <KBarWrapper />
+        </DialogProvider>
+      </GraphContextProvider>
+    </InstrumentsProvider>
+  );
+}
 
-  const actions = [
-    {
-      id: "quick-options",
-      name: "Quick Options",
-      shortcut: ["q"],
-      keywords: "quick, quickoptions",
-      // perform: () => {},
-      icon: <List className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "switch-function",
-      name: "Switch Function",
-      // shortcut: ["s"],
-      keywords: "switch, switch function",
-      parent: "quick-options",
-      perform: () => {},
-      icon: <ChartSpline  className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "play-audio",
-      name: "Play Audio",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => {},
-      icon: <Play className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "change-audio-speed",
-      name: "Change Audio Speed",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => {},
-      icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "zoom-in",
-      name: "Zoom In",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => {},
-      icon: <ZoomIn className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "zoom-out",
-      name: "Zoom Out",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => {},
-      icon: <ZoomOut className="size-5 shrink-0 opacity-70" />,
-    },
-
-
-    {
-      id: "diagram-options",
-      name: "Diagram Options",
-      // shortcut: [""],
-      keywords: "diagramm",
-      // perform: () => {},
-      icon: <FileChartLine className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "toggle-grid",
-      name: "Toggle Grid",
-      // shortcut: [""],
-      keywords: "grid",
-      parent: "diagram-options",
-      perform: () => {},
-      icon: <Grid3X3 className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "set-view",
-      name: "Set View",
-      // shortcut: [""],
-      keywords: "view",
-      parent: "diagram-options",
-      perform: () => {},
-      icon: <ChartArea className="size-5 shrink-0 opacity-70" />,
-    },
-
-
-
-
-    {
-      id: "change-function",
-      name: "edit functions",
-      shortcut: ["f"],
-      keywords: "function, change function, change graph, graph, edit function, edit graph",
-      //  section: "",
-      perform: () => {},
-      icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
-    },
-
-
-    {
-      id: "change-theme",
-      name: "Change Theme",
-      // shortcut: [""],
-      keywords: "theme",
-      // perform: () => {},
-      icon: <SwatchBook className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "light-theme",
-      name: "Light Theme",
-      // shortcut: [""],
-      keywords: "theme",
-      parent: "change-theme",
-      perform: () => {},
-      icon: <Sun className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "dark-theme",
-      name: "Dark Theme",
-      // shortcut: [""],
-      keywords: "theme",
-      parent: "change-theme",
-      perform: () => {},
-      icon: <Moon className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "high-contrast-theme",
-      name: "High Contrast Theme",
-      // shortcut: [""],
-      keywords: "theme",
-      parent: "change-theme",
-      perform: () => {},
-      icon: <Contrast className="size-5 shrink-0 opacity-70" />,
-    },
-
-  ]
+const KBarWrapper = () => {
+  // needed to wrap actions into GraphContextProvider
+  const actions = useKBarActions();
 
   return (
-    <>
-      <KBarProvider actions={actions}>
-        <CommandBar/>
-        <h1 className='text-3xl font-bold underline'>Under Construction</h1>
-        {/* <OpenCommandBarButton /> */}
-      </KBarProvider>
-    </>
-  )
-}
+    // <KBarProvider actions={actions}>
+    <KBarProvider>
+      {/* <DynamicPaletteActions /> */}
+      <PaletteActions />
+      <CommandBar />
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
+        <Header />
+        <div className="flex-1 overflow-auto">
+          {/* <GraphControls /> */}
+          <GraphView />
+          <GraphSonification />
+        </div>
+      </div>
+    </KBarProvider>
+  );
+};
 
+// OpenCommandBarButton removed as its functionality is now in the Header
 
-const OpenCommandBarButton = () => {
-  const { query } = useKBar();
-  return <button onClick={query.toggle}>Open CommandBar</button>;
-}
-
-export default App
+export default App;
