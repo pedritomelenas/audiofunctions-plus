@@ -205,24 +205,24 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle, announceStatus })
       className="mb-2" 
       role="group" 
       aria-labelledby={`function-toggle-${index}-label`}
-      aria-describedby={`function-toggle-${index}-status function-toggle-${index}-instrument`}
     >
       <div 
         className={`p-4 border rounded-lg cursor-pointer transition-colors select-none ${
           isActive 
-            ? "border-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30" 
+            ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
             : "border-gray-mddk bg-background hover:border-gray-md"
         }`}
-        onClick={onToggle}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        role="button"
-        aria-pressed={isActive}
-        aria-labelledby={`function-toggle-${index}-label`}
-        aria-describedby={`function-toggle-${index}-status function-toggle-${index}-instrument`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer flex-1"
+            onClick={onToggle}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="button"
+            aria-pressed={isActive}
+            aria-label={`Toggle ${displayName}. Currently ${isActive ? 'active' : 'inactive'}`}
+          >
             <div 
               className={`w-6 h-6 rounded-full flex items-center justify-center ${
                 isActive ? "bg-green-500" : "bg-gray-mddk"
@@ -243,34 +243,15 @@ const FunctionToggleItem = ({ index, name, isActive, onToggle, announceStatus })
             </span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span 
-              id={`function-toggle-${index}-status`}
-              className="sr-only"
-            >
-              {isActive ? 'Active' : 'Inactive'}
-            </span>
-            
-            <span 
-              id={`function-toggle-${index}-instrument`}
-              className="sr-only"
-            >
-              Current instrument: {currentInstrument}
-            </span>
-            
-            <button
-              type="button"
-              className="btn-neutral"
-              onClick={handleInstrumentChange}
-              onKeyDown={handleInstrumentKeyDown}
-              aria-label={`Change instrument for ${displayName}. Current instrument: ${currentInstrument}. Click to cycle to next instrument.`}
-              title={`Change instrument for ${displayName}. Current: ${currentInstrument}`}
-              tabIndex={0}
-            >
-              {getInstrumentIcon(currentInstrument)}
-              <span className="sr-only">{currentInstrument}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn-neutral ml-2"
+            onClick={handleInstrumentChange}
+            onKeyDown={handleInstrumentKeyDown}
+            aria-label={`Change instrument for ${displayName}. Current instrument: ${currentInstrument}. Press Enter to cycle to next instrument.`}
+          >
+            {getInstrumentIcon(currentInstrument)}
+          </button>
         </div>
       </div>
     </div>
