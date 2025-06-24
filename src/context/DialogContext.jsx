@@ -2,6 +2,9 @@
 import React, { createContext, useContext, useState } from "react";
 import EditFunctionDialog from "../components/ui/dialogs/EditFunctionDialog";
 import ChangeGraphBoundDialog from "../components/ui/dialogs/ChangeGraphBoundDialog";
+import ShowHideFunctionsDialog from "../components/ui/dialogs/ShowHideFunctionsDialog";
+import MovementAdjustmentsDialog from "../components/ui/dialogs/MovementAdjustmentsDialog";
+import SpeedAdjustmentDialog from "../components/ui/dialogs/SpeedAdjustmentDialog";
 
 const DialogContext = createContext();
 
@@ -25,6 +28,24 @@ export function DialogProvider({ children }) {
       
       <ChangeGraphBoundDialog
         isOpen={dialog.type === "change-graph-bound"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <ShowHideFunctionsDialog
+        isOpen={dialog.type === "showHide-functions"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <MovementAdjustmentsDialog
+        isOpen={dialog.type === "movement-adjustments"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <SpeedAdjustmentDialog
+        isOpen={dialog.type === "speed-adjustment"}
         onClose={closeDialog}
         {...dialog.props}
       />

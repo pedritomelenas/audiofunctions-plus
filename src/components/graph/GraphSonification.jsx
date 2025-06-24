@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import { useGraphContext } from "../../context/GraphContext";
 import { useInstruments } from "../../context/InstrumentsContext";
+import { GLOBAL_FREQUENCY_RANGE, InstrumentFrequencyType } from "../../config/instruments";
 import { 
   getActiveFunctions,
   getFunctionById,
@@ -21,6 +22,23 @@ const GraphSonification = () => {
   const { getInstrumentByName } = useInstruments();
   const instrumentsRef = useRef(new Map()); // Map to store instrument references
   const channelsRef = useRef(new Map()); // Map to store channel references
+  const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
+  const pinkNoiseRef = useRef(null); // Reference to pink noise synthesizer
+
+  // Initialize pink noise synthesizer
+  useEffect(() => {
+    if (!pinkNoiseRef.current) {
+      pinkNoiseRef.current = new Tone.Noise("pink").toDestination();
+      pinkNoiseRef.current.volume.value = -36; // dB - low volume background sound
+    }
+
+    return () => {
+      if (pinkNoiseRef.current) {
+        pinkNoiseRef.current.dispose();
+        pinkNoiseRef.current = null;
+      }
+    };
+  }, []);
 
   // Initialize channels for all functions
   useEffect(() => {
@@ -78,18 +96,19 @@ const GraphSonification = () => {
     activeFunctions.forEach(func => {
       if (!instrumentsRef.current.has(func.id)) {
         const functionIndex = getFunctionIndexById(functionDefinitions, func.id);
-        const instrument = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
-        if (instrument) {
-          instrumentsRef.current.set(func.id, instrument.instrument);
+        const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
+        if (instrumentConfig && instrumentConfig.createInstrument) {
+          const instrument = instrumentConfig.createInstrument();
+          instrumentsRef.current.set(func.id, instrument);
           
           // Connect to channel
           const channel = channelsRef.current.get(func.id);
           if (channel) {
-            instrument.instrument.connect(channel);
+            instrument.connect(channel);
             
             // Special case for organ
             if (getFunctionInstrumentN(functionDefinitions, functionIndex) === 'organ') {
-              instrument.instrument.start();
+              instrument.start();
             }
           }
         }
@@ -112,14 +131,34 @@ const GraphSonification = () => {
   useEffect(() => {
     if (!isAudioEnabled) {
       stopAllTones();
+      stopPinkNoise();
       return;
     }
 
     const activeFunctions = getActiveFunctions(functionDefinitions);
-    if (activeFunctions.length === 0) return;
+    if (activeFunctions.length === 0) {
+      stopPinkNoise();
+      return;
+    }
 
     // Create a map of function IDs to their cursor coordinates
     const coordsMap = new Map(cursorCoords.map(coord => [coord.functionId, coord]));
+
+    // Check if any active function has a value below 0
+    let hasNegativeValue = false;
+    activeFunctions.forEach(func => {
+      const coords = coordsMap.get(func.id);
+      if (coords && parseFloat(coords.y) < 0) {
+        hasNegativeValue = true;
+      }
+    });
+
+    // Control pink noise based on negative values
+    if (hasNegativeValue) {
+      startPinkNoise();
+    } else {
+      stopPinkNoise();
+    }
 
     // Process each active function
     activeFunctions.forEach(func => {
@@ -131,14 +170,26 @@ const GraphSonification = () => {
       
       if (instrument && channel && instrumentConfig) {
         if (coords) {
+          if(parseFloat(coords.y) < graphBounds.yMin || parseFloat(coords.y) > graphBounds.yMax) {
+            // If y coordinate is out of bounds, stop the sound
+            // we should play an earcon here
+            stopTone(func.id);
+            return;
+          }
           // We have coordinates for this function
-          const frequency = calculateFrequency(parseFloat(coords.y), instrumentConfig);
           const pan = calculatePan(parseFloat(coords.x));
           
-          if (frequency) {
-            startTone(func.id, frequency, pan);
+          if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
+            // Handle discrete pitch class-based sonification
+            handleDiscreteSonification(func.id, parseFloat(coords.y), pan, instrumentConfig);
           } else {
-            stopTone(func.id);
+            // Handle continuous frequency-based sonification
+            const frequency = calculateFrequency(parseFloat(coords.y));
+            if (frequency) {
+              startTone(func.id, frequency, pan);
+            } else {
+              stopTone(func.id);
+            }
           }
         } else {
           // No coordinates for this function, stop its sound
@@ -149,12 +200,11 @@ const GraphSonification = () => {
 
   }, [cursorCoords, isAudioEnabled, functionDefinitions, getInstrumentByName]);
 
-  const calculateFrequency = (y, instrumentConfig) => {
-    if (y === null || y === undefined || !instrumentConfig) return null;
+  const calculateFrequency = (y) => {
+    if (y === null || y === undefined) return null;
     
-    const { frequencyRange } = instrumentConfig;
     const normalizedY = (y - graphBounds.yMin)/(graphBounds.yMax-graphBounds.yMin);
-    return frequencyRange.min + normalizedY * (frequencyRange.max - frequencyRange.min);
+    return GLOBAL_FREQUENCY_RANGE.min + normalizedY * (GLOBAL_FREQUENCY_RANGE.max - GLOBAL_FREQUENCY_RANGE.min);
   };
 
   const calculatePan = (x) => {
@@ -163,6 +213,36 @@ const GraphSonification = () => {
     if (pan > 1) return 1;
     if (pan < -1) return -1;
     return pan;
+  };
+
+  const handleDiscreteSonification = (functionId, y, pan, instrumentConfig) => {
+    if (!instrumentConfig.availablePitchClasses || instrumentConfig.availablePitchClasses.length === 0) {
+      return;
+    }
+
+    // Map y value to pitch class index
+    const normalizedY = (y - graphBounds.yMin) / (graphBounds.yMax - graphBounds.yMin);
+    const pitchClassIndex = Math.floor(normalizedY * instrumentConfig.availablePitchClasses.length);
+    const clampedIndex = Math.max(0, Math.min(pitchClassIndex, instrumentConfig.availablePitchClasses.length - 1));
+    const currentPitchClass = instrumentConfig.availablePitchClasses[clampedIndex];
+
+    // Get the last pitch class for this function
+    const lastPitchClass = lastPitchClassesRef.current.get(functionId);
+
+    // Only trigger sound if pitch class has changed
+    if (currentPitchClass !== lastPitchClass) {
+      // Convert pitch class to frequency
+      const frequency = Tone.Frequency(currentPitchClass).toFrequency();
+      
+      // Stop any current sound
+      stopTone(functionId);
+      
+      // Start new sound
+      startTone(functionId, frequency, pan);
+      
+      // Update the last pitch class
+      lastPitchClassesRef.current.set(functionId, currentPitchClass);
+    }
   };
 
   const startTone = (functionId, frequency, pan) => {
@@ -193,6 +273,18 @@ const GraphSonification = () => {
     instrumentsRef.current.forEach((instrument, functionId) => {
       stopTone(functionId);
     });
+  };
+
+  const startPinkNoise = () => {
+    if (pinkNoiseRef.current && pinkNoiseRef.current.state === "stopped") {
+      pinkNoiseRef.current.start();
+    }
+  };
+
+  const stopPinkNoise = () => {
+    if (pinkNoiseRef.current && pinkNoiseRef.current.state === "started") {
+      pinkNoiseRef.current.stop();
+    }
   };
 
   return null;

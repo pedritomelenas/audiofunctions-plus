@@ -1,14 +1,18 @@
 import React from "react";
 import { ChartSpline, Play, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Grid3X3,  } from "lucide-react"
+  ChartArea, FileChartLine, Grid3X3, Volume2, VolumeX } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
+import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
 
 export const useKBarActions = () => {
   const { openDialog } = useDialog();
-  const { setFunctionInput } = useGraphContext();
+  const { setFunctionInput, isAudioEnabled, setIsAudioEnabled } = useGraphContext();
+
+  // Import the zoom function
+  const ZoomBoard = useZoomBoard();
 
   return [
     {
@@ -18,24 +22,6 @@ export const useKBarActions = () => {
       keywords: "quick, quickoptions",
       // perform: () => {},
       icon: <List className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "switch-function",
-      name: "Switch Function to tan(x)",
-      // shortcut: ["s"],
-      keywords: "switch, switch function",
-      parent: "quick-options",
-      perform: () => setFunctionInput("tan(x)"),
-      icon: <ChartSpline  className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "play-audio",
-      name: "Play Audio",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => console.log("Play Audio triggered"),
-      icon: <Play className="size-5 shrink-0 opacity-70" />,
     },
     {
       id: "change-audio-speed",
@@ -52,7 +38,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       // keywords: ", ",
       parent: "quick-options",
-      perform: () => {},
+      perform: () => ZoomBoard(false),
       icon: <ZoomIn className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -61,7 +47,7 @@ export const useKBarActions = () => {
       // shortcut: [""],
       // keywords: ", ",
       parent: "quick-options",
-      perform: () => {},
+      perform: () => ZoomBoard(true),
       icon: <ZoomOut className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -150,6 +136,19 @@ export const useKBarActions = () => {
       parent: "change-theme",
       perform: () => {setTheme("high-contrast")},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
+    },
+
+
+
+    
+    
+    {
+      id: "movement-adjustments",
+      name: "Movement Adjustments",
+      shortcut: ["m"],
+      keywords: "movement, speed, step, navigation, adjustments",
+      perform: () => openDialog("movement-adjustments"),
+      icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
     },
   ];
 };

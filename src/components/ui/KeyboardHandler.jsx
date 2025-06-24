@@ -1,6 +1,24 @@
 import { useEffect, useRef } from "react";
 import { useGraphContext } from "../../context/GraphContext";
 
+// Export the ZoomBoard function so it can be used in other components
+export const useZoomBoard = () => {
+  const { setGraphBounds } = useGraphContext();
+  
+  return (out, xOnly = false, yOnly = false) => {
+    const scaleFactor = {x: 0.9, y: 0.9};
+    if (out) { scaleFactor.x = 1.1; scaleFactor.y = 1.1; }
+    if (xOnly) scaleFactor.y = 1; //only x axis zoom
+    if (yOnly) scaleFactor.x = 1; //only y axis zoom
+    setGraphBounds(prev => ({
+      xMin: prev.xMin * scaleFactor.x,
+      xMax: prev.xMax * scaleFactor.x,
+      yMin: prev.yMin * scaleFactor.y,
+      yMax: prev.yMax * scaleFactor.y,
+    }));
+  };
+};
+
 export default function KeyboardHandler() {
     const { 
         setPlayFunction, 
@@ -12,21 +30,10 @@ export default function KeyboardHandler() {
         updateCursor
     } = useGraphContext();
 
-    const pressedKeys = useRef(new Set());  //remember pressed keys to detect combinations
+    const pressedKeys = useRef(new Set());
 
-    // Function to zoom the graph board in or out
-    const ZoomBoard = (out, xOnly, yOnly) => {
-        const scaleFactor = {x: 0.9, y: 0.9};
-        if (out) { scaleFactor.x = 1.1; scaleFactor.y = 1.1; }
-        if (xOnly) scaleFactor.y = 1; //only x axis zoom
-        if (yOnly) scaleFactor.x = 1; //only y axis zoom
-        setGraphBounds(prev => ({
-            xMin: prev.xMin * scaleFactor.x,
-            xMax: prev.xMax * scaleFactor.x,
-            yMin: prev.yMin * scaleFactor.y,
-            yMax: prev.yMax * scaleFactor.y
-        }));
-    }
+    // Use the exported zoom function
+    const ZoomBoard = useZoomBoard();
   
     useEffect(() => {
       const handleKeyDown = (event) => {
@@ -127,9 +134,15 @@ export default function KeyboardHandler() {
 
       const handleKeyUp = (e) => {
         pressedKeys.current.delete(e.key.toLowerCase());
-        // If the arrow keys are released, stop move
+        // If the arrow keys are released, stop move but maintain the last cursor position
         if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
-          setPlayFunction(prev => prev.source === "keyboard" ? { ...prev, active: false } : prev);
+          setPlayFunction(prev => {
+            if (prev.source === "keyboard") {
+              // Keep the current x position and just set active to false
+              return { ...prev, active: false };
+            }
+            return prev;
+          });
         }
       };
   

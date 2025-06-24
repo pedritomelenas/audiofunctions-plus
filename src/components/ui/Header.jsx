@@ -11,8 +11,8 @@ const Header = () => {
   return (
     <header className="w-full py-2 px-4 flex justify-between border-b border-border shadow bg-background">      
       <div className="flex items-center gap-4">
-        <img src="/logo.svg" alt="AudioFunctions+ logo" className="size-17" />
-        <h1 className="font-bold hidden sm:block">AudioFunctions+</h1>
+        <img src="/logo_beta.svg" alt="AudioFunctions+ logo" className="size-17" />
+        <h1 className="font-bold hidden sm:block">AudioFunctions+ [beta-version]</h1>
       </div>
       
       <div className="flex items-center gap-4">

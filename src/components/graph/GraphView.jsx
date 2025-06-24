@@ -77,6 +77,8 @@ function createEndPoints(txtraw,board){
 }
 
 const GraphView = () => {
+  const wrapperRef = useRef(null);
+  const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
   const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints = [];
@@ -85,6 +87,8 @@ const GraphView = () => {
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
   const cursorsRef = useRef(new Map()); // Store cursors for each function
   const parsedExpressionsRef = useRef(new Map()); // Store parsed expressions
+  const lastCursorPositionRef = useRef(null); // Store the last known cursor position
+  const pendingStateUpdateRef = useRef(null); // Store pending state update
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -178,6 +182,9 @@ const GraphView = () => {
       const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
       const snappedX = l.length > 0 ? l[0] : x;
       
+      // Store the current position immediately
+      lastCursorPositionRef.current = { x: snappedX };
+      
       // Update all active cursors
       const cursorPositions = [];
       activeFunctions.forEach(func => {
@@ -189,17 +196,17 @@ const GraphView = () => {
           try {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
-            if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+            //if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
                 y: y.toFixed(2)
               });
-            } else {
-              console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
-              cursor.hide();
-            }
+            //} else {
+            //  console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              //cursor.hide();
+            //}
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
             cursor.hide();
@@ -207,7 +214,18 @@ const GraphView = () => {
         }
       });
       
+      // Update audio immediately by calling setCursorCoords right away
       setCursorCoords(cursorPositions);
+      
+      // Clear any pending state update
+      if (pendingStateUpdateRef.current) {
+        clearTimeout(pendingStateUpdateRef.current);
+      }
+      
+      // The delayed state update is no longer needed since we update immediately
+      // But we keep the ref for potential future use
+      pendingStateUpdateRef.current = null;
+      
       board.update();
     };
     setUpdateCursor(() => updateCursors);
@@ -236,7 +254,6 @@ const GraphView = () => {
         const actualSpeed = PlayFunction.source === "keyboard" 
           ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
           : PlayFunction.speed;
-        
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         updateCursors(PlayFunction.x);
         if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
@@ -248,8 +265,10 @@ const GraphView = () => {
         clearInterval(PlayFunction.timer);
         PlayFunction.timer = null;
       }
-      // Ensure cursors remain at their last position when playback stops
-      if (PlayFunction.x !== undefined) {
+      // Use the last known position immediately
+      if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+        updateCursors(lastCursorPositionRef.current.x);
+      } else if (PlayFunction.x !== undefined) {
         updateCursors(PlayFunction.x);
       }
     }
@@ -268,7 +287,7 @@ const GraphView = () => {
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, graphBounds, PlayFunction.active]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source]);
 
   useEffect(() => {
     if (boardRef.current) {
@@ -282,7 +301,63 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
-  return <div id="jxgbox" style={{ width: "100%", height: "100%" }} />;
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const handleKeyDown = (e) => {
+      // only handle key events when the wrapper is focused
+      if (document.activeElement !== wrapper) return;
+
+      // ESCAPE to exit the application
+      if (e.key === 'Escape') {
+        wrapper.blur(); // Focus entfernen
+        return;
+      }
+      
+      // TAB to allow normal tabbing through elements
+      if (e.key === 'Tab') {
+        return; // Not preventing default to allow normal tabbing
+      }
+
+      // Only intercept graph-specific keys
+      const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
+      if (!graphKeys.includes(e.key)) {
+        return; // Other keys are passed through normally
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
+          break;
+        case 'ArrowRight':
+          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
+          break;
+      }
+    };
+
+    wrapper.addEventListener('keydown', handleKeyDown);
+    return () => wrapper.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <div 
+      ref={wrapperRef}
+      role="application"
+      tabIndex={0}
+      aria-label="Interactive graph."
+      style={{ outline: 'none', width: "100%", height: "100%" }}
+    >
+      <div 
+        ref={graphContainerRef}
+        id="jxgbox" 
+        style={{ width: "100%", height: "100%", outline: 'none' }}
+      />
+    </div>
+  );
 };
 
 export default GraphView;
