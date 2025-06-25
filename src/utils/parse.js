@@ -279,9 +279,9 @@ function isPiecewise(txt){
         }
     } 
     console.log("Intervals: ", intervals.map((e)=> e.toString()));    
-    // now it remans to check that the intervals are disjoint     
+    // now it remains to check that the intervals are disjoint     
     // first we sort the intervals by their first element
-    intervals.sort((a,b)=> a[0]-b[0]);
+    intervals.sort((a,b)=> (a[0]-b[0]==0) ? (a[1]-b[1]) : (a[0]-b[0]));
     console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
     for (let i=0;i<intervals.length-1;i++){
         const a = intervals[i];
