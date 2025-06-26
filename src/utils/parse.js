@@ -206,8 +206,12 @@ function isPiecewise(txt){
                     case "==":  
                         intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
                         break;
+                    case "!=":
+                        intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+                        break;
                 }
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }else{//equation of the form a op x
                 //console.log("variable second")
                 if (!isMathConstant(ineq.args[0].toString())){
