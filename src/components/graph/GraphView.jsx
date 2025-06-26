@@ -33,14 +33,14 @@ function createEndPoints(txtraw,board){
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
+                        xisolated.push(v);
                     }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'isolated-point', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
+                        xisolated.push(v);
                     }
                 }
             }
@@ -49,10 +49,16 @@ function createEndPoints(txtraw,board){
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
+                    if (ineq.op == "!="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
+                        xisolated.push(v);
+                    }
                 }else{ // we have x op a, with op in {<, >}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
+                    if (ineq.op == "!="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
+                        xisolated.push(v);
+                    }
                 }
             }
         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
@@ -76,7 +82,7 @@ function createEndPoints(txtraw,board){
             }
         }
     }
-    return [endpoints,xisolated];
+    return [endpoints,[...new Set(xisolated)]]; // we return the endpoints and the x-coordinates of isolated points, removing duplicates
 }
 
 const GraphView = () => {
