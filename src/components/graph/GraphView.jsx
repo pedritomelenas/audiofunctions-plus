@@ -13,7 +13,10 @@ const math = create(all, config)
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 // it should be previusly checked that it is a valid piecewise function or a math expression
 function createEndPoints(txtraw,board){
-    const parsed = transformMathConstants(math.parse(txtraw));
+    // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
+    // we are also transforming the math constants to be able to parse them
+    // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
+    const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
