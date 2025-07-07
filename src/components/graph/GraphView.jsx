@@ -90,6 +90,7 @@ const GraphView = () => {
   const lastCursorPositionRef = useRef(null); // Store the last known cursor position
   const pendingStateUpdateRef = useRef(null); // Store pending state update
   const currentTimerRef = useRef(null); // Store the current timer ID
+  const preservedCursorPositionsRef = useRef(new Map()); // Store cursor positions to preserve during function updates
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -117,6 +118,16 @@ const GraphView = () => {
 
     // Get active functions
     const activeFunctions = getActiveFunctions(functionDefinitions);
+
+    // Preserve current cursor positions before clearing
+    if (cursorCoords && Array.isArray(cursorCoords)) {
+      cursorCoords.forEach(coord => {
+        preservedCursorPositionsRef.current.set(coord.functionId, {
+          x: parseFloat(coord.x),
+          y: parseFloat(coord.y)
+        });
+      });
+    }
 
     // Clear old objects and cursors
     graphObjectsRef.current.clear();
@@ -157,11 +168,22 @@ const GraphView = () => {
       }
 
       // Find last known position for this function's cursor
+      let preservedPos = preservedCursorPositionsRef.current.get(func.id);
       let lastPos = cursorCoords && Array.isArray(cursorCoords)
         ? cursorCoords.find(c => c.functionId === func.id)
         : undefined;
-      let initialX = lastPos ? parseFloat(lastPos.x) : 0;
-      let initialY = lastPos ? parseFloat(lastPos.y) : 0;
+      
+      let initialX = 0;
+      let initialY = 0;
+      
+      // Use preserved position if available, otherwise use current cursorCoords
+      if (preservedPos) {
+        initialX = preservedPos.x;
+        initialY = preservedPos.y;
+      } else if (lastPos) {
+        initialX = parseFloat(lastPos.x);
+        initialY = parseFloat(lastPos.y);
+      }
 
       // Create cursor for this function at last known position (or [0,0])
       const cursor = board.create("point", [initialX, initialY], {
@@ -204,6 +226,8 @@ const GraphView = () => {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
             if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+              // Show cursor and update position
+              cursor.show();
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
@@ -212,17 +236,29 @@ const GraphView = () => {
               });
             } else {
               console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              // Hide cursor but still update its position to keep exploration moving
               cursor.hide();
+              // Position cursor at a point outside the visible area when function is invalid
+              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, graphBounds.yMax + 10]);
             }
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
+            // Hide cursor but still update its position to keep exploration moving
             cursor.hide();
+            // Position cursor at a point outside the visible area when function is invalid
+            cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, graphBounds.yMax + 10]);
           }
         }
       });
       
       // Update audio immediately by calling setCursorCoords right away
       setCursorCoords(cursorPositions);
+      
+      // Always ensure we have a valid last position, even if no functions are valid
+      if (cursorPositions.length === 0 && lastCursorPositionRef.current && lastCursorPositionRef.current.x !== snappedX) {
+        // If no functions are valid but we have a last position, update it to current x
+        lastCursorPositionRef.current = { x: snappedX };
+      }
       
       // Clear any pending state update
       if (pendingStateUpdateRef.current) {
@@ -237,21 +273,31 @@ const GraphView = () => {
     };
     setUpdateCursor(() => updateCursors);
 
+    // Update cursors to their preserved positions after recreation
+    if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+      updateCursors(lastCursorPositionRef.current.x);
+    }
+
+    // Clear preserved positions after they've been used
+    preservedCursorPositionsRef.current.clear();
+
     if (PlayFunction.active) {
       console.log("Play mode activated!");
       let startX;
       if (PlayFunction.source === "play") {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
       } else if (PlayFunction.source === "keyboard") {
-        // Use the current cursor position if available, otherwise default to edge
+        // Use the current cursor position if available, otherwise use last known position
         if (cursorCoords && cursorCoords.length > 0 && cursorCoords[0].x !== undefined) {
           startX = parseFloat(cursorCoords[0].x);
-          // Clamp to bounds
-          if (startX > graphBounds.xMax) startX = graphBounds.xMax;
-          if (startX < graphBounds.xMin) startX = graphBounds.xMin;
+        } else if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+          startX = lastCursorPositionRef.current.x;
         } else {
           startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
         }
+        // Clamp to bounds
+        if (startX > graphBounds.xMax) startX = graphBounds.xMax;
+        if (startX < graphBounds.xMin) startX = graphBounds.xMin;
       } else {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
       }

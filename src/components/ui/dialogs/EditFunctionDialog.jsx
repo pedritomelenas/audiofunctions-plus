@@ -328,6 +328,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
 const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
   const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
   const { availableInstruments } = useInstruments();
+  const needsUpdateRef = useRef(false);
   
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -444,11 +445,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     if (parts.length > 1) {
       setParts(prev => {
         const newParts = prev.filter((_, i) => i !== partIndex);
-        
-        // Convert back to the required format and call onChange
-        const partsArray = newParts.map(part => `[${part.function},${part.condition}]`);
-        const formatted = `[${partsArray.join(',')}]`;
-        onChange(formatted);
+        needsUpdateRef.current = true;
         
         // Announce the removal
         setTimeout(() => {
@@ -466,15 +463,21 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     setParts(prev => {
       const newParts = [...prev];
       newParts[partIndex] = { ...newParts[partIndex], [field]: value };
-      
-      // Convert back to the required format without JSON.stringify quotes
-      const partsArray = newParts.map(part => `[${part.function},${part.condition}]`);
-      const formatted = `[${partsArray.join(',')}]`;
-      onChange(formatted);
-      
+      needsUpdateRef.current = true;
       return newParts;
     });
   };
+
+  // Handle onChange calls after render is complete
+  useEffect(() => {
+    if (needsUpdateRef.current && parts.length > 0) {
+      // Convert back to the required format and call onChange
+      const partsArray = parts.map(part => `[${part.function},${part.condition}]`);
+      const formatted = `[${partsArray.join(',')}]`;
+      onChange(formatted);
+      needsUpdateRef.current = false;
+    }
+  }, [parts, onChange]);
   return (
     <div 
       className="mb-4" 
