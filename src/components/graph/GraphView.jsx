@@ -89,6 +89,7 @@ const GraphView = () => {
   const parsedExpressionsRef = useRef(new Map()); // Store parsed expressions
   const lastCursorPositionRef = useRef(null); // Store the last known cursor position
   const pendingStateUpdateRef = useRef(null); // Store pending state update
+  const currentTimerRef = useRef(null); // Store the current timer ID
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -179,6 +180,12 @@ const GraphView = () => {
     });
 
     const updateCursors = (x) => {
+      // Guard against board not being initialized
+      if (!board || !board.jc) {
+        console.warn("Board or board.jc not available for cursor update");
+        return;
+      }
+
       const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
       const snappedX = l.length > 0 ? l[0] : x;
       
@@ -196,17 +203,17 @@ const GraphView = () => {
           try {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
-            //if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+            if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
                 y: y.toFixed(2)
               });
-            //} else {
-            //  console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
-              //cursor.hide();
-            //}
+            } else {
+              console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              cursor.hide();
+            }
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
             cursor.hide();
@@ -249,7 +256,16 @@ const GraphView = () => {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
       }
       PlayFunction.x = startX;
-      PlayFunction.timer = setInterval(() => {
+      currentTimerRef.current = setInterval(() => {
+        // Guard against board not being initialized
+        if (!board || !board.jc) {
+          console.warn("Board not available for play function, stopping timer");
+          clearInterval(currentTimerRef.current);
+          currentTimerRef.current = null;
+          setPlayFunction(prev => ({ ...prev, active: false }));
+          return;
+        }
+        
         // Use direction to determine movement direction
         const actualSpeed = PlayFunction.source === "keyboard" 
           ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
@@ -257,24 +273,28 @@ const GraphView = () => {
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         updateCursors(PlayFunction.x);
         if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
-          PlayFunction.active = false;
+          clearInterval(currentTimerRef.current);
+          currentTimerRef.current = null;
+          setPlayFunction(prev => ({ ...prev, active: false }));
         }
       }, PlayFunction.interval);
     } else {
-      if (PlayFunction.timer !== null) {
-        clearInterval(PlayFunction.timer);
-        PlayFunction.timer = null;
+      if (currentTimerRef.current !== null) {
+        clearInterval(currentTimerRef.current);
+        currentTimerRef.current = null;
       }
       // Use the last known position immediately
-      if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
-        updateCursors(lastCursorPositionRef.current.x);
-      } else if (PlayFunction.x !== undefined) {
-        updateCursors(PlayFunction.x);
+      if (board && board.jc) {
+        if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+          updateCursors(lastCursorPositionRef.current.x);
+        } else if (PlayFunction.x !== undefined) {
+          updateCursors(PlayFunction.x);
+        }
       }
     }
 
     const moveHandler = (event) => {
-      if (!playActiveRef.current) {
+      if (!playActiveRef.current && board && board.jc) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
         updateCursors(x);
@@ -284,10 +304,20 @@ const GraphView = () => {
     board.on("move", moveHandler, { passive: true });
 
     return () => {
+      // Clear any running timer when component unmounts or dependencies change
+      if (currentTimerRef.current !== null) {
+        clearInterval(currentTimerRef.current);
+        currentTimerRef.current = null;
+      }
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
   }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source]);
+
+  // Update playActiveRef when PlayFunction.active changes
+  useEffect(() => {
+    playActiveRef.current = PlayFunction.active;
+  }, [PlayFunction.active]);
 
   useEffect(() => {
     if (boardRef.current) {
