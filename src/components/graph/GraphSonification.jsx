@@ -222,12 +222,12 @@ const GraphSonification = () => {
             
             if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
               // Handle discrete pitch class-based sonification
-              handleDiscreteSonification(func.id, parseFloat(coords.y), pan, instrumentConfig);
+              handleDiscreteSonification(func.id, parseFloat(coords.y), pan, instrumentConfig, coords.mouseY);
             } else {
               // Handle continuous frequency-based sonification
               const frequency = calculateFrequency(parseFloat(coords.y));
               if (frequency) {
-                startTone(func.id, frequency, pan);
+                startTone(func.id, frequency, pan, coords.mouseY);
               } else {
                 stopTone(func.id);
               }
@@ -286,7 +286,29 @@ const GraphSonification = () => {
     return pan;
   };
 
-  const handleDiscreteSonification = (functionId, y, pan, instrumentConfig) => {
+  const calculateVolume = (functionY, mouseY, graphBounds) => {
+    if (mouseY === null || mouseY === undefined) {
+      return 0; // Default volume when no mouse Y is available
+    }
+    
+    // Calculate distance between function value and mouse Y
+    const distance = Math.abs(functionY - mouseY);
+    const maxDistance = graphBounds.yMax - graphBounds.yMin;
+    
+    // Normalize distance (0 = on the function, 1 = maximum distance)
+    const normalizedDistance = Math.min(distance / maxDistance, 1);
+    
+    // Convert to volume: closer = louder, farther = quieter
+    // Use a less steep curve for discrete sonification - linear instead of exponential
+    const volume = 1 - normalizedDistance;
+    
+    // Convert to dB: volume of 1 = 0 dB (full volume), volume of 0 = -30 dB (quieter but not silent)
+    const volumeDB = (volume - 1) * 30;
+    
+    return volumeDB;
+  };
+
+  const handleDiscreteSonification = (functionId, y, pan, instrumentConfig, mouseY) => {
     try {
       if (!instrumentConfig.availablePitchClasses || instrumentConfig.availablePitchClasses.length === 0) {
         return;
@@ -309,8 +331,8 @@ const GraphSonification = () => {
         // Stop any current sound
         stopTone(functionId);
         
-        // Start new sound
-        startTone(functionId, frequency, pan);
+        // Start new sound with the actual function Y value for volume calculation
+        startTone(functionId, frequency, pan, mouseY, y);
         
         // Update the last pitch class
         lastPitchClassesRef.current.set(functionId, currentPitchClass);
@@ -322,7 +344,7 @@ const GraphSonification = () => {
     }
   };
 
-  const startTone = (functionId, frequency, pan) => {
+  const startTone = (functionId, frequency, pan, mouseY = null, functionY = null) => {
     const instrument = instrumentsRef.current.get(functionId);
     const channel = channelsRef.current.get(functionId);
     
@@ -340,12 +362,33 @@ const GraphSonification = () => {
       try {
         instrument.triggerAttack(frequency, startTime);
         channel.pan.value = pan;
+        
+        // Apply volume control based on mouse distance (only when mouseY is available)
+        if (mouseY !== null && mouseY !== undefined) {
+          // Use provided functionY if available (for discrete sonification), otherwise calculate from frequency
+          const actualFunctionY = functionY !== null ? functionY : (frequency - GLOBAL_FREQUENCY_RANGE.min) / (GLOBAL_FREQUENCY_RANGE.max - GLOBAL_FREQUENCY_RANGE.min) * (graphBounds.yMax - graphBounds.yMin) + graphBounds.yMin;
+          const volumeDB = calculateVolume(actualFunctionY, parseFloat(mouseY), graphBounds);
+          channel.volume.value = volumeDB;
+        } else {
+          // Reset to default volume when no mouse Y is available
+          channel.volume.value = 0;
+        }
       } catch (error) {
         console.warn(`Error starting tone for function ${functionId}:`, error);
         // Fallback: try to start immediately
         try {
           instrument.triggerAttack(frequency);
           channel.pan.value = pan;
+          
+          // Apply volume control in fallback as well
+          if (mouseY !== null && mouseY !== undefined) {
+            // Use provided functionY if available (for discrete sonification), otherwise calculate from frequency
+            const actualFunctionY = functionY !== null ? functionY : (frequency - GLOBAL_FREQUENCY_RANGE.min) / (GLOBAL_FREQUENCY_RANGE.max - GLOBAL_FREQUENCY_RANGE.min) * (graphBounds.yMax - graphBounds.yMin) + graphBounds.yMin;
+            const volumeDB = calculateVolume(actualFunctionY, parseFloat(mouseY), graphBounds);
+            channel.volume.value = volumeDB;
+          } else {
+            channel.volume.value = 0;
+          }
         } catch (fallbackError) {
           console.error(`Fallback error starting tone for function ${functionId}:`, fallbackError);
         }

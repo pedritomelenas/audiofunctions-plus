@@ -201,7 +201,7 @@ const GraphView = () => {
       cursorsRef.current.set(func.id, cursor);
     });
 
-    const updateCursors = (x) => {
+    const updateCursors = (x, mouseY = null) => {
       // Guard against board not being initialized
       if (!board || !board.jc) {
         console.warn("Board or board.jc not available for cursor update");
@@ -232,7 +232,8 @@ const GraphView = () => {
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
-                y: y.toFixed(2)
+                y: y.toFixed(2),
+                mouseY: mouseY !== null ? mouseY.toFixed(2) : null
               });
             } else {
               console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
@@ -343,7 +344,8 @@ const GraphView = () => {
       if (!playActiveRef.current && board && board.jc) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
-        updateCursors(x);
+        const y = coords[1];
+        updateCursors(x, y);
       }
     };
 
