@@ -209,7 +209,15 @@ const GraphView = () => {
       }
 
       const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
-      const snappedX = l.length > 0 ? l[0] : x;
+      let snappedX = l.length > 0 ? l[0] : x;
+      
+      // Clamp x position to prevent crossing chart boundaries
+      const tolerance = 0.02; // Same tolerance as in GraphSonification
+      if (snappedX <= graphBounds.xMin + tolerance) {
+        snappedX = graphBounds.xMin + tolerance;
+      } else if (snappedX >= graphBounds.xMax - tolerance) {
+        snappedX = graphBounds.xMax - tolerance;
+      }
       
       // Store the current position immediately
       lastCursorPositionRef.current = { x: snappedX };
@@ -226,13 +234,21 @@ const GraphView = () => {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
             if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+              // Clamp y position to prevent crossing vertical boundaries
+              let clampedY = y;
+              if (clampedY <= graphBounds.yMin + tolerance) {
+                clampedY = graphBounds.yMin + tolerance;
+              } else if (clampedY >= graphBounds.yMax - tolerance) {
+                clampedY = graphBounds.yMax - tolerance;
+              }
+              
               // Show cursor and update position
               cursor.show();
-              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
+              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, clampedY]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
-                y: y.toFixed(2),
+                y: clampedY.toFixed(2),
                 mouseY: mouseY !== null ? mouseY.toFixed(2) : null
               });
             } else {
@@ -318,8 +334,19 @@ const GraphView = () => {
           ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
           : PlayFunction.speed;
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
+        
+        // Clamp PlayFunction.x to prevent crossing boundaries
+        const tolerance = 0.02;
+        if (PlayFunction.x <= graphBounds.xMin + tolerance) {
+          PlayFunction.x = graphBounds.xMin + tolerance;
+        } else if (PlayFunction.x >= graphBounds.xMax - tolerance) {
+          PlayFunction.x = graphBounds.xMax - tolerance;
+        }
+        
         updateCursors(PlayFunction.x);
-        if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
+        
+        // Stop play function if we've reached the boundaries
+        if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
           clearInterval(currentTimerRef.current);
           currentTimerRef.current = null;
           setPlayFunction(prev => ({ ...prev, active: false }));
@@ -332,10 +359,10 @@ const GraphView = () => {
       }
       // Use the last known position immediately
       if (board && board.jc) {
-        if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
-          updateCursors(lastCursorPositionRef.current.x);
-        } else if (PlayFunction.x !== undefined) {
-          updateCursors(PlayFunction.x);
+      if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+        updateCursors(lastCursorPositionRef.current.x);
+      } else if (PlayFunction.x !== undefined) {
+        updateCursors(PlayFunction.x);
         }
       }
     }

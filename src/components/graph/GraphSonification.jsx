@@ -11,6 +11,7 @@ import {
   getFunctionInstrumentN,
   getFunctionIndexById
 } from "../../utils/graphObjectOperations";
+import audioSampleManager from "../../utils/audioSamples";
 
 const GraphSonification = () => {
   const { 
@@ -19,6 +20,13 @@ const GraphSonification = () => {
     graphBounds,
     functionDefinitions 
   } = useGraphContext();
+  
+  // Refs to track previous states for event detection
+  const prevCursorCoordsRef = useRef(new Map()); // Track previous cursor positions
+  const prevXSignRef = useRef(new Map()); // Track previous x coordinate signs for y-axis intersection
+  const boundaryTriggeredRef = useRef(new Map()); // Track if boundary event was recently triggered to avoid spam
+  const yAxisTriggeredRef = useRef(new Map()); // Track if y-axis intersection was recently triggered
+  const prevBoundaryStateRef = useRef(new Map()); // Track previous boundary state for each function
   
   const { getInstrumentByName } = useInstruments();
   const { isEditFunctionDialogOpen } = useDialog();
@@ -40,6 +48,28 @@ const GraphSonification = () => {
         pinkNoiseRef.current.dispose();
         pinkNoiseRef.current = null;
       }
+    };
+  }, []);
+
+  // Initialize audio sample manager only
+  useEffect(() => {
+    const initializeAudioSampleManager = async () => {
+      try {
+        // Wait for Tone.js to be fully initialized
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        await audioSampleManager.initialize();
+        console.log("Audio sample manager initialized (samples will load on-demand)");
+      } catch (error) {
+        console.error("Failed to initialize audio sample manager:", error);
+      }
+    };
+
+    initializeAudioSampleManager();
+
+    return () => {
+      // Cleanup audio sample manager
+      audioSampleManager.dispose();
     };
   }, []);
 
@@ -211,6 +241,21 @@ const GraphSonification = () => {
         
         if (instrument && channel && instrumentConfig) {
           if (coords) {
+            // Check for chart boundary events
+            checkChartBoundaryEvents(func.id, coords).catch(error => 
+              console.warn(`Error in chart boundary event check for function ${func.id}:`, error)
+            );
+            
+            // Check for y-axis intersection events
+            checkYAxisIntersectionEvents(func.id, coords).catch(error => 
+              console.warn(`Error in y-axis intersection event check for function ${func.id}:`, error)
+            );
+            
+            // Check for discontinuity/NaN events
+            checkDiscontinuityEvents(func.id, coords).catch(error => 
+              console.warn(`Error in discontinuity event check for function ${func.id}:`, error)
+            );
+            
             if(parseFloat(coords.y) < graphBounds.yMin || parseFloat(coords.y) > graphBounds.yMax) {
               // If y coordinate is out of bounds, stop the sound
               // we should play an earcon here
@@ -270,6 +315,48 @@ const GraphSonification = () => {
       }
     };
   }, [isEditFunctionDialogOpen, isAudioEnabled]);
+
+  // Clean up tracking refs when functions change
+  useEffect(() => {
+    // Clean up tracking refs for functions that no longer exist
+    const currentFunctionIds = new Set(functionDefinitions.map(func => func.id));
+    
+    // Clean up prevCursorCoordsRef
+    Array.from(prevCursorCoordsRef.current.keys()).forEach(functionId => {
+      if (!currentFunctionIds.has(functionId)) {
+        prevCursorCoordsRef.current.delete(functionId);
+      }
+    });
+    
+    // Clean up prevXSignRef
+    Array.from(prevXSignRef.current.keys()).forEach(functionId => {
+      if (!currentFunctionIds.has(functionId)) {
+        prevXSignRef.current.delete(functionId);
+      }
+    });
+    
+    // Clean up boundaryTriggeredRef (now handles boundary-specific keys)
+    Array.from(boundaryTriggeredRef.current.keys()).forEach(key => {
+      const functionId = key.split('_')[0]; // Extract functionId from boundary key
+      if (!currentFunctionIds.has(functionId)) {
+        boundaryTriggeredRef.current.delete(key);
+      }
+    });
+    
+    // Clean up prevBoundaryStateRef
+    Array.from(prevBoundaryStateRef.current.keys()).forEach(functionId => {
+      if (!currentFunctionIds.has(functionId)) {
+        prevBoundaryStateRef.current.delete(functionId);
+      }
+    });
+    
+    // Clean up yAxisTriggeredRef
+    Array.from(yAxisTriggeredRef.current.keys()).forEach(functionId => {
+      if (!currentFunctionIds.has(functionId)) {
+        yAxisTriggeredRef.current.delete(functionId);
+      }
+    });
+  }, [functionDefinitions]);
 
   const calculateFrequency = (y) => {
     if (y === null || y === undefined) return null;
@@ -425,6 +512,123 @@ const GraphSonification = () => {
   if (isEditFunctionDialogOpen && isAudioEnabled) {
     console.log("Sonification paused: Edit function dialog is open");
   }
+
+  // Event detection functions
+  const checkChartBoundaryEvents = async (functionId, coords) => {
+    const x = parseFloat(coords.x);
+    const y = parseFloat(coords.y);
+    const tolerance = 0.02; // Same tolerance as in GraphView
+    
+    // Check if cursor is at any of the four boundaries (cursor is clamped, so it can't go beyond)
+    const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < 0.001;
+    const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < 0.001;
+    const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < 0.001;
+    const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < 0.001;
+    
+    // Get previous boundary state for this function
+    const prevState = prevBoundaryStateRef.current.get(functionId) || {
+      left: false, right: false, bottom: false, top: false
+    };
+    
+    // Create a boundary key for this specific boundary
+    let boundaryKey = null;
+    if (isAtLeftBoundary) boundaryKey = `${functionId}_left`;
+    else if (isAtRightBoundary) boundaryKey = `${functionId}_right`;
+    else if (isAtBottomBoundary) boundaryKey = `${functionId}_bottom`;
+    else if (isAtTopBoundary) boundaryKey = `${functionId}_top`;
+    
+    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}, prevState=`, prevState);
+    
+    if (boundaryKey) {
+      // Check if we haven't recently triggered this specific boundary to avoid spam
+      const lastTriggered = boundaryTriggeredRef.current.get(boundaryKey);
+      const now = Date.now();
+      
+      if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown for responsive feedback
+        await playAudioSample("chart_border", { volume: -15 });
+        boundaryTriggeredRef.current.set(boundaryKey, now);
+        console.log(`Chart boundary event triggered for function ${functionId} at boundary: ${boundaryKey}`);
+      }
+    }
+    
+    // Update the previous boundary state
+    prevBoundaryStateRef.current.set(functionId, {
+      left: isAtLeftBoundary,
+      right: isAtRightBoundary,
+      bottom: isAtBottomBoundary,
+      top: isAtTopBoundary
+    });
+  };
+
+  const checkYAxisIntersectionEvents = async (functionId, coords) => {
+    const x = parseFloat(coords.x);
+    const prevXSign = prevXSignRef.current.get(functionId);
+    const currentXSign = Math.sign(x);
+    
+    // Check if we crossed the y-axis (x coordinate sign changed)
+    // Only trigger if we have a valid previous sign (not null/undefined) and signs are different
+    if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && currentXSign !== 0) {
+      const lastTriggered = yAxisTriggeredRef.current.get(functionId);
+      const now = Date.now();
+      
+      if (!lastTriggered || (now - lastTriggered) > 300) { // 300ms cooldown
+        await playAudioSample("y_axis_intersection", { volume: -12 });
+        yAxisTriggeredRef.current.set(functionId, now);
+        console.log(`Y-axis intersection event triggered for function ${functionId}`);
+      }
+    }
+    
+    // Update the previous x sign
+    prevXSignRef.current.set(functionId, currentXSign);
+  };
+
+  const checkDiscontinuityEvents = async (functionId, coords) => {
+    const y = parseFloat(coords.y);
+    
+    // Check if the function value is NaN, undefined, null, or infinite (discontinuity)
+    if (isNaN(y) || y === undefined || y === null || !isFinite(y)) {
+      // Check if we haven't recently triggered this event to avoid spam
+      const lastTriggered = boundaryTriggeredRef.current.get(`${functionId}_discontinuity`);
+      const now = Date.now();
+      
+      if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown for discontinuities
+        await playAudioSample("no_y", { volume: -10 });
+        boundaryTriggeredRef.current.set(`${functionId}_discontinuity`, now);
+        console.log(`Discontinuity event triggered for function ${functionId} at x=${coords.x}, y=${y}`);
+      }
+    }
+  };
+
+  // Helper function to play audio samples
+  const playAudioSample = async (sampleName, options = {}) => {
+    try {
+      await audioSampleManager.playSample(sampleName, options);
+    } catch (error) {
+      console.warn(`Failed to play audio sample ${sampleName}:`, error);
+    }
+  };
+
+  // Example function to demonstrate how to play samples during sonification
+  // You can call this function when specific events occur
+  const triggerSampleEvent = async (eventType) => {
+    try {
+      switch (eventType) {
+        case 'chart_border':
+          await playAudioSample('chart_border', { volume: -15 });
+          break;
+        case 'no_y':
+          await playAudioSample('no_y', { volume: -10 });
+          break;
+        case 'y_axis_intersection':
+          await playAudioSample('y_axis_intersection', { volume: -12 });
+          break;
+        default:
+          console.log(`Unknown event type: ${eventType}`);
+      }
+    } catch (error) {
+      console.warn(`Failed to trigger sample event ${eventType}:`, error);
+    }
+  };
 
   return null;
 };
