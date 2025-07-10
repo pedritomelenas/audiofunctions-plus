@@ -256,21 +256,23 @@ const GraphSonification = () => {
               console.warn(`Error in discontinuity event check for function ${func.id}:`, error)
             );
             
-            if(parseFloat(coords.y) < graphBounds.yMin || parseFloat(coords.y) > graphBounds.yMax) {
+            // Check if y coordinate is within chart bounds
+            const y = parseFloat(coords.y);
+            if (y < graphBounds.yMin || y > graphBounds.yMax) {
               // If y coordinate is out of bounds, stop the sound
-              // we should play an earcon here
               stopTone(func.id);
               return;
             }
+            
             // We have coordinates for this function
             const pan = calculatePan(parseFloat(coords.x));
             
             if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
               // Handle discrete pitch class-based sonification
-              handleDiscreteSonification(func.id, parseFloat(coords.y), pan, instrumentConfig, coords.mouseY);
+              handleDiscreteSonification(func.id, y, pan, instrumentConfig, coords.mouseY);
             } else {
               // Handle continuous frequency-based sonification
-              const frequency = calculateFrequency(parseFloat(coords.y));
+              const frequency = calculateFrequency(y);
               if (frequency) {
                 startTone(func.id, frequency, pan, coords.mouseY);
               } else {
@@ -537,7 +539,7 @@ const GraphSonification = () => {
     else if (isAtBottomBoundary) boundaryKey = `${functionId}_bottom`;
     else if (isAtTopBoundary) boundaryKey = `${functionId}_top`;
     
-    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}, prevState=`, prevState);
+    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}`);
     
     if (boundaryKey) {
       // Check if we haven't recently triggered this specific boundary to avoid spam
@@ -583,7 +585,18 @@ const GraphSonification = () => {
   };
 
   const checkDiscontinuityEvents = async (functionId, coords) => {
-    const y = parseFloat(coords.y);
+    // Handle both numeric and string representations of y
+    let y;
+    if (typeof coords.y === 'string') {
+      // If y is a string, try to parse it, but also check for special string values
+      if (coords.y === 'NaN' || coords.y === 'undefined' || coords.y === 'null' || coords.y === 'Infinity' || coords.y === '-Infinity') {
+        y = NaN; // Force NaN for these special cases
+      } else {
+        y = parseFloat(coords.y);
+      }
+    } else {
+      y = parseFloat(coords.y);
+    }
     
     // Check if the function value is NaN, undefined, null, or infinite (discontinuity)
     if (isNaN(y) || y === undefined || y === null || !isFinite(y)) {
@@ -594,7 +607,7 @@ const GraphSonification = () => {
       if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown for discontinuities
         await playAudioSample("no_y", { volume: -10 });
         boundaryTriggeredRef.current.set(`${functionId}_discontinuity`, now);
-        console.log(`Discontinuity event triggered for function ${functionId} at x=${coords.x}, y=${y}`);
+        console.log(`Discontinuity event triggered for function ${functionId} at x=${coords.x}, y=${coords.y}`);
       }
     }
   };

@@ -235,28 +235,35 @@ const GraphView = () => {
             // Check if y is a valid number
             if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
               // Clamp y position to prevent crossing vertical boundaries
-              let clampedY = y;
-              if (clampedY <= graphBounds.yMin + tolerance) {
-                clampedY = graphBounds.yMin + tolerance;
-              } else if (clampedY >= graphBounds.yMax - tolerance) {
-                clampedY = graphBounds.yMax - tolerance;
-              }
+              // let clampedY = y;
+              // if (clampedY <= graphBounds.yMin + tolerance) {
+              //   clampedY = graphBounds.yMin + tolerance;
+              // } else if (clampedY >= graphBounds.yMax - tolerance) {
+              //   clampedY = graphBounds.yMax - tolerance;
+              // }
               
               // Show cursor and update position
               cursor.show();
-              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, clampedY]);
+              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
-                y: clampedY.toFixed(2),
+                y: y.toFixed(2),
                 mouseY: mouseY !== null ? mouseY.toFixed(2) : null
               });
             } else {
               console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
-              // Hide cursor but still update its position to keep exploration moving
+              // Hide cursor visually but still pass the invalid y value for sonification
               cursor.hide();
               // Position cursor at a point outside the visible area when function is invalid
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, graphBounds.yMax + 10]);
+              // Still pass the invalid y value to cursor positions for sonification detection
+              cursorPositions.push({
+                functionId: func.id,
+                x: snappedX.toFixed(2),
+                y: y.toString(), // Pass the invalid y value as string to preserve NaN/undefined
+                mouseY: mouseY !== null ? mouseY.toFixed(2) : null
+              });
             }
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
