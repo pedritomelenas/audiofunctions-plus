@@ -106,14 +106,11 @@ const GraphView = () => {
           minorHeight: 3,
         },
       },
-      zoom: { enabled: true, needShift: false },
-      pan: { enabled: true, needShift: false, needTwoFingers: true},
+      zoom: { enabled: false, needShift: false },
+      pan: { enabled: false, needShift: false, needTwoFingers: true},
       showCopyright: false,
-      showNavigation: false, //hides arrows and zoom icons
-      drag: {
-       enabled: false
-      }
-    });
+      showNavigation: false //hides arrows and zoom icons
+      });
 
     board.removeEventHandlers(); // remove all event handlers
     board.addPointerEventHandlers()
