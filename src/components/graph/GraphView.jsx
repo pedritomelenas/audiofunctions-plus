@@ -110,9 +110,13 @@ const GraphView = () => {
       pan: { enabled: true, needShift: false, needTwoFingers: true},
       showCopyright: false,
       showNavigation: false, //hides arrows and zoom icons
+      drag: {
+       enabled: false
+      }
     });
 
     board.removeEventHandlers(); // remove all event handlers
+    board.addPointerEventHandlers()
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
