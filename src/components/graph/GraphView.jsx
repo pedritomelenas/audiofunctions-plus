@@ -47,18 +47,22 @@ function createEndPoints(txtraw,board){
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
-                    endpoints.push(p);
-                    if (ineq.op == "!="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(v);
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (isNaN(fv) && ineq.op == "!="){ // the point is not defined here, we try the mean of the values at the left and right of v
+                      fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      console.log("Possible value at x=", v, fv);
                     }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    endpoints.push(p);
                 }else{ // we have x op a, with op in {<, >}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
-                    endpoints.push(p);
-                    if (ineq.op == "!="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(v);
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (isNaN(fv) && ineq.op == "!="){ // the point is not defined here, we try the mean of the values at the left and right of v
+                      fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      console.log("Possible value at x=", v, fv);
                     }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    endpoints.push(p);
                 }
             }
         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
