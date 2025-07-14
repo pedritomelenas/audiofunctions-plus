@@ -32,7 +32,6 @@ function createEndPoints(func,board){
     const l = parsed.items; //list of items, each item is a pair [expr,ineq]
     let ineq,v,a,b,p,i;
     const endpoints = []; // the endpoints of the intervals
-    const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
@@ -42,7 +41,6 @@ function createEndPoints(func,board){
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(v);
                         console.log("Adding isolated point at x=", v);
                         func.pointOfInterests.push({
                             x: v,
@@ -56,7 +54,6 @@ function createEndPoints(func,board){
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'isolated-point', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(v);
                         console.log("Adding isolated point at x=", v);
                         func.pointOfInterests.push({
                             x: v,
@@ -123,7 +120,7 @@ function createEndPoints(func,board){
             }
         }
     }
-    return [endpoints,[...new Set(xisolated)]]; // we return the endpoints and the x-coordinates of isolated points, removing duplicates
+    return endpoints; // we return the endpoints and the x-coordinates of isolated points, removing duplicates
 }
 
 const GraphView = () => {
@@ -132,7 +129,6 @@ const GraphView = () => {
   const boardRef = useRef(null);
   const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints = [];
-  let xisolated = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
   const cursorsRef = useRef(new Map()); // Store cursors for each function
@@ -200,9 +196,8 @@ const GraphView = () => {
 
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const [funcEndpoints, funcXisolated] = createEndPoints(func, board);
+        const funcEndpoints = createEndPoints(func, board);
         endpoints = [...endpoints, ...funcEndpoints];
-        xisolated = [...xisolated, ...funcXisolated];
       }
 
       // Find last known position for this function's cursor
@@ -230,7 +225,6 @@ const GraphView = () => {
 
     const updateCursors = (x) => {
       // retrieve points of interest
-      // const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
       let l = [];
       activeFunctions.forEach(func => {
         func.pointOfInterests.forEach((point) =>{ 
