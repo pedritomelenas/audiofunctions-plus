@@ -249,7 +249,7 @@ function isPiecewise(txt){
                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
                         break;
                     case "==":  
-                        intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+                        intervals.push([ineq.args[0].evaluate(), ineq.args[0].evaluate(), 1, 1]);
                         break;
                     case "!=":
                         intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
