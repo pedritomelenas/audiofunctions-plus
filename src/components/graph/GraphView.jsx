@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
-import { create, all } from 'mathjs'
+import { create, all, forEach } from 'mathjs'
 import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 
@@ -230,8 +230,17 @@ const GraphView = () => {
 
     const updateCursors = (x) => {
       // retrieve points of interest
-      const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
-      const snappedX = l.length > 0 ? l[0] : x;
+      // const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
+      let l = [];
+      activeFunctions.forEach(func => {
+        func.pointOfInterests.forEach((point) =>{ 
+          console.log("New x of interest:", point.x); 
+          l.push(point.x);
+        }); 
+        console.log("Points of interest: (x-coordinates)  ", l.toString());
+      });
+      const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
+      const snappedX = sl.length > 0 ? sl[0] : x;
       
       // Store the current position immediately
       lastCursorPositionRef.current = { x: snappedX };
