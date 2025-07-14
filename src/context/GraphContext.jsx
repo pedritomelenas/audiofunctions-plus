@@ -125,6 +125,8 @@ const initGraphObject = {
       // should we differ between x and y Diffs?
       "showGrid": true,
       "showAxes": true,
-      "gridColor": "#CCCCCC"
+      "gridColor": "#CCCCCC",
+      
+      "restrictionMode": "none" // "none", "read-only"
   }
 };

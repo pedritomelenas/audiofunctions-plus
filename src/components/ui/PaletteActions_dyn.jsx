@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, EyeOff, Settings, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Grid3X3, } from "lucide-react"
+  ChartArea, FileChartLine, Grid3X3, Share, } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -183,6 +183,19 @@ export const useDynamicKBarActions = () => {
       parent: "diagram-options",
       perform: () => openDialog("movement-adjustments"),
       icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
+    },
+
+
+
+
+    // Share
+    {
+      id: "share",
+      name: "Share",
+      shortcut: [""],
+      keywords: "share, export, link",
+      perform: () => openDialog("share"),
+      icon: <Share className="size-5 shrink-0 opacity-70" />,
     },
 
 
