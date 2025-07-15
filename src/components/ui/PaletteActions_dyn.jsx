@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, EyeOff, Settings, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Grid3X3, Share, } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -187,15 +187,41 @@ export const useDynamicKBarActions = () => {
 
 
 
-
-    // Share
+    // Import/Export
+    {
+      id: "import-export",
+      name: "Import/Export",
+      // shortcut: [""],
+      keywords: "import, export, json, file, save, load, share",
+      // perform: () => {},
+      icon: <Import className="size-5 shrink-0 opacity-70" />,
+    },
+    {
+      id: "import-json",
+      name: "Import JSON",
+      shortcut: [""],
+      keywords: "import, json, upload, file",
+      parent: "import-export",
+      perform: () => openDialog("import-json"),
+      icon: <FileUp className="size-5 shrink-0 opacity-70" />,
+    },
+    {
+      id: "export-json",
+      name: "Export as JSON",
+      shortcut: [""],
+      keywords: "export, json, download, save, file",
+      parent: "import-export",
+      perform: () => openDialog("export-json"),
+      icon: <FileDown className="size-5 shrink-0 opacity-70" />,
+    },
     {
       id: "share",
       name: "Share",
       shortcut: [""],
       keywords: "share, export, link",
+      parent: "import-export",
       perform: () => openDialog("share"),
-      icon: <Share className="size-5 shrink-0 opacity-70" />,
+      icon: <Share2 className="size-5 shrink-0 opacity-70" />,
     },
 
 
@@ -247,6 +273,8 @@ export const useDynamicKBarActions = () => {
       perform: () => {setTheme("high-contrast")},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
+
+    
 
   ], [isAudioEnabled, cursorCoords, functionDefinitions]);
 
