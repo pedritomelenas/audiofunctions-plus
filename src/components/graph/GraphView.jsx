@@ -106,10 +106,14 @@ const GraphView = () => {
           minorHeight: 3,
         },
       },
-      zoom: { enabled: true, needShift: false },
-      pan: { enabled: true, needShift: false, needTwoFingers: true},
+      zoom: { enabled: false, needShift: false },
+      pan: { enabled: false, needShift: false, needTwoFingers: true},
       showCopyright: false,
-    });
+      showNavigation: false //hides arrows and zoom icons
+      });
+
+    board.removeEventHandlers(); // remove all event handlers
+    board.addPointerEventHandlers()
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
@@ -147,7 +151,7 @@ const GraphView = () => {
         highlight: false,
         strokeColor: func.color || "#0000FF", // Use function's color or default to blue
       });
-
+  
       // Create endpoints for piecewise functions
       if (expr !== "0") {
         const [funcEndpoints, funcXisolated] = createEndPoints(func.functionString, board);
