@@ -4,9 +4,26 @@ import { useGraphContext } from "../../context/GraphContext";
 import { create, all } from 'mathjs'
 import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
+import * as Tone from "tone";
 
 const config = { }
 const math = create(all, config)
+
+// Tick synth for x axis division ticks
+const tickSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.001,
+  octaves: 1,
+  envelope: {
+    attack: 0,
+    decay: 0.05,
+    sustain: 0,
+    release: 0
+  },
+  volume: -18 // Lower volume in dB
+}).toDestination();
+
+// Number of x axis divisions (can be made configurable)
+const X_AXIS_DIVISIONS = 10;
 
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
@@ -80,7 +97,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
   let endpoints = [];
   let xisolated = [];
   let snapaccuracy;
@@ -91,6 +108,10 @@ const GraphView = () => {
   const pendingStateUpdateRef = useRef(null); // Store pending state update
   const currentTimerRef = useRef(null); // Store the current timer ID
   const preservedCursorPositionsRef = useRef(new Map()); // Store cursor positions to preserve during function updates
+  const lastTickDivisionRef = useRef(null); // Track last ticked division index
+  const prevXRef = useRef(null); // Track previous x value globally
+  const divisionPointsRef = useRef([]); // Store division points
+  const lastTickIndexRef = useRef(null); // Track last ticked index globally
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -201,6 +222,15 @@ const GraphView = () => {
       cursorsRef.current.set(func.id, cursor);
     });
 
+    // Calculate division points for the x axis based on stepSize
+    const divisions = [];
+    const firstTick = Math.ceil(graphBounds.xMin / stepSize) * stepSize;
+    for (let x = firstTick; x <= graphBounds.xMax; x += stepSize) {
+      divisions.push(x);
+    }
+    divisionPointsRef.current = divisions;
+    lastTickDivisionRef.current = null; // Reset on bounds change
+
     const updateCursors = (x, mouseY = null) => {
       // Guard against board not being initialized
       if (!board || !board.jc) {
@@ -294,6 +324,15 @@ const GraphView = () => {
       pendingStateUpdateRef.current = null;
       
       board.update();
+
+      // --- X axis tick logic (track last ticked index, no epsilon, not reset on resume) ---
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
+        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+        if (n !== lastTickIndexRef.current) {
+          tickSynth.triggerAttackRelease("C6", "16n");
+          lastTickIndexRef.current = n;
+        }
+      }
     };
     setUpdateCursor(() => updateCursors);
 
@@ -394,7 +433,7 @@ const GraphView = () => {
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source, stepSize, isAudioEnabled]);
 
   // Update playActiveRef when PlayFunction.active changes
   useEffect(() => {

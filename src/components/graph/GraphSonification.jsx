@@ -18,7 +18,8 @@ const GraphSonification = () => {
     cursorCoords, 
     isAudioEnabled, 
     graphBounds,
-    functionDefinitions 
+    functionDefinitions,
+    stepSize // <-- get stepSize from context
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -190,109 +191,6 @@ const GraphSonification = () => {
     };
   }, [functionDefinitions, getInstrumentByName, forceRecreate]);
 
-  // Handle sound generation based on cursor positions
-  useEffect(() => {
-    // Pause sonification when edit dialog is open to prevent crashes from invalid functions
-    if (isEditFunctionDialogOpen) {
-      stopAllTones();
-      stopPinkNoise();
-      return;
-    }
-
-    if (!isAudioEnabled) {
-      stopAllTones();
-      stopPinkNoise();
-      return;
-    }
-
-    const activeFunctions = getActiveFunctions(functionDefinitions);
-    if (activeFunctions.length === 0) {
-      stopPinkNoise();
-      return;
-    }
-
-    // Create a map of function IDs to their cursor coordinates
-    const coordsMap = new Map(cursorCoords.map(coord => [coord.functionId, coord]));
-
-    // Check if any active function has a value below 0
-    let hasNegativeValue = false;
-    activeFunctions.forEach(func => {
-      const coords = coordsMap.get(func.id);
-      if (coords && parseFloat(coords.y) < 0) {
-        hasNegativeValue = true;
-      }
-    });
-
-    // Control pink noise based on negative values
-    if (hasNegativeValue) {
-      startPinkNoise();
-    } else {
-      stopPinkNoise();
-    }
-
-    // Process each active function
-    activeFunctions.forEach(func => {
-      try {
-        const coords = coordsMap.get(func.id);
-        const instrument = instrumentsRef.current.get(func.id);
-        const channel = channelsRef.current.get(func.id);
-        const functionIndex = getFunctionIndexById(functionDefinitions, func.id);
-        const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
-        
-        if (instrument && channel && instrumentConfig) {
-          if (coords) {
-            // Check for chart boundary events
-            checkChartBoundaryEvents(func.id, coords).catch(error => 
-              console.warn(`Error in chart boundary event check for function ${func.id}:`, error)
-            );
-            
-            // Check for y-axis intersection events
-            checkYAxisIntersectionEvents(func.id, coords).catch(error => 
-              console.warn(`Error in y-axis intersection event check for function ${func.id}:`, error)
-            );
-            
-            // Check for discontinuity/NaN events
-            checkDiscontinuityEvents(func.id, coords).catch(error => 
-              console.warn(`Error in discontinuity event check for function ${func.id}:`, error)
-            );
-            
-            // Check if y coordinate is within chart bounds
-            const y = parseFloat(coords.y);
-            if (y < graphBounds.yMin || y > graphBounds.yMax) {
-              // If y coordinate is out of bounds, stop the sound
-              stopTone(func.id);
-              return;
-            }
-            
-            // We have coordinates for this function
-            const pan = calculatePan(parseFloat(coords.x));
-            
-            if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
-              // Handle discrete pitch class-based sonification
-              handleDiscreteSonification(func.id, y, pan, instrumentConfig, coords.mouseY);
-            } else {
-              // Handle continuous frequency-based sonification
-              const frequency = calculateFrequency(y);
-              if (frequency) {
-                startTone(func.id, frequency, pan, coords.mouseY);
-              } else {
-                stopTone(func.id);
-              }
-            }
-          } else {
-            // No coordinates for this function, stop its sound
-            stopTone(func.id);
-          }
-        }
-      } catch (error) {
-        console.warn(`Error processing function ${func.id} for sonification:`, error);
-        // Stop the tone for this function to prevent further errors
-        stopTone(func.id);
-      }
-    });
-
-  }, [cursorCoords, isAudioEnabled, functionDefinitions, getInstrumentByName, isEditFunctionDialogOpen]);
-
   // Clean up sonification when edit dialog closes
   useEffect(() => {
     let timeoutId = null;
@@ -438,17 +336,17 @@ const GraphSonification = () => {
     const channel = channelsRef.current.get(functionId);
     
     if (instrument && channel) {
-      // Get the current time from Tone.js
-      const now = Tone.now();
-      
-      // Add a tiny offset based on the functionId to prevent simultaneous triggers
-      // Using the last character of functionId to create a small offset
-      const offset = parseInt(functionId.slice(-1), 10) * 0.01;
-      
-      // Ensure the start time is in the future to prevent "Start time must be strictly greater than previous start time" error
-      const startTime = Math.max(now + offset, now + 0.001);
-      
       try {
+        // Get the current time from Tone.js
+        const now = Tone.now();
+        
+        // Add a tiny offset based on the functionId to prevent simultaneous triggers
+        // Using the last character of functionId to create a small offset
+        const offset = parseInt(functionId.slice(-1), 10) * 0.01;
+        
+        // Ensure the start time is in the future to prevent "Start time must be strictly greater than previous start time" error
+        const startTime = Math.max(now + offset, now + 0.001);
+        
         instrument.triggerAttack(frequency, startTime);
         channel.pan.value = pan;
         
@@ -464,7 +362,7 @@ const GraphSonification = () => {
         }
       } catch (error) {
         console.warn(`Error starting tone for function ${functionId}:`, error);
-        // Fallback: try to start immediately
+        // Fallback: try to start immediately without timing
         try {
           instrument.triggerAttack(frequency);
           channel.pan.value = pan;
@@ -514,6 +412,51 @@ const GraphSonification = () => {
   if (isEditFunctionDialogOpen && isAudioEnabled) {
     console.log("Sonification paused: Edit function dialog is open");
   }
+
+  // Main effect for processing cursor coordinates and triggering sonification
+  useEffect(() => {
+    if (!isAudioEnabled || isEditFunctionDialogOpen || !cursorCoords) {
+      stopAllTones();
+      stopPinkNoise();
+      return;
+    }
+
+    // Start pink noise when sonification is active
+    startPinkNoise();
+
+    // Process each cursor coordinate
+    cursorCoords.forEach(async (coord) => {
+      const functionId = coord.functionId;
+      const x = parseFloat(coord.x);
+      const y = parseFloat(coord.y);
+      const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
+      const pan = calculatePan(x);
+
+      // Get the function's instrument configuration
+      const functionIndex = getFunctionIndexById(functionDefinitions, functionId);
+      const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
+
+      if (!instrumentConfig) return;
+
+      // Handle discrete vs continuous instruments differently
+      if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
+        handleDiscreteSonification(functionId, y, pan, instrumentConfig, mouseY);
+      } else {
+        // Continuous sonification
+        const frequency = calculateFrequency(y);
+        if (frequency !== null) {
+          startTone(functionId, frequency, pan, mouseY, y);
+        } else {
+          stopTone(functionId);
+        }
+      }
+
+      // Check for special events
+      await checkChartBoundaryEvents(functionId, coord);
+      await checkYAxisIntersectionEvents(functionId, coord);
+      await checkDiscontinuityEvents(functionId, coord);
+    });
+  }, [cursorCoords, isAudioEnabled, isEditFunctionDialogOpen, functionDefinitions, graphBounds]);
 
   // Event detection functions
   const checkChartBoundaryEvents = async (functionId, coords) => {

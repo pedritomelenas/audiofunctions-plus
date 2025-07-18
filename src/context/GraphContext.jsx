@@ -19,6 +19,7 @@ export const GraphContextProvider = ({ children }) => {
   const playActiveRef = useRef(false);   // reference to track if the play function is active, used in mouse move handler 
   const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
+  const [stepSize, setStepSize] = useState(1); // Default value 1
   const inputRefs = {
     function: useRef(null),
     speed: useRef(null),
@@ -58,6 +59,8 @@ export const GraphContextProvider = ({ children }) => {
         inputRefs,
         updateCursor,
         setUpdateCursor,
+        stepSize,
+        setStepSize,
       }}
     >
       {children}
