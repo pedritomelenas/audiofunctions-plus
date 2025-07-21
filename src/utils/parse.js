@@ -16,7 +16,9 @@ function isMathConstant(expr){
 
 // detects if expr is an expression of a function in one variable or a constant, for instance, "sin(x)+x^2" or "2"
 function isOneVariableFunction(expr){
-    const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh"];
+    const allowed_fn = ["sin", "ceil", "floor", "cos", "tan", "exp", "log", "sqrt", "abs", "exp", "ln", "log10", "log2", "asin", "acos", "atan", "sinh", "cosh", "tanh","cot","acot","nthroot"];
+    const fn_with_more_args = ["log", "nthroot"]; // functions that can have one or two arguments 
+    // WARNING nthroot is not implemented in mathjs, we need nthRoot
     const allowed_constants = ["PI","pi","e","E"];
     const allowed_op = ["+", "-", "*", "/", "^"];  
     function removeItemAll(arr, value) {
@@ -41,21 +43,36 @@ function isOneVariableFunction(expr){
         console.log(snodes.map((n) => n.name));
         console.log("fn ",fnNodes.map((n) => n.name));
         console.log("op ",opNodes.map((n) => n.op));
-        if (!(fnNodes.every((n) => n.args.length==1 && allowed_fn.includes(n.name)))){
-            console.log("Invalid function or wrong number of arguments");
-            return false;
-        }
+        // if (!(fnNodes.every((n) => n.args.length==1 && allowed_fn.includes(n.name)))){
+        //     console.log("Invalid function or wrong number of arguments");
+        //     return false;
+        // }
+        for (let i=0;i<fnNodes.length;i++){
+            if (!(allowed_fn.includes(fnNodes[i].name))){
+                console.log("Invalid function name: ", fnNodes[i].name);
+                return false;
+            }
+            if (fnNodes[i].args.length!=1 && !(fn_with_more_args.includes(fnNodes[i].name))){
+                console.log("Invalid function, wrong number of arguments: ", fnNodes[i].name);
+                return false;
+            }
+            if (fn_with_more_args.includes(fnNodes[i].name) && fnNodes[i].args.length>2){
+                console.log("This function should have at most two arguments: ", fnNodes[i].name);
+                return false;
+            }               
+        }    
         if (!(opNodes.every((n) => allowed_op.includes(n.op)))){
             console.log("Invalid operator");
             return false;
         }
-        parsed.traverse(function (node, path, parent) {
+        parsed.traverse(function (node, path, parent) { // we have checked all functions, we remove them from the list of symbol nodes
             if (node.isSymbolNode && parent?.name == node.name && allowed_fn.includes(node.name)){ 
                 removeItemAll(snodes,node);
                 console.log(node.name);
             }
         });
         console.log(snodes.map((n) => n.name));
+        // the remaining should be a single variable "x" or a constant
         return snodes.every((n) => allowed_constants.includes(n.name) || n.name=="x"); 
     }
     catch(ex){
@@ -206,8 +223,12 @@ function isPiecewise(txt){
                     case "==":  
                         intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
                         break;
+                    case "!=":
+                        intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+                        break;
                 }
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }else{//equation of the form a op x
                 //console.log("variable second")
                 if (!isMathConstant(ineq.args[0].toString())){
@@ -228,7 +249,11 @@ function isPiecewise(txt){
                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
                         break;
                     case "==":  
-                        intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+                        intervals.push([ineq.args[0].evaluate(), ineq.args[0].evaluate(), 1, 1]);
+                        break;
+                    case "!=":
+                        intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
+                        intervals.push([-Infinity, ineq.args[0].evaluate(), 0, 0]);
                         break;
                 }
                 console.log("Added interval: ", intervals[intervals.length-1].toString());
@@ -279,9 +304,9 @@ function isPiecewise(txt){
         }
     } 
     console.log("Intervals: ", intervals.map((e)=> e.toString()));    
-    // now it remans to check that the intervals are disjoint     
+    // now it remains to check that the intervals are disjoint     
     // first we sort the intervals by their first element
-    intervals.sort((a,b)=> a[0]-b[0]);
+    intervals.sort((a,b)=> (a[0]-b[0]==0) ? (a[1]-b[1]) : (a[0]-b[0]));
     console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
     for (let i=0;i<intervals.length-1;i++){
         const a = intervals[i];
@@ -337,7 +362,10 @@ function parsePiecewise(txt){
 // this function checks that the input is a valid function expression
 // either single or piecewise
 // if the txt is not a valid expression, it returns "0", otherwise it returns the input string parsed (if piecewise)
-export function checkMathSpell(txt){
+export function checkMathSpell(txt_input){
+    // we are allowing ** to be used as a power operator, so we replace it with ^
+    const txt = txt_input.replace(/\*\*/g, '^'); // replace ** with ^
+    console.log("Checking math spell: ", txt);
     // check if its a function of one variable
     if(isOneVariableFunction(txt)){
         // jessiecode does does not understand E, e, pi, we translate them to mathjs constants

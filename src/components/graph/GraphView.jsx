@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
-import { create, all } from 'mathjs'
+import { create, all, forEach } from 'mathjs'
 import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 
@@ -12,15 +12,26 @@ const math = create(all, config)
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 // it should be previusly checked that it is a valid piecewise function or a math expression
-function createEndPoints(txtraw,board){
-    const parsed = transformMathConstants(math.parse(txtraw));
+function createEndPoints(func,board){
+    // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
+    // we are also transforming the math constants to be able to parse them
+    // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
+    console.log("Creating endpoints for function: ", func);
+    const txtraw= func.functionString
+    const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
+    const types_to_be_deleted= ["isolated", "unequal"]; // we remove these types of points of interest, since they will be redefined
+    const filteredPoints = func.pointOfInterests.filter(
+      point => !types_to_be_deleted.includes(point.type)
+    );
+    func.pointOfInterests = filteredPoints;
+    console.log(func);
+
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
     const l = parsed.items; //list of items, each item is a pair [expr,ineq]
     let ineq,v,a,b,p,i;
     const endpoints = []; // the endpoints of the intervals
-    const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
@@ -30,25 +41,61 @@ function createEndPoints(txtraw,board){
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
-                    }
+                        console.log("Adding isolated point at x=", v);
+                        func.pointOfInterests.push({
+                            x: v,
+                            y: l[i].items[0].evaluate({x:v}),
+                            type: "isolated"
+                        });
+                        console.log("Function ", func);
+                      }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'isolated-point', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
+                        console.log("Adding isolated point at x=", v);
+                        func.pointOfInterests.push({
+                            x: v,
+                            y: l[i].items[0].evaluate({x:v}),
+                            type: "isolated"
+                        });
+                        console.log("Function ", func);
                     }
                 }
             }
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (ineq.op == "!="){ 
+                      if (isNaN(fv)){// the point is not defined here, we try the mean of the values at the left and right of v
+                        fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      }
+                      console.log("Possible value at x=", v, fv);
+                      func.pointOfInterests.push({
+                        x: v,
+                        y: NaN,
+                        type: "unequal"
+                      });
+                    }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }else{ // we have x op a, with op in {<, >}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (ineq.op == "!="){ 
+                      if (isNaN(fv)){// the point is not defined here, we try the mean of the values at the left and right of v
+                        fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      }
+                      console.log("Possible value at x=", v, fv);
+                      func.pointOfInterests.push({
+                        x: v,
+                        y: NaN,
+                        type: "unequal"
+                      });
+                    }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }
             }
@@ -73,7 +120,7 @@ function createEndPoints(txtraw,board){
             }
         }
     }
-    return [endpoints,xisolated];
+    return endpoints; // we return the endpoints and the x-coordinates of isolated points, removing duplicates
 }
 
 const GraphView = () => {
@@ -82,7 +129,6 @@ const GraphView = () => {
   const boardRef = useRef(null);
   const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
   let endpoints = [];
-  let xisolated = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
   const cursorsRef = useRef(new Map()); // Store cursors for each function
@@ -130,7 +176,7 @@ const GraphView = () => {
     activeFunctions.forEach(func => {
       let graphFormula;
       let expr = checkMathSpell(func.functionString);
-      
+
       try {
         graphFormula = board.jc.snippet(expr, true, "x", true);
         setInputErrorMes(null);
@@ -154,9 +200,8 @@ const GraphView = () => {
   
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const [funcEndpoints, funcXisolated] = createEndPoints(func.functionString, board);
+        const funcEndpoints = createEndPoints(func, board);
         endpoints = [...endpoints, ...funcEndpoints];
-        xisolated = [...xisolated, ...funcXisolated];
       }
 
       // Find last known position for this function's cursor
@@ -183,8 +228,17 @@ const GraphView = () => {
     });
 
     const updateCursors = (x) => {
-      const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
-      const snappedX = l.length > 0 ? l[0] : x;
+      // retrieve points of interest
+      let l = [];
+      activeFunctions.forEach(func => {
+        func.pointOfInterests.forEach((point) =>{ 
+          console.log("New x of interest:", point.x); 
+          l.push(point.x);
+        }); 
+        console.log("Points of interest: (x-coordinates)  ", l.toString());
+      });
+      const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
+      const snappedX = sl.length > 0 ? sl[0] : x;
       
       // Store the current position immediately
       lastCursorPositionRef.current = { x: snappedX };
