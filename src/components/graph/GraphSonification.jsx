@@ -421,8 +421,18 @@ const GraphSonification = () => {
       return;
     }
 
-    // Start pink noise when sonification is active
-    startPinkNoise();
+    // Check if any active function has a y-value below zero
+    const hasNegativeY = cursorCoords.some(coord => {
+      const y = parseFloat(coord.y);
+      return !isNaN(y) && isFinite(y) && y < 0;
+    });
+
+    // Only start pink noise if there's a negative y value
+    if (hasNegativeY) {
+      startPinkNoise();
+    } else {
+      stopPinkNoise();
+    }
 
     // Process each cursor coordinate
     cursorCoords.forEach(async (coord) => {
