@@ -9,19 +9,6 @@ import * as Tone from "tone";
 const config = { }
 const math = create(all, config)
 
-// Tick synth for x axis division ticks
-const tickSynth = new Tone.MembraneSynth({
-  pitchDecay: 0.001,
-  octaves: 1,
-  envelope: {
-    attack: 0,
-    decay: 0.05,
-    sustain: 0,
-    release: 0
-  },
-  volume: -18 // Lower volume in dB
-}).toDestination();
-
 // Number of x axis divisions (can be made configurable)
 const X_AXIS_DIVISIONS = 10;
 
@@ -329,7 +316,7 @@ const GraphView = () => {
       if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
         let n = Math.floor((x - graphBounds.xMin) / stepSize);
         if (n !== lastTickIndexRef.current) {
-          tickSynth.triggerAttackRelease("C6", "16n");
+          // tickSynth.triggerAttackRelease("C6", "16n"); // Removed tick synth
           lastTickIndexRef.current = n;
         }
       }

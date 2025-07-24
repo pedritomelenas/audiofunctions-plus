@@ -28,6 +28,9 @@ const GraphSonification = () => {
   const boundaryTriggeredRef = useRef(new Map()); // Track if boundary event was recently triggered to avoid spam
   const yAxisTriggeredRef = useRef(new Map()); // Track if y-axis intersection was recently triggered
   const prevBoundaryStateRef = useRef(new Map()); // Track previous boundary state for each function
+  const lastTickIndexRef = useRef(null); // Track last ticked index
+  const tickSynthRef = useRef(null); // Reference to tick synth
+  const tickChannelRef = useRef(null); // Reference to tick channel for panning
   
   const { getInstrumentByName } = useInstruments();
   const { isEditFunctionDialogOpen } = useDialog();
@@ -36,6 +39,43 @@ const GraphSonification = () => {
   const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
   const pinkNoiseRef = useRef(null); // Reference to pink noise synthesizer
   const [forceRecreate, setForceRecreate] = useState(false); // State to force recreation of sonification pipeline
+
+  // Initialize tick synth
+  useEffect(() => {
+    if (!tickSynthRef.current) {
+      tickSynthRef.current = new Tone.MembraneSynth({
+        pitchDecay: 0.001,
+        octaves: 1,
+        envelope: {
+          attack: 0,
+          decay: 0.05,
+          sustain: 0,
+          release: 0
+        },
+        volume: -18 // Lower volume in dB
+      });
+
+      // Create a channel for the tick synth to handle panning
+      tickChannelRef.current = new Tone.Channel({
+        pan: 0,
+        volume: 0
+      }).toDestination();
+
+      // Connect tick synth to its channel
+      tickSynthRef.current.connect(tickChannelRef.current);
+    }
+
+    return () => {
+      if (tickSynthRef.current) {
+        tickSynthRef.current.dispose();
+        tickSynthRef.current = null;
+      }
+      if (tickChannelRef.current) {
+        tickChannelRef.current.dispose();
+        tickChannelRef.current = null;
+      }
+    };
+  }, []);
 
   // Initialize pink noise synthesizer
   useEffect(() => {
@@ -442,6 +482,19 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
+      // Handle tick sound with panning
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
+        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+        if (n !== lastTickIndexRef.current) {
+          // Update tick synth panning based on x position
+          if (tickChannelRef.current) {
+            tickChannelRef.current.pan.value = pan;
+          }
+          tickSynthRef.current?.triggerAttackRelease("C6", "16n");
+          lastTickIndexRef.current = n;
+        }
+      }
+
       // Get the function's instrument configuration
       const functionIndex = getFunctionIndexById(functionDefinitions, functionId);
       const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
@@ -466,7 +519,7 @@ const GraphSonification = () => {
       await checkYAxisIntersectionEvents(functionId, coord);
       await checkDiscontinuityEvents(functionId, coord);
     });
-  }, [cursorCoords, isAudioEnabled, isEditFunctionDialogOpen, functionDefinitions, graphBounds]);
+  }, [cursorCoords, isAudioEnabled, isEditFunctionDialogOpen, functionDefinitions, graphBounds, stepSize]);
 
   // Event detection functions
   const checkChartBoundaryEvents = async (functionId, coords) => {
