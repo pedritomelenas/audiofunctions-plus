@@ -16,8 +16,11 @@ export function DialogProvider({ children }) {
   const openDialog = (type, props = {}) => setDialog({ type, props });
   const closeDialog = () => setDialog({ type: null, props: {} });
 
+  // Check if edit function dialog is open
+  const isEditFunctionDialogOpen = dialog.type === "edit-function";
+
   return (
-    <DialogContext.Provider value={{ openDialog, closeDialog }}>
+    <DialogContext.Provider value={{ openDialog, closeDialog, isEditFunctionDialogOpen }}>
       {children}
 
       <EditFunctionDialog
