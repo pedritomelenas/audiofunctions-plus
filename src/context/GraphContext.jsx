@@ -116,7 +116,16 @@ const initGraphObject = {
       "isActive": true,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
-      "pointOfInterests": [],
+      "pointOfInterests": [
+        {
+          "x": 3,
+          "y": 5,
+          "type": "isolated",
+          "label": "iso 1",         // optional
+          "color": "#FF0000",       // optional
+          "earcon": "earcon 1"      // optional
+        },
+      ],
       "landmarks": []
     }
   ],
