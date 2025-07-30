@@ -474,6 +474,53 @@ const GraphSonification = () => {
       stopPinkNoise();
     }
 
+    // Check if any functions are visible in the current interval
+    const hasVisibleFunctions = cursorCoords.some(coord => {
+      const y = parseFloat(coord.y);
+      return !isNaN(y) && isFinite(y) && y >= graphBounds.yMin && y <= graphBounds.yMax;
+    });
+
+    // Check if any functions are out of bounds (invalid y values or outside visible bounds)
+    const hasOutOfBoundsFunctions = cursorCoords.some(coord => {
+      const y = parseFloat(coord.y);
+      return isNaN(y) || y === undefined || y === null || !isFinite(y) || 
+             y < graphBounds.yMin || y > graphBounds.yMax;
+    });
+
+    // If no functions are visible in the current interval, play no_y.mp3 and stop all tones
+    if (!hasVisibleFunctions && cursorCoords.length > 0) {
+      // Check if we haven't recently triggered this event to avoid spam
+      const lastTriggered = boundaryTriggeredRef.current.get('no_visible_functions');
+      const now = Date.now();
+      
+      if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown
+        // Stop all tones before playing the earcon
+        stopAllTones();
+        
+        playAudioSample("no_y", { volume: -10 });
+        boundaryTriggeredRef.current.set('no_visible_functions', now);
+        console.log(`No visible functions in current interval, playing no_y.mp3. cursorCoords:`, cursorCoords);
+      }
+    } else if (hasVisibleFunctions) {
+      // Clear the no_visible_functions trigger when functions become visible again
+      boundaryTriggeredRef.current.delete('no_visible_functions');
+      
+      // If some functions are out of bounds but others are visible, play no_y.mp3
+      if (hasOutOfBoundsFunctions) {
+        const lastTriggered = boundaryTriggeredRef.current.get('some_out_of_bounds');
+        const now = Date.now();
+        
+        if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown
+          playAudioSample("no_y", { volume: -10 });
+          boundaryTriggeredRef.current.set('some_out_of_bounds', now);
+          console.log(`Some functions out of bounds, playing no_y.mp3 while continuing sonification of visible functions. cursorCoords:`, cursorCoords);
+        }
+      } else {
+        // Clear the some_out_of_bounds trigger when all functions are visible
+        boundaryTriggeredRef.current.delete('some_out_of_bounds');
+      }
+    }
+
     // Process each cursor coordinate
     cursorCoords.forEach(async (coord) => {
       const functionId = coord.functionId;
@@ -501,17 +548,26 @@ const GraphSonification = () => {
 
       if (!instrumentConfig) return;
 
-      // Handle discrete vs continuous instruments differently
-      if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
-        handleDiscreteSonification(functionId, y, pan, instrumentConfig, mouseY);
-      } else {
-        // Continuous sonification
-        const frequency = calculateFrequency(y);
-        if (frequency !== null) {
-          startTone(functionId, frequency, pan, mouseY, y);
+      // Check if the function value is valid before proceeding with sonification
+      const isValidY = typeof y === 'number' && !isNaN(y) && isFinite(y);
+      const isWithinBounds = isValidY && y >= graphBounds.yMin && y <= graphBounds.yMax;
+
+      if (isWithinBounds) {
+        // Handle discrete vs continuous instruments differently
+        if (instrumentConfig.instrumentType === InstrumentFrequencyType.discretePitchClassBased) {
+          handleDiscreteSonification(functionId, y, pan, instrumentConfig, mouseY);
         } else {
-          stopTone(functionId);
+          // Continuous sonification
+          const frequency = calculateFrequency(y);
+          if (frequency !== null) {
+            startTone(functionId, frequency, pan, mouseY, y);
+          } else {
+            stopTone(functionId);
+          }
         }
+      } else {
+        // Stop the tone for this function when it's not valid or outside bounds
+        stopTone(functionId);
       }
 
       // Check for special events
@@ -604,17 +660,27 @@ const GraphSonification = () => {
       y = parseFloat(coords.y);
     }
     
-    // Check if the function value is NaN, undefined, null, or infinite (discontinuity)
-    if (isNaN(y) || y === undefined || y === null || !isFinite(y)) {
+    // Check if the function value is NaN, undefined, null, infinite, or outside visible bounds
+    const isInvalid = isNaN(y) || y === undefined || y === null || !isFinite(y);
+    const isOutsideBounds = typeof y === 'number' && (y < graphBounds.yMin || y > graphBounds.yMax);
+    
+    if (isInvalid || isOutsideBounds) {
       // Check if we haven't recently triggered this event to avoid spam
       const lastTriggered = boundaryTriggeredRef.current.get(`${functionId}_discontinuity`);
       const now = Date.now();
       
       if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown for discontinuities
+        // Stop the tone for this function before playing the earcon
+        stopTone(functionId);
+        console.log(`Stopping tone for function ${functionId} due to ${isInvalid ? 'discontinuity' : 'out of bounds'} at x=${coords.x}, y=${coords.y}`);
+        
         await playAudioSample("no_y", { volume: -10 });
         boundaryTriggeredRef.current.set(`${functionId}_discontinuity`, now);
-        console.log(`Discontinuity event triggered for function ${functionId} at x=${coords.x}, y=${coords.y}`);
+        console.log(`${isInvalid ? 'Discontinuity' : 'Out of bounds'} event triggered for function ${functionId} at x=${coords.x}, y=${coords.y}`);
       }
+    } else {
+      // Clear the discontinuity trigger when function becomes valid again
+      boundaryTriggeredRef.current.delete(`${functionId}_discontinuity`);
     }
   };
 
