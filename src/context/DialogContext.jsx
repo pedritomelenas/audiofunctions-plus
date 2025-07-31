@@ -5,6 +5,9 @@ import ChangeGraphBoundDialog from "../components/ui/dialogs/ChangeGraphBoundDia
 import ShowHideFunctionsDialog from "../components/ui/dialogs/ShowHideFunctionsDialog";
 import MovementAdjustmentsDialog from "../components/ui/dialogs/MovementAdjustmentsDialog";
 import SpeedAdjustmentDialog from "../components/ui/dialogs/SpeedAdjustmentDialog";
+import ShareDialog from "../components/ui/dialogs/shareDialog";
+import ExportJsonDialog from "../components/ui/dialogs/ExportJsonDialog";
+import ImportJsonDialog from "../components/ui/dialogs/ImportJsonDialog";
 
 const DialogContext = createContext();
 
@@ -49,6 +52,24 @@ export function DialogProvider({ children }) {
 
       <SpeedAdjustmentDialog
         isOpen={dialog.type === "speed-adjustment"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <ShareDialog
+        isOpen={dialog.type === "share"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <ImportJsonDialog
+        isOpen={dialog.type === "import-json"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <ExportJsonDialog
+        isOpen={dialog.type === "export-json"}
         onClose={closeDialog}
         {...dialog.props}
       />

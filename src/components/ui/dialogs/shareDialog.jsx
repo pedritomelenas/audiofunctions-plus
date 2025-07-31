@@ -1,0 +1,284 @@
+import React, { useState, useEffect, useRef } from "react";
+import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import { useGraphContext } from "../../../context/GraphContext";
+import ShareLinkDialog from "./ShareLinkDialog";
+
+const ShareDialog = ({ isOpen, onClose }) => {
+  const { graphBounds, graphSettings, setGraphSettings, functionDefinitions } = useGraphContext();
+  const [statusMessage, setStatusMessage] = useState('');
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
+  
+  // Local state for share settings (not saved until share is clicked)
+  const [shareSettings, setShareSettings] = useState({
+    defaultView: [-10, 10, 10, -10],
+    minBoundDifference: 0.1,
+    maxBoundDifference: 100,
+    restrictionMode: "none"
+  });
+
+  // Initialize share settings when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setShareSettings({
+        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
+        minBoundDifference: graphSettings.minBoundDifference || 0.1,
+        maxBoundDifference: graphSettings.maxBoundDifference || 100,
+        restrictionMode: graphSettings.restrictionMode || "none"
+      });
+      announceStatus('Share dialog opened.');
+    }
+  }, [isOpen, graphBounds, graphSettings]);
+
+  // Announce status changes to screen readers
+  const announceStatus = (message) => {
+    setStatusMessage(message);
+    setTimeout(() => setStatusMessage(''), 3000);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape: Close dialog (cancel)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen]);
+
+  const handleCancel = () => {
+    onClose();
+  };
+
+  const handleShare = () => {
+    // Update graph settings with share settings (excluding restrictionMode)
+    setGraphSettings(prevSettings => ({
+      ...prevSettings,
+      defaultView: shareSettings.defaultView,
+      minBoundDifference: shareSettings.minBoundDifference,
+      maxBoundDifference: shareSettings.maxBoundDifference
+    }));
+    
+    // Create share data object
+    const shareData = {
+      functions: functionDefinitions,
+      graphSettings: {
+        ...graphSettings,
+        defaultView: shareSettings.defaultView,
+        minBoundDifference: shareSettings.minBoundDifference,
+        maxBoundDifference: shareSettings.maxBoundDifference,
+        restrictionMode: shareSettings.restrictionMode
+      }
+    };
+    
+    // Convert to JSON string and then to base64
+    const jsonString = JSON.stringify(shareData);
+    const base64String = btoa(jsonString);
+    
+    // Generate the share link
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareLink = `${baseUrl}#import=${base64String}`;
+    
+    console.log('Share data (JSON):', jsonString);
+    console.log('Share data (Base64):', base64String);
+    console.log('Share link:', shareLink);
+    
+    setGeneratedLink(shareLink);
+    setShowLinkDialog(true);
+    onClose(); // Close the main share dialog immediately
+    
+    announceStatus('Settings saved and share link generated.');
+  };
+
+  const handleCloseLinkDialog = () => {
+    setShowLinkDialog(false);
+    // Don't call onClose() here anymore since share dialog is already closed
+  };
+
+  const updateShareSetting = (key, value) => {
+    setShareSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const updateDefaultView = (index, value) => {
+    const newDefaultView = [...shareSettings.defaultView];
+    newDefaultView[index] = parseFloat(value);
+    updateShareSetting('defaultView', newDefaultView);
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onClose={onClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+        <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
+          <DialogPanel className="w-full max-w-2xl max-h-[90vh] bg-background rounded-lg shadow-lg flex flex-col">
+            <div className="p-6 pb-4">
+              <DialogTitle id="dialog-title" className="text-lg font-bold text-titles">
+                Share
+              </DialogTitle>
+              <Description id="dialog-description" className="text-descriptions">
+                Configure sharing settings for your functions and graphs.
+              </Description>
+            </div>
+            
+            {/* Live region for status announcements */}
+            <div 
+              aria-live="polite" 
+              aria-atomic="true" 
+              className="sr-only"
+              role="status"
+            >
+              {statusMessage}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 space-y-6" role="main" aria-label="Share content">
+              {/* Default View Settings */}
+              <div>
+                <h3 className="text-md font-semibold text-titles mb-4">Default View</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      X Min:
+                    </div>
+                    <input
+                      type="number"
+                      value={shareSettings.defaultView[0]}
+                      onChange={(e) => updateDefaultView(0, e.target.value)}
+                      className="text-input-inner"
+                      aria-label="X minimum for default view"
+                    />
+                  </div>
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      X Max:
+                    </div>
+                    <input
+                      type="number"
+                      value={shareSettings.defaultView[1]}
+                      onChange={(e) => updateDefaultView(1, e.target.value)}
+                      className="text-input-inner"
+                      aria-label="X maximum for default view"
+                    />
+                  </div>
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      Y Max:
+                    </div>
+                    <input
+                      type="number"
+                      value={shareSettings.defaultView[2]}
+                      onChange={(e) => updateDefaultView(2, e.target.value)}
+                      className="text-input-inner"
+                      aria-label="Y maximum for default view"
+                    />
+                  </div>
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      Y Min:
+                    </div>
+                    <input
+                      type="number"
+                      value={shareSettings.defaultView[3]}
+                      onChange={(e) => updateDefaultView(3, e.target.value)}
+                      className="text-input-inner"
+                      aria-label="Y minimum for default view"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bound Differences */}
+              <div>
+                <h3 className="text-md font-semibold text-titles mb-4">Zoom limits</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      Min Axis Interval:
+                    </div>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={shareSettings.minBoundDifference}
+                      onChange={(e) => updateShareSetting('minBoundDifference', parseFloat(e.target.value))}
+                      className="text-input-inner"
+                      aria-label="Minimum bound difference"
+                    />
+                  </div>
+                  <div className="text-input-outer">
+                    <div className="text-input-label">
+                      Max Axis Interval:
+                    </div>
+                    <input
+                      type="number"
+                      step="1"
+                      value={shareSettings.maxBoundDifference}
+                      onChange={(e) => updateShareSetting('maxBoundDifference', parseFloat(e.target.value))}
+                      className="text-input-inner"
+                      aria-label="Maximum bound difference"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Restriction Mode */}
+              <div>
+                <h3 className="text-md font-semibold text-titles mb-4">Restriction Mode</h3>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="restriction-mode"
+                    checked={shareSettings.restrictionMode === "read-only"}
+                    onChange={(e) => updateShareSetting('restrictionMode', e.target.checked ? "read-only" : "none")}
+                    className="h-4 w-4 accent-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background border-input bg-background rounded"
+                    aria-describedby="restriction-mode-description"
+                  />
+                  <label htmlFor="restriction-mode" className="text-sm text-titles cursor-pointer">
+                    Enable read-only mode
+                  </label>
+                </div>
+                <p id="restriction-mode-description" className="text-sm text-descriptions mt-1">
+                  When enabled, shared graphs will be read-only for viewers
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4" role="group" aria-label="Dialog actions">
+              <div className="flex justify-end items-center gap-2" role="group" aria-label="Dialog controls">
+                <button
+                  onClick={handleCancel}
+                  className="btn-secondary sm:w-auto"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  className="btn-primary sm:w-auto"
+                >
+                  Share via link
+                </button>
+              </div>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+
+      {/* Share Link Dialog */}
+      <ShareLinkDialog
+        isOpen={showLinkDialog}
+        onClose={handleCloseLinkDialog}
+        shareLink={generatedLink}
+      />
+    </>
+  );
+};
+
+export default ShareDialog;
