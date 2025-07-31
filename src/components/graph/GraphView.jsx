@@ -151,6 +151,8 @@ const GraphView = () => {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       grid: {
         cssClass: "grid",
+        gridX: stepSize, // Grid-Abstand für X-Achse
+        gridY: stepSize, // Grid-Abstand für Y-Achse
       },      
       axis: {
         cssClass: "axis", 
@@ -160,6 +162,7 @@ const GraphView = () => {
           insertTicks: true,
           majorHeight: 5,
           minorHeight: 3,
+          ticksDistance: stepSize, // Tick-Abstand anpassen
         },
       },
       zoom: { enabled: false, needShift: false },
@@ -479,7 +482,7 @@ const GraphView = () => {
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source, stepSize, isAudioEnabled]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source, stepSize]);
 
   // Update playActiveRef when PlayFunction.active changes
   useEffect(() => {
@@ -494,7 +497,7 @@ const GraphView = () => {
         graphBounds.xMax,
         graphBounds.yMin,
       ]);
-      boardRef.current.update();
+      boardRef.current.update();  
     }
   }, [graphBounds]);
 
