@@ -129,23 +129,35 @@ export default function KeyboardHandler() {
                     }); 
                     });
                     let sl;
-                    if (direction === 1){
-                        sl = l.filter(e => (CurrentX < e) && (e < NewX));
-                    }else{
-                        sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                    // this code is for moving to the next point of interest
+                    // if (direction === 1){
+                    //     sl = l.filter(e => (CurrentX < e) && (e < NewX));
+                    // }else{
+                    //     sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                    // }
+                    // if (sl.length> 0) {
+                    //     //console.log("Filtered points of interest to be considered: (x-coordinates)  ", sl.toString());
+                    //     if (direction === 1) {
+                    //         // If moving right, snap to the next point of interest
+                    //         NewX = sl[0];
+                    //     } else {
+                    //         // If moving left, snap to the previous point of interest
+                    //         NewX = sl[sl.length - 1];
+                    //     }
+                    // }
+                    let snapaccuracy= stepSize/5;
+                    if (direction === 1) {
+                        sl = l.filter(e => (CurrentX < e)  && (Math.abs(e-NewX) < snapaccuracy));
+                    } else {
+                        sl = l.filter(e => (e < CurrentX) && (Math.abs(e-NewX) < snapaccuracy));
                     }
-                    if (sl.length> 0) {
-                        //console.log("Filtered points of interest to be considered: (x-coordinates)  ", sl.toString());
-                        if (direction === 1) {
-                            // If moving right, snap to the next point of interest
-                            NewX = sl[0];
-                        } else {
-                            // If moving left, snap to the previous point of interest
-                            NewX = sl[sl.length - 1];
-                        }
+                    if (sl.length > 0) {
+                        console.log("Filtered points of interest to be considered: (x-coordinates) for snapping ", sl.toString());
                     }
-                    
-                    updateCursor(NewX);                                                                               // one step move
+                    let snappedX = sl.length > 0 ? sl[0] : NewX;
+                    //console.log("Current X:", CurrentX, "New X:", NewX, "Snapped X:", snappedX);
+
+                    updateCursor(snappedX);                                                                      // one step move
                 } else {
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
                 }

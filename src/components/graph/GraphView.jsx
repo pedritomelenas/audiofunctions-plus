@@ -281,10 +281,10 @@ const GraphView = () => {
       let l = [];
       activeFunctions.forEach(func => {
         func.pointOfInterests.forEach((point) =>{ 
-          console.log("New x of interest:", point.x); 
+          //console.log("New x of interest:", point.x); 
           l.push(point.x);
         }); 
-        console.log("Points of interest: (x-coordinates)  ", l.toString());
+        //console.log("Points of interest: (x-coordinates)  ", l.toString());
       });
       
       const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
