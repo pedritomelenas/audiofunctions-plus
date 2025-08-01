@@ -27,7 +27,8 @@ export default function KeyboardHandler() {
         inputRefs,
         setGraphSettings,
         cursorCoords, 
-        updateCursor
+        updateCursor,
+        stepSize
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
@@ -104,13 +105,21 @@ export default function KeyboardHandler() {
                 break;
 
             //Arrows
-            case "ArrowLeft":
-                //updateCursor(parseFloat(cursorCoords.x) - 0.1);                                        // one step move left
-                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 })); // smooth move left
-                break;
-            case "ArrowRight":
-                //updateCursor(parseFloat(cursorCoords.x) + 0.1);                                        // one step move right
-                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));  // smooth move right
+            case "ArrowLeft": case "ArrowRight":
+                let direction = 1;                               //right by default
+                if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
+                if (event.ctrlKey) {
+                    let NewX = parseFloat(cursorCoords[0].x);
+                    let IsOnGrid = NewX % stepSize === 0;
+                    if (direction === 1) {
+                        NewX = IsOnGrid ? NewX + stepSize : Math.ceil(NewX / stepSize) * stepSize;
+                    } else {
+                        NewX = IsOnGrid ? NewX - stepSize :  Math.floor(NewX / stepSize) * stepSize;
+                    }
+                    updateCursor(NewX);                                                                               // one step move
+                } else {
+                    setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
+                }
                 break;
             case "ArrowUp":
                 if (event.ctrlKey) {
