@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
-import { Volume2, VolumeX, MapPin, Eye, EyeOff, Settings, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
+import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -9,7 +9,7 @@ import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction } = useGraphContext();
   const { openDialog } = useDialog();
 
   const ZoomBoard = useZoomBoard();
@@ -31,6 +31,48 @@ export const useDynamicKBarActions = () => {
     alert(`Current Coordinates:\n\n${message}`);
   };
 
+  // Switch to next active function
+  const switchToNextFunction = () => {
+    if (!functionDefinitions || functionDefinitions.length === 0) return;
+    
+    // Find currently active function
+    const currentActiveIndex = functionDefinitions.findIndex(func => func.isActive);
+    
+    // If no function is active, activate the first one
+    if (currentActiveIndex === -1) {
+      if (functionDefinitions.length > 0) {
+        const updatedDefinitions = functionDefinitions.map((func, index) => ({
+          ...func,
+          isActive: index === 0
+        }));
+        setFunctionDefinitions(updatedDefinitions);
+      }
+      return;
+    }
+    
+    // Find next function index (rotate through the list)
+    const nextIndex = (currentActiveIndex + 1) % functionDefinitions.length;
+    
+    // Deactivate all functions and activate the next one
+    const updatedDefinitions = functionDefinitions.map((func, index) => ({
+      ...func,
+      isActive: index === nextIndex
+    }));
+    
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
+  // Show specific function and hide all others
+  const showOnlyFunction = (targetIndex) => {
+    if (!functionDefinitions || targetIndex < 0 || targetIndex >= functionDefinitions.length) return;
+    
+    const updatedDefinitions = functionDefinitions.map((func, index) => ({
+      ...func,
+      isActive: index === targetIndex
+    }));
+    
+    setFunctionDefinitions(updatedDefinitions);
+  };
 
   
   useRegisterActions([
@@ -49,7 +91,7 @@ export const useDynamicKBarActions = () => {
     {
       id: "toggle-audio",
       name: isAudioEnabled ? "Stop Audio" : "Start Audio",
-      shortcut: [""],
+      shortcut: ["p"],
       keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
       perform: () => setIsAudioEnabled(prev => !prev),
@@ -68,39 +110,96 @@ export const useDynamicKBarActions = () => {
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     },
 
+    // Switch function
     {
-      id: "change-audio-speed",
-      name: "Change Audio Speed",
-      // shortcut: [""],
-      // keywords: ", ",
+      id: "next-function",
+      name: "Next Function",
+      shortcut: ["n"],
+      keywords: "switch, function, next, rotate, cycle",
       parent: "quick-options",
-      perform: () => openDialog("speed-adjustment"),
-      icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
+      perform: switchToNextFunction,
+      icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
+    
+    // Play full function
     {
-      id: "zoom-in",
-      name: "Zoom In",
-      // shortcut: [""],
-      // keywords: ", ",
+      id: "play-function",
+      name: "Play Function",
+      shortcut: ["b"],
+      keywords: "play, run, complete, automatic, auto, autoplay",
       parent: "quick-options",
-      perform: () => ZoomBoard(false),
-      icon: <ZoomIn className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "zoom-out",
-      name: "Zoom Out",
-      // shortcut: [""],
-      // keywords: ", ",
-      parent: "quick-options",
-      perform: () => ZoomBoard(true),
-      icon: <ZoomOut className="size-5 shrink-0 opacity-70" />,
+      perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},
+      icon: <Play className="size-5 shrink-0 opacity-70" />,
     },
 
+    // {
+    //   id: "change-audio-speed",
+    //   name: "Change Audio Speed",
+    //   // shortcut: [""],
+    //   // keywords: ", ",
+    //   parent: "quick-options",
+    //   perform: () => openDialog("speed-adjustment"),
+    //   icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
+    // },
+    // {
+    //   id: "zoom-in",
+    //   name: "Zoom In",
+    //   // shortcut: [""],
+    //   // keywords: ", ",
+    //   parent: "quick-options",
+    //   perform: () => ZoomBoard(false),
+    //   icon: <ZoomIn className="size-5 shrink-0 opacity-70" />,
+    // },
+    // {
+    //   id: "zoom-out",
+    //   name: "Zoom Out",
+    //   // shortcut: [""],
+    //   // keywords: ", ",
+    //   parent: "quick-options",
+    //   perform: () => ZoomBoard(true),
+    //   icon: <ZoomOut className="size-5 shrink-0 opacity-70" />,
+    // },
 
 
 
+    // Function selection section
+    {
+      id: "select-function",
+      name: "Switch active Function",
+      shortcut: [""],
+      keywords: "function, select, show, display",
+      icon: <SquareActivity className="size-5 shrink-0 opacity-70" />,
+    },
+    // Switch function
+    {
+      id: "next-function",
+      name: "Next Function",
+      shortcut: ["n"],
+      keywords: "switch, function, next, rotate, cycle",
+      parent: "select-function",
+      perform: switchToNextFunction,
+      icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
+    },
+
+    // Individual function selection actions
+    ...(functionDefinitions || []).map((func, index) => {
+      const functionName = getFunctionNameN(functionDefinitions, index) || `Function ${index + 1}`;
+      
+      return {
+        id: `show-function-${func.id}`,
+        name: `Show ${functionName}`,
+        shortcut: index < 9 ? [(index + 1).toString()] : undefined, // Add hotkeys 1-9 for first 9 functions
+        keywords: `function, show, display, ${functionName}`,
+        parent: "select-function",
+        perform: () => showOnlyFunction(index),
+        icon: <Eye className="size-5 shrink-0 opacity-70" />,
+      };
+    }),
 
 
+
+    // COMMENTED OUT: Old show/hide functionality
+    /*
     // Show/hide functions section
     {
       id: "show/hide-functions",
@@ -138,11 +237,7 @@ export const useDynamicKBarActions = () => {
           : <Eye className="size-5 shrink-0 opacity-70" />,
       };
     }),
-
-
-
-
-
+    */
 
     // Edit functions
     {
