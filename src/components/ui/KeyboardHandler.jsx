@@ -25,6 +25,7 @@ export default function KeyboardHandler() {
         setIsAudioEnabled, 
         setGraphBounds,
         inputRefs,
+        graphSettings,
         setGraphSettings,
         cursorCoords, 
         updateCursor
@@ -64,10 +65,18 @@ export default function KeyboardHandler() {
             //     event.preventDefault();
             //     break;
 
-            case "r": // Reset graph bounds to default
-                setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
-                updateCursor(0);
-                break;
+            // case "r": // Reset graph bounds to default
+            //     // Use defaultView from graphSettings instead of hardcoded values
+            //     const defaultView = graphSettings?.defaultView;
+            //     if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
+            //         const [xMin, xMax, yMax, yMin] = defaultView;
+            //         setGraphBounds({ xMin, xMax, yMin, yMax });
+            //     } else {
+            //         // Fallback to hardcoded values if defaultView is not available
+            //         setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+            //     }
+            //     updateCursor(0);
+            //     break;
 
             // case "g": // Tohggle grid visibility - not sure how to do and if we really need this
             //     console.log("Toggle grid visibility");

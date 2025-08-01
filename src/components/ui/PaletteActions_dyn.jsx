@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -9,7 +9,7 @@ import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
   const { openDialog } = useDialog();
 
   const ZoomBoard = useZoomBoard();
@@ -130,6 +130,28 @@ export const useDynamicKBarActions = () => {
       parent: "quick-options",
       perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},
       icon: <Play className="size-5 shrink-0 opacity-70" />,
+    },
+
+    // Reset View
+    {
+      id: "reset-view",
+      name: "Reset View",
+      shortcut: ["r"],
+      keywords: "reset, restore, standard",
+      parent: "quick-options",
+      perform: () => {
+        // Use defaultView from graphSettings instead of hardcoded values
+        const defaultView = graphSettings?.defaultView;
+        if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
+            const [xMin, xMax, yMax, yMin] = defaultView;
+            setGraphBounds({ xMin, xMax, yMin, yMax });
+        } else {
+            // Fallback to hardcoded values if defaultView is not available
+            setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+        }
+        updateCursor(0);
+      },
+      icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
 
     // {
@@ -279,6 +301,29 @@ export const useDynamicKBarActions = () => {
       perform: () => openDialog("movement-adjustments"),
       icon: <CircleGauge className="size-5 shrink-0 opacity-70" />,
     },
+    
+    {
+      id: "reset-view",
+      name: "Reset View",
+      shortcut: ["r"],
+      keywords: "reset, restore, standard",
+      parent: "diagram-options",
+      perform: () => {
+        // Use defaultView from graphSettings instead of hardcoded values
+        const defaultView = graphSettings?.defaultView;
+        if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
+            const [xMin, xMax, yMax, yMin] = defaultView;
+            setGraphBounds({ xMin, xMax, yMin, yMax });
+        } else {
+            // Fallback to hardcoded values if defaultView is not available
+            setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+        }
+        updateCursor(0);
+      },
+      icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
+    },
+
+
 
 
 
