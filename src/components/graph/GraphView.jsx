@@ -198,9 +198,11 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
+      setInputErrorMes(null);
       let [expr, errMMsg] = checkMathSpell(func.functionString);
       if (errMMsg!=null){
-        console.log("Error in function ", func.id, ":", errMMsg);
+        console.log("Error in ", func.functionName, ":", errMMsg);
+        setInputErrorMes(`Invalid expression for ${func.functionName}: ${errMMsg}. Please check your input.`);
       }
 
       try {
