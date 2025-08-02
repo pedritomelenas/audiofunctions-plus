@@ -1,7 +1,8 @@
-import { create, all, re } from 'mathjs'
+import { create, all, re, e } from 'mathjs'
 
 const config = { }
 const math = create(all, config)
+let errorMessage = null; // this will be used to store error messages 
 
 // function to check if 'expr' is a constant, for instance, -1 or 10+2
 function isMathConstant(expr){
@@ -40,40 +41,49 @@ function isOneVariableFunction(expr){
         let snodes = [... new Set(parsed.filter((n) => n.isSymbolNode))]; // symbol nodes this includes functions and variables
         const fnNodes = [... new Set(parsed.filter((n) => n.isFunctionNode))]; // function nodes
         const opNodes = [... new Set(parsed.filter((n) => n.isOperatorNode))]; // operator nodes
-        console.log(snodes.map((n) => n.name));
-        console.log("fn ",fnNodes.map((n) => n.name));
-        console.log("op ",opNodes.map((n) => n.op));
+        //console.log(snodes.map((n) => n.name));
+        //console.log("fn ",fnNodes.map((n) => n.name));
+        //console.log("op ",opNodes.map((n) => n.op));
         // if (!(fnNodes.every((n) => n.args.length==1 && allowed_fn.includes(n.name)))){
         //     console.log("Invalid function or wrong number of arguments");
         //     return false;
         // }
         for (let i=0;i<fnNodes.length;i++){
             if (!(allowed_fn.includes(fnNodes[i].name))){
-                console.log("Invalid function name: ", fnNodes[i].name);
+                errorMessage = "Invalid function name: " + fnNodes[i].name;
+                //console.log("Invalid function name: ", fnNodes[i].name);
                 return false;
             }
             if (fnNodes[i].args.length!=1 && !(fn_with_more_args.includes(fnNodes[i].name))){
-                console.log("Invalid function, wrong number of arguments: ", fnNodes[i].name);
+                errorMessage = "Invalid function, wrong number of arguments: " + fnNodes[i].name;
+                //console.log("Invalid function, wrong number of arguments: ", fnNodes[i].name);
                 return false;
             }
             if (fn_with_more_args.includes(fnNodes[i].name) && fnNodes[i].args.length>2){
-                console.log("This function should have at most two arguments: ", fnNodes[i].name);
+                errorMessage = "Function " + fnNodes[i].name + " should have at most two arguments";
+                //console.log("This function should have at most two arguments: ", fnNodes[i].name);
                 return false;
             }               
         }    
         if (!(opNodes.every((n) => allowed_op.includes(n.op)))){
-            console.log("Invalid operator");
+            errorMessage = "Invalid operator";
+            //console.log("Invalid operator");
             return false;
         }
         parsed.traverse(function (node, path, parent) { // we have checked all functions, we remove them from the list of symbol nodes
             if (node.isSymbolNode && parent?.name == node.name && allowed_fn.includes(node.name)){ 
                 removeItemAll(snodes,node);
-                console.log(node.name);
+                //console.log(node.name);
             }
         });
-        console.log(snodes.map((n) => n.name));
+        //console.log(snodes.map((n) => n.name));
         // the remaining should be a single variable "x" or a constant
-        return snodes.every((n) => allowed_constants.includes(n.name) || n.name=="x"); 
+        if (snodes.every((n) => allowed_constants.includes(n.name) || n.name=="x")){
+            return true; 
+        } else {
+            errorMessage = "Invalid variable or constant";
+            return false;
+        }
     }
     catch(ex){
         return false;
@@ -97,6 +107,7 @@ function isValidMathParse(expr){
         return true;
     }
     catch(ex){
+        errorMessage = "Invalid math expression: " + ex.message;
         return false;
     }
 
@@ -147,7 +158,7 @@ export function transformMathConstants(node) {
 function isPiecewise(txt){
     // we first check that the input is a valid math expression
     if (!(isValidMathParse(txt))){
-        console.log("Invalid input: could not parse");
+        //console.log("Invalid input: could not parse");
         return false;
     }
     const parsed = math.parse(txt); // we parse the string txt
@@ -156,12 +167,14 @@ function isPiecewise(txt){
     }
     const its = parsed.items; //list of items, each item should be a pair [expr,ineq]
     if (!its.every((e)=> "items" in e)){
-        console.log("Invalid input, not an array of arrays");
+        //console.log("Invalid input, not an array of arrays");
+        errorMessage = "Invalid piecewise format, not an array of arrays";
         return false;
     }
     // so we check that all items are pairs 
     if (!its.every((e)=> e.items.length==2)){
-        console.log("Invalid input, not a list of pairs");
+        //console.log("Invalid input, not a list of pairs");
+        errorMessage = "Invalid piecewise format, not a list of pairs";
         return false;
     }
     // now we check that the first item is a function and the second is an inequality
@@ -175,7 +188,8 @@ function isPiecewise(txt){
         it=its[i]; // the ith item
         // we check if the first item is a function in x
         if (!(isOneVariableFunction(it.items[0].toString()))){
-            console.log("Invalid input, not a valid function", it.items[0].toString());
+            //console.log("Invalid input, not a valid function", it.items[0].toString());
+            errorMessage = "Invalid piecewise format, not a valid function: " + it.items[0].toString();
             return false;
         }
         // now we check that the second item is an inequality
@@ -185,26 +199,30 @@ function isPiecewise(txt){
             if (ineq.op != "<" && ineq.op != ">" && 
                 ineq.op != "<=" && ineq.op != ">=" && 
                 ineq.op != "==" && ineq.op != "!="){
-                console.log("Invalid input, not a valid inequality (wrong relations)", ineq.toString());
+                //console.log("Invalid input, not a valid inequality (wrong relations)", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid inequality (wrong relations): " + ineq.toString();
                 return false;
             }
             // we check that the number of arguments of the inequality are valid 
             // this is probably not necessary, since the parser should check this
             if (ineq.args.length!=2){
-                console.log("Invalid input, not a valid inequality", ineq.toString());
+                //console.log("Invalid input, not a valid inequality", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid inequality (wrong number of arguments): " + ineq.toString();
                 return false;
             }    
             // we check that the arguments of the inequality are valid
             // one must be constant and the other a variable
             const typeArgs = new Set(ineq.args.map((e)=> e.type));
             if (!typeArgs.has("SymbolNode")){ // at least one must be variable
-                console.log("Invalid input, not a valid inequality (variable needed))", ineq.toString());
+                //console.log("Invalid input, not a valid inequality (variable needed))", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid inequality (variable needed): " + ineq.toString();
                 return false;
             }
             if (ineq.args[0].type=="SymbolNode"){//equation of the form x op a
                 //console.log("Variable first");
                 if (!isMathConstant(ineq.args[1].toString())){
-                    console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+                    //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+                    errorMessage = "Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString();
                     return false;
                 }
                 switch (ineq.op) {
@@ -232,7 +250,8 @@ function isPiecewise(txt){
             }else{//equation of the form a op x
                 //console.log("variable second")
                 if (!isMathConstant(ineq.args[0].toString())){
-                    console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+                    //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+                    errorMessage = "Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString();
                     return false;
                 }
                 switch (ineq.op) {
@@ -256,7 +275,7 @@ function isPiecewise(txt){
                         intervals.push([-Infinity, ineq.args[0].evaluate(), 0, 0]);
                         break;
                 }
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             // need to check now that the other argument is constant
         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
@@ -265,15 +284,18 @@ function isPiecewise(txt){
             //const keysIneq = Object.keys(ineq);
             //if (!(keysIneq[0]=="conditionals" && keysIneq[1]=="params" && keysIneq.length==2)){
             if (!(ineq.type=="RelationalNode")){
-                console.log("Invalid input, not a valid inequality", ineq.toString());
+                //console.log("Invalid input, not a valid inequality", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid inequality: " + ineq.toString();
                 return false;
             }
             if (!(ineq.conditionals.length==2)){
-                console.log("Invalid input, not a valid chain of inequalities (more than two)", ineq.toString());
+                //console.log("Invalid input, not a valid chain of inequalities (more than two)", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid chain of inequalities (more than two): " + ineq.toString();
                 return false;
             }
             if (!ineq.conditionals.every((e)=> e=="smaller" || e=="smallerEq")){
-                console.log("Invalid input, not a valid chain of inequalities (only < and <= are allowed)", ineq.toString());
+                //console.log("Invalid input, not a valid chain of inequalities (only < and <= are allowed)", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid chain of inequalities (only < and <= are allowed): " + ineq.toString();
                 return false;
             }
             // we check that the arguments of the inequality are valid
@@ -282,41 +304,44 @@ function isPiecewise(txt){
             if (!(isMathConstant(ineq.params[0].toString()) && 
                   ineq.params[1].type=="SymbolNode") && 
                   isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
-                console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
+                //console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
+                errorMessage = "Invalid piecewise format, not a valid inequality (two constant params and a symbol): " + ineq.toString();
                 return false;
             }
             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smallerEq"){ // a<=x<=b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 1]);
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smallerEq"){ // a<x<=b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 1]);
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smaller"){ // a<=x<b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 0]);
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smaller"){ // a<x<b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 0]);
-                console.log("Added interval: ", intervals[intervals.length-1].toString());
+                //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
         }
     } 
-    console.log("Intervals: ", intervals.map((e)=> e.toString()));    
+    //console.log("Intervals: ", intervals.map((e)=> e.toString()));    
     // now it remains to check that the intervals are disjoint     
     // first we sort the intervals by their first element
     intervals.sort((a,b)=> (a[0]-b[0]==0) ? (a[1]-b[1]) : (a[0]-b[0]));
-    console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
+    //console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
     for (let i=0;i<intervals.length-1;i++){
         const a = intervals[i];
         const b = intervals[i+1];
         if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
-            console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            errorMessage = "Invalid piecewise format, intervals are not disjoint: " + (a[2]==0?"(":"[") +a[0].toString() + ","+ a[1].toString() + (a[3]==0?")":"]") + " and " + (b[2]==0?"(":"[") +b[0].toString() + ","+ b[1].toString() + (b[3]==0?")":"]");
             return false;
         }
         if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
-            console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+            errorMessage = "Invalid piecewise format, intervals are not disjoint: " + (a[2]==0?"(":"[") +a[0].toString() + ","+ a[1].toString() + (a[3]==0?")":"]") + " and " + (b[2]==0?"(":"[") +b[0].toString() + ","+ b[1].toString() + (b[3]==0?")":"]");
             return false;
         }
     }
@@ -365,18 +390,19 @@ function parsePiecewise(txt){
 export function checkMathSpell(txt_input){
     // we are allowing ** to be used as a power operator, so we replace it with ^
     const txt = txt_input.replace(/\*\*/g, '^'); // replace ** with ^
-    console.log("Checking math spell: ", txt);
+    // console.log("Checking math spell: ", txt);
     // check if its a function of one variable
+    errorMessage = null; // reset error message
     if(isOneVariableFunction(txt)){
         // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-        return transformMathConstants(math.parse(txt)).toString({implicit: 'show'});
+        return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), errorMessage];
     }
     // we check if the input is a piecewise function
     if (isPiecewise(txt)){
         // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-        const expr = transformMathConstants(math.parse(txt)).toString();        
-        return parsePiecewise(expr);
+        const expr = transformMathConstants(math.parse(txt)).toString();
+        return [parsePiecewise(expr), errorMessage];
     }
     //no more options
-    return "0";
+    return ["0", errorMessage];
 }

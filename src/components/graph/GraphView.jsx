@@ -198,7 +198,10 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
-      let expr = checkMathSpell(func.functionString);
+      let [expr, errMMsg] = checkMathSpell(func.functionString);
+      if (errMMsg!=null){
+        console.log("Error in function ", func.id, ":", errMMsg);
+      }
 
       try {
         graphFormula = board.jc.snippet(expr, true, "x", true);
@@ -281,10 +284,10 @@ const GraphView = () => {
       let l = [];
       activeFunctions.forEach(func => {
         func.pointOfInterests.forEach((point) =>{ 
-          console.log("New x of interest:", point.x); 
+          //console.log("New x of interest:", point.x); 
           l.push(point.x);
         }); 
-        console.log("Points of interest: (x-coordinates)  ", l.toString());
+        //console.log("Points of interest: (x-coordinates)  ", l.toString());
       });
       
       const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
