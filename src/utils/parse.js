@@ -107,7 +107,7 @@ function isValidMathParse(expr){
         return true;
     }
     catch(ex){
-        errorMessage = "Invalid math expression: " + ex.message;
+        errorMessage = "Invalid or incomplete math expression";
         return false;
     }
 
