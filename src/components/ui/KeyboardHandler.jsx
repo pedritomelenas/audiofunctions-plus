@@ -145,19 +145,28 @@ export default function KeyboardHandler() {
                     //         NewX = sl[sl.length - 1];
                     //     }
                     // }
-                    let snapaccuracy= stepSize/5;
-                    if (direction === 1) {
-                        sl = l.filter(e => (CurrentX < e)  && (Math.abs(e-NewX) < snapaccuracy));
-                    } else {
-                        sl = l.filter(e => (e < CurrentX) && (Math.abs(e-NewX) < snapaccuracy));
+                    // this code is for snapping 
+                    // let snapaccuracy= stepSize/5;
+                    // if (direction === 1) {
+                    //     sl = l.filter(e => (CurrentX < e)  && (Math.abs(e-NewX) < snapaccuracy));
+                    // } else {
+                    //     sl = l.filter(e => (e < CurrentX) && (Math.abs(e-NewX) < snapaccuracy));
+                    // }
+                    // if (sl.length > 0) {
+                    //     console.log("Filtered points of interest to be considered: (x-coordinates) for snapping ", sl.toString());
+                    // }
+                    // let snappedX = sl.length > 0 ? sl[0] : NewX;
+                    // //console.log("Current X:", CurrentX, "New X:", NewX, "Snapped X:", snappedX);
+                    //updateCursor(snappedX);                                                       
+                    if (direction === 1){
+                        sl = l.filter(e => (CurrentX < e) && (e < NewX));
+                    }else{
+                        sl = l.filter(e => (NewX < e) && (e < CurrentX));
                     }
-                    if (sl.length > 0) {
-                        console.log("Filtered points of interest to be considered: (x-coordinates) for snapping ", sl.toString());
+                    if (sl.length> 0) {
+                        console.log("There are points of interest in the way");
                     }
-                    let snappedX = sl.length > 0 ? sl[0] : NewX;
-                    //console.log("Current X:", CurrentX, "New X:", NewX, "Snapped X:", snappedX);
-
-                    updateCursor(snappedX);                                                                      // one step move
+                    updateCursor(NewX);               // one step move
                 } else {
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
                 }
