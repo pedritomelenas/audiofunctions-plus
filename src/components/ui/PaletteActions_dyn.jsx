@@ -1,9 +1,9 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
-import { getFunctionNameN, updateFunctionN } from "../../utils/graphObjectOperations";
+import { getFunctionNameN, updateFunctionN, setFunctionInstrumentN, getFunctionInstrumentN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
@@ -74,7 +74,39 @@ export const useDynamicKBarActions = () => {
     setFunctionDefinitions(updatedDefinitions);
   };
 
-  
+  // Toggle sonification type for active function
+  const toggleSonificationType = () => {
+    if (!functionDefinitions || functionDefinitions.length === 0) return;
+    
+    // Find currently active function
+    const activeIndex = functionDefinitions.findIndex(func => func.isActive);
+    if (activeIndex === -1) return;
+    
+    const currentInstrument = getFunctionInstrumentN(functionDefinitions, activeIndex);
+    
+    // Toggle between discrete (guitar) and continuous (clarinet) sonification
+    const newInstrument = currentInstrument === 'guitar' ? 'clarinet' : 'guitar';
+    const sonificationType = newInstrument === 'guitar' ? 'discrete' : 'continuous';
+    
+    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, activeIndex, newInstrument);
+    setFunctionDefinitions(updatedDefinitions);
+    
+    console.log(`Sonification type changed to ${sonificationType} (${newInstrument}) for active function`);
+  };
+
+  // Get current sonification type for active function
+  const getCurrentSonificationType = () => {
+    if (!functionDefinitions || functionDefinitions.length === 0) return 'continuous';
+    
+    const activeIndex = functionDefinitions.findIndex(func => func.isActive);
+    if (activeIndex === -1) return 'continuous';
+    
+    const currentInstrument = getFunctionInstrumentN(functionDefinitions, activeIndex);
+    return currentInstrument === 'guitar' ? 'discrete' : 'continuous';
+  };
+
+  const currentSonificationType = getCurrentSonificationType();
+
   useRegisterActions([
 
     // quick options
@@ -119,6 +151,17 @@ export const useDynamicKBarActions = () => {
       parent: "quick-options",
       perform: switchToNextFunction,
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
+    },
+
+    // Toggle sonification type
+    {
+      id: "toggle-sonification-type",
+      name: `Change Sonification-Instrument to ${currentSonificationType === 'discrete' ? 'Continuous' : 'Discrete'}`,
+      shortcut: ["i"],
+      keywords: "sonification, instrument, discrete, continuous, guitar, clarinet, toggle",
+      parent: "quick-options",
+      perform: toggleSonificationType,
+      icon: <Music className="size-5 shrink-0 opacity-70" />,
     },
     
     // Play full function
