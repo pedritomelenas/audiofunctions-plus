@@ -11,6 +11,7 @@ import {
   addFunction,
   removeFunctionN,
   updateFunctionN,
+  isFunctionActiveN,
   setFunctionInstrumentN // Add this import
 } from "../../../utils/graphObjectOperations";
 
@@ -47,7 +48,11 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       pointOfInterests: [],
       landmarks: []
     };
-    setFunctionDefinitions(addFunction(functionDefinitions, newFunction));
+    
+    // Deactivate all existing functions and add the new active function
+    const updatedDefinitions = (functionDefinitions || []).map(func => ({ ...func, isActive: false }));
+    setFunctionDefinitions(addFunction(updatedDefinitions, newFunction));
+    
     announceStatus(`New function added. Total functions: ${getFunctionCount(functionDefinitions) + 1}`);
     setFocusAfterAction(`function-${getFunctionCount(functionDefinitions)}`);
   };
@@ -63,15 +68,37 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       pointOfInterests: [],
       landmarks: []
     };
-    setFunctionDefinitions(addFunction(functionDefinitions, newFunction));
+    
+    // Deactivate all existing functions and add the new active function
+    const updatedDefinitions = (functionDefinitions || []).map(func => ({ ...func, isActive: false }));
+    setFunctionDefinitions(addFunction(updatedDefinitions, newFunction));
+    
     announceStatus(`New piecewise function added. Total functions: ${getFunctionCount(functionDefinitions) + 1}`);
     setFocusAfterAction(`piecewise-function-${getFunctionCount(functionDefinitions)}-part-0-function`);
   };
 
   const removeContainer = (index) => {
     const functionType = getFunctionTypeN(functionDefinitions, index) === 'piecewise_function' ? 'piecewise function' : 'function';
-    setFunctionDefinitions(removeFunctionN(functionDefinitions, index));
-    announceStatus(`${functionType} ${index + 1} deleted. Remaining functions: ${getFunctionCount(functionDefinitions) - 1}`);
+    const wasActive = isFunctionActiveN(functionDefinitions, index);
+    
+    // Remove the function first
+    let updatedDefinitions = removeFunctionN(functionDefinitions, index);
+    
+    // If the removed function was active and there are still functions left, activate another one
+    if (wasActive && updatedDefinitions.length > 0) {
+      // Prefer the function that was before the deleted one, or the first one if we deleted index 0
+      const newActiveIndex = index > 0 ? index - 1 : 0;
+      // Make sure the index is valid after removal
+      const targetIndex = Math.min(newActiveIndex, updatedDefinitions.length - 1);
+      
+      updatedDefinitions = updatedDefinitions.map((func, i) => ({
+        ...func,
+        isActive: i === targetIndex
+      }));
+    }
+    
+    setFunctionDefinitions(updatedDefinitions);
+    announceStatus(`${functionType} ${index + 1} deleted. Remaining functions: ${updatedDefinitions.length}`);
   };
 
   const updateFunctionString = (index, newFunctionString) => {

@@ -152,17 +152,6 @@ export const useDynamicKBarActions = () => {
       perform: switchToNextFunction,
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
-
-    // Toggle sonification type
-    {
-      id: "toggle-sonification-type",
-      name: `Change Sonification-Instrument to ${currentSonificationType === 'discrete' ? 'Continuous' : 'Discrete'}`,
-      shortcut: ["i"],
-      keywords: "sonification, instrument, discrete, continuous, guitar, clarinet, toggle",
-      parent: "quick-options",
-      perform: toggleSonificationType,
-      icon: <Music className="size-5 shrink-0 opacity-70" />,
-    },
     
     // Play full function
     {
@@ -173,6 +162,17 @@ export const useDynamicKBarActions = () => {
       parent: "quick-options",
       perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},
       icon: <Play className="size-5 shrink-0 opacity-70" />,
+    },
+
+    // Toggle sonification type
+    {
+      id: "toggle-sonification-type",
+      name: `Change Sonification-Instrument to ${currentSonificationType === 'discrete' ? 'Continuous' : 'Discrete'}`,
+      shortcut: ["i"],
+      keywords: "sonification, instrument, discrete, continuous, guitar, clarinet, toggle",
+      parent: "quick-options",
+      perform: toggleSonificationType,
+      icon: <Music className="size-5 shrink-0 opacity-70" />,
     },
 
     // Reset View
