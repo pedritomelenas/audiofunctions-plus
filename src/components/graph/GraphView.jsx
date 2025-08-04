@@ -264,6 +264,7 @@ const GraphView = () => {
         size: 5,
         fixed: true,
         highlight: false,
+        showInfobox: false,
         fillColor: func.color || "#0000FF",
         strokeColor: func.color || "#0000FF"
       });
