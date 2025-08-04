@@ -203,6 +203,8 @@ const GraphView = () => {
       if (errMMsg!=null){
         console.log("Error in ", func.functionName, ":", errMMsg);
         setInputErrorMes(`Invalid expression for ${func.functionName}: ${errMMsg}. Please check your input.`);
+        expr = "0";
+        graphFormula = 0;
       }
 
       try {
