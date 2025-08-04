@@ -199,23 +199,27 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
-      setInputErrorMes(null);
+      // setInputErrorMes({[func.id]: null}); 
+      // @Lukas, please change
       let [expr, errMMsg] = checkMathSpell(func.functionString);
       if (errMMsg!=null){
         console.log("Error in ", func.functionName, ":", errMMsg);
-        setInputErrorMes(`Invalid expression for ${func.functionName}: ${errMMsg}. Please check your input.`);
+        // setInputErrorMes({[func.id]: `Invalid expression for ${func.functionName}: ${errMMsg}. Please check your input.`});
+        // @Lukas, please change
         expr = "0";
         graphFormula = 0;
-      }
-
-      try {
-        graphFormula = board.jc.snippet(expr, true, "x", true);
-        setInputErrorMes(null);
-      } catch (err) {
-        console.error(`Error parsing expression for function ${func.id}: `, err);
-        setInputErrorMes(`Invalid function ${func.functionName}. Please check your input.`);
-        expr = "0";
-        graphFormula = 0;
+      }else{     
+        try {
+          graphFormula = board.jc.snippet(expr, true, "x", true);
+          // setInputErrorMes({[func.id]: null});
+          // @Lukas, please change
+        } catch (err) {
+          console.error(`Error parsing expression for function ${func.id}: `, err);
+          // setInputErrorMes({[func.id]: `Invalid function ${func.functionName}. Please check your input.`});
+          // @Lukas, please change
+          expr = "0";
+          graphFormula = 0;
+        }
       }
 
       // Store the parsed expression
