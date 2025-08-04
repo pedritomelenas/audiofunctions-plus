@@ -263,6 +263,15 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
     }
   };
 
+  const handleFocus = () => {
+    // Set this function as active when its input is focused
+    const updatedDefinitions = functionDefinitions.map((func, i) => ({
+      ...func,
+      isActive: i === index
+    }));
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
   const handleInstrumentChange = (e) => {
     e.stopPropagation(); // Prevent triggering other events
     
@@ -319,6 +328,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
             className="text-input-inner grow"
             aria-label={`Function ${index + 1} mathematical expression`}
             aria-description="Mathematical expression."
@@ -366,6 +376,15 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
         onAccept();
       }
     }
+  };
+
+  const handleFocus = () => {
+    // Set this function as active when any of its inputs is focused
+    const updatedDefinitions = functionDefinitions.map((func, i) => ({
+      ...func,
+      isActive: i === index
+    }));
+    setFunctionDefinitions(updatedDefinitions);
   };
 
   const handleInstrumentChange = (e) => {
@@ -448,6 +467,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     }
     return [{ function: '', condition: '' }];
   });
+  
   const addPart = () => {
     setParts(prev => {
       const newParts = [...prev, { function: '', condition: '' }];
@@ -505,6 +525,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       needsUpdateRef.current = false;
     }
   }, [parts, onChange]);
+  
   return (
     <div 
       className="mb-4" 
@@ -544,6 +565,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
                   value={part.function}
                   onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onFocus={handleFocus}
                   className="text-input-inner w-full grow"
                   placeholder="e.g., x^2 + 1"
                   aria-label={`Function expression for part ${partIndex + 1}`}
@@ -561,6 +583,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
                   value={part.condition}
                   onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onFocus={handleFocus}
                   className="text-input-inner w-full grow"
                   placeholder="e.g., x < 0 or x >= 1"
                   aria-label={`Condition for part ${partIndex + 1}`}
