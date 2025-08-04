@@ -151,8 +151,9 @@ const GraphView = () => {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       grid: {
         cssClass: "grid",
-        gridX: stepSize, // Grid-Abstand für X-Achse
-        gridY: stepSize, // Grid-Abstand für Y-Achse
+        majorStep: stepSize
+        // gridX: stepSize, // Grid-Abstand für X-Achse
+        // gridY: stepSize, // Grid-Abstand für Y-Achse
       },      
       axis: {
         cssClass: "axis", 
