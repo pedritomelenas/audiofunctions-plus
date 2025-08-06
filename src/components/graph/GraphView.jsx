@@ -131,7 +131,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrors, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
@@ -199,27 +199,38 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
-      // setInputErrorMes({[func.id]: null}); 
-      // @Lukas, please change
-      let [expr, errMMsg] = checkMathSpell(func.functionString);
-      if (errMMsg!=null){
+      let expr;
+      let hasError = false;
+      
+      // Check math spell and syntax
+      let [exprResult, errMMsg] = checkMathSpell(func.functionString);
+      expr = exprResult;
+      
+      if (errMMsg !== null) {
         console.log("Error in ", func.functionName, ":", errMMsg);
-        // setInputErrorMes({[func.id]: `Invalid expression for ${func.functionName}: ${errMMsg}. Please check your input.`});
-        // @Lukas, please change
+        setInputErrors(prev => ({ ...prev, [func.id]: `${errMMsg}. Please check your input.` }));
+        hasError = true;
         expr = "0";
         graphFormula = 0;
-      }else{     
+      } else {
         try {
           graphFormula = board.jc.snippet(expr, true, "x", true);
-          // setInputErrorMes({[func.id]: null});
-          // @Lukas, please change
         } catch (err) {
           console.error(`Error parsing expression for function ${func.id}: `, err);
-          // setInputErrorMes({[func.id]: `Invalid function ${func.functionName}. Please check your input.`});
-          // @Lukas, please change
+          setInputErrors(prev => ({ ...prev, [func.id]: `Invalid function. Please check your input.` }));
+          hasError = true;
           expr = "0";
           graphFormula = 0;
         }
+      }
+
+      // Clear error if no issues found
+      if (!hasError) {
+        setInputErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[func.id];
+          return newErrors;
+        });
       }
 
       // Store the parsed expression
@@ -235,8 +246,14 @@ const GraphView = () => {
   
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const funcEndpoints = createEndPoints(func, board);
-        endpoints = [...endpoints, ...funcEndpoints];
+        try {
+          const funcEndpoints = createEndPoints(func, board);
+          endpoints = [...endpoints, ...funcEndpoints];
+        } catch (endpointErr) {
+          console.error(`Error creating endpoints for ${func.functionName}:`, endpointErr);
+          // Update error if endpoint creation fails
+          setInputErrors(prev => ({ ...prev, [func.id]: `Error creating piecewise endpoints. Please check your input.` }));
+        }
       }
 
       // Find last known position for this function's cursor

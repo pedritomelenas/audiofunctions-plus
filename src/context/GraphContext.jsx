@@ -29,6 +29,8 @@ export const GraphContextProvider = ({ children }) => {
     speed: useRef(null),
   };
 
+  const [inputErrors, setInputErrors] = useState({});
+
   // Load data from URL hash on component mount
   useEffect(() => {
     const loadFromUrl = async () => {
@@ -87,6 +89,8 @@ export const GraphContextProvider = ({ children }) => {
         setCursorCoords,
         inputErrorMes,
         setInputErrorMes,
+        inputErrors,
+        setInputErrors,
         isAudioEnabled,
         setIsAudioEnabled,
         graphBounds,
