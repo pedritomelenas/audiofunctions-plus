@@ -1,26 +1,41 @@
 import React, { useEffect, useRef } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
-import { create, all } from 'mathjs'
+import { create, all, forEach } from 'mathjs'
 import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
+import * as Tone from "tone";
 
 const config = { }
 const math = create(all, config)
+
+// Number of x axis divisions (can be made configurable)
+const X_AXIS_DIVISIONS = 10;
 
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 // it should be previusly checked that it is a valid piecewise function or a math expression
-function createEndPoints(txtraw,board){
-    const parsed = transformMathConstants(math.parse(txtraw));
+function createEndPoints(func,board){
+    // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
+    // we are also transforming the math constants to be able to parse them
+    // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
+    console.log("Creating endpoints for function: ", func);
+    const txtraw= func.functionString
+    const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
+    const types_to_be_deleted= ["isolated", "unequal"]; // we remove these types of points of interest, since they will be redefined
+    const filteredPoints = func.pointOfInterests.filter(
+      point => !types_to_be_deleted.includes(point.type)
+    );
+    func.pointOfInterests = filteredPoints;
+    console.log(func);
+
     if (!("items" in parsed)){ // not a piecewise function
         return [[],[]];
     }
     const l = parsed.items; //list of items, each item is a pair [expr,ineq]
     let ineq,v,a,b,p,i;
     const endpoints = []; // the endpoints of the intervals
-    const xisolated = []; // the x coordinates of points associated to equalities (avoidable discontinuities)
     for (i=0;i< l.length;i++){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
@@ -30,25 +45,61 @@ function createEndPoints(txtraw,board){
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
-                    }
+                        console.log("Adding isolated point at x=", v);
+                        func.pointOfInterests.push({
+                            x: v,
+                            y: l[i].items[0].evaluate({x:v}),
+                            type: "isolated"
+                        });
+                        console.log("Function ", func);
+                      }
                 }else{ // we have x op a, with op in {<=, >=, ==}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'isolated-point', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                     if (ineq.op == "=="){ // if we have an equality, we add the x coordinate to the list of x-coordinates of isolated points
-                        xisolated.push(p.X());
+                        console.log("Adding isolated point at x=", v);
+                        func.pointOfInterests.push({
+                            x: v,
+                            y: l[i].items[0].evaluate({x:v}),
+                            type: "isolated"
+                        });
+                        console.log("Function ", func);
                     }
                 }
             }
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
                 if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (ineq.op == "!="){ 
+                      if (isNaN(fv)){// the point is not defined here, we try the mean of the values at the left and right of v
+                        fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      }
+                      console.log("Possible value at x=", v, fv);
+                      func.pointOfInterests.push({
+                        x: v,
+                        y: NaN,
+                        type: "unequal"
+                      });
+                    }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }else{ // we have x op a, with op in {<, >}
                     v=ineq.args[1].evaluate(); // v is the value of a in x op a
-                    p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
+                    let fv = l[i].items[0].evaluate({x:v});
+                    if (ineq.op == "!="){ 
+                      if (isNaN(fv)){// the point is not defined here, we try the mean of the values at the left and right of v
+                        fv=(l[i].items[0].evaluate({x:v-0.0000001})+l[i].items[0].evaluate({x:v+0.0000001})/2);
+                      }
+                      console.log("Possible value at x=", v, fv);
+                      func.pointOfInterests.push({
+                        x: v,
+                        y: NaN,
+                        type: "unequal"
+                      });
+                    }
+                    p=board.create("point", [v,fv], {cssClass: 'endpoint-open', fixed:true, highlight:false, withLabel:false, size: 4});   
                     endpoints.push(p);
                 }
             }
@@ -73,28 +124,35 @@ function createEndPoints(txtraw,board){
             }
         }
     }
-    return [endpoints,xisolated];
+    return endpoints; // we return the endpoints and the x-coordinates of isolated points, removing duplicates
 }
 
 const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
   let endpoints = [];
-  let xisolated = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
   const cursorsRef = useRef(new Map()); // Store cursors for each function
   const parsedExpressionsRef = useRef(new Map()); // Store parsed expressions
   const lastCursorPositionRef = useRef(null); // Store the last known cursor position
   const pendingStateUpdateRef = useRef(null); // Store pending state update
+  const currentTimerRef = useRef(null); // Store the current timer ID
+  const preservedCursorPositionsRef = useRef(new Map()); // Store cursor positions to preserve during function updates
+  const lastTickDivisionRef = useRef(null); // Track last ticked division index
+  const prevXRef = useRef(null); // Track previous x value globally
+  const divisionPointsRef = useRef([]); // Store division points
+  const lastTickIndexRef = useRef(null); // Track last ticked index globally
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       grid: {
         cssClass: "grid",
+        gridX: stepSize, // Grid-Abstand für X-Achse
+        gridY: stepSize, // Grid-Abstand für Y-Achse
       },      
       axis: {
         cssClass: "axis", 
@@ -104,18 +162,33 @@ const GraphView = () => {
           insertTicks: true,
           majorHeight: 5,
           minorHeight: 3,
+          ticksDistance: stepSize, // Tick-Abstand anpassen
         },
       },
-      zoom: { enabled: true, needShift: false },
-      pan: { enabled: true, needShift: false, needTwoFingers: true},
+      zoom: { enabled: false, needShift: false },
+      pan: { enabled: false, needShift: false, needTwoFingers: true},
       showCopyright: false,
-    });
+      showNavigation: false //hides arrows and zoom icons
+      });
+
+    board.removeEventHandlers(); // remove all event handlers
+    board.addPointerEventHandlers()
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
 
     // Get active functions
     const activeFunctions = getActiveFunctions(functionDefinitions);
+
+    // Preserve current cursor positions before clearing
+    if (cursorCoords && Array.isArray(cursorCoords)) {
+      cursorCoords.forEach(coord => {
+        preservedCursorPositionsRef.current.set(coord.functionId, {
+          x: parseFloat(coord.x),
+          y: parseFloat(coord.y)
+        });
+      });
+    }
 
     // Clear old objects and cursors
     graphObjectsRef.current.clear();
@@ -126,7 +199,7 @@ const GraphView = () => {
     activeFunctions.forEach(func => {
       let graphFormula;
       let expr = checkMathSpell(func.functionString);
-      
+
       try {
         graphFormula = board.jc.snippet(expr, true, "x", true);
         setInputErrorMes(null);
@@ -147,20 +220,30 @@ const GraphView = () => {
         highlight: false,
         strokeColor: func.color || "#0000FF", // Use function's color or default to blue
       });
-
+  
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const [funcEndpoints, funcXisolated] = createEndPoints(func.functionString, board);
+        const funcEndpoints = createEndPoints(func, board);
         endpoints = [...endpoints, ...funcEndpoints];
-        xisolated = [...xisolated, ...funcXisolated];
       }
 
       // Find last known position for this function's cursor
+      let preservedPos = preservedCursorPositionsRef.current.get(func.id);
       let lastPos = cursorCoords && Array.isArray(cursorCoords)
         ? cursorCoords.find(c => c.functionId === func.id)
         : undefined;
-      let initialX = lastPos ? parseFloat(lastPos.x) : 0;
-      let initialY = lastPos ? parseFloat(lastPos.y) : 0;
+      
+      let initialX = 0;
+      let initialY = 0;
+      
+      // Use preserved position if available, otherwise use current cursorCoords
+      if (preservedPos) {
+        initialX = preservedPos.x;
+        initialY = preservedPos.y;
+      } else if (lastPos) {
+        initialX = parseFloat(lastPos.x);
+        initialY = parseFloat(lastPos.y);
+      }
 
       // Create cursor for this function at last known position (or [0,0])
       const cursor = board.create("point", [initialX, initialY], {
@@ -178,9 +261,42 @@ const GraphView = () => {
       cursorsRef.current.set(func.id, cursor);
     });
 
-    const updateCursors = (x) => {
-      const l = xisolated.filter(e => Math.abs(e-x) < snapaccuracy);
-      const snappedX = l.length > 0 ? l[0] : x;
+    // Calculate division points for the x axis based on stepSize
+    const divisions = [];
+    const firstTick = Math.ceil(graphBounds.xMin / stepSize) * stepSize;
+    for (let x = firstTick; x <= graphBounds.xMax; x += stepSize) {
+      divisions.push(x);
+    }
+    divisionPointsRef.current = divisions;
+    lastTickDivisionRef.current = null; // Reset on bounds change
+
+    const updateCursors = (x, mouseY = null) => {
+      // Guard against board not being initialized
+      if (!board || !board.jc) {
+        console.warn("Board or board.jc not available for cursor update");
+        return;
+      }
+
+      // Retrieve points of interest for snapping
+      let l = [];
+      activeFunctions.forEach(func => {
+        func.pointOfInterests.forEach((point) =>{ 
+          console.log("New x of interest:", point.x); 
+          l.push(point.x);
+        }); 
+        console.log("Points of interest: (x-coordinates)  ", l.toString());
+      });
+      
+      const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
+      let snappedX = sl.length > 0 ? sl[0] : x;
+      
+      // Clamp x position to prevent crossing chart boundaries
+      const tolerance = 0.02; // Same tolerance as in GraphSonification
+      if (snappedX <= graphBounds.xMin + tolerance) {
+        snappedX = graphBounds.xMin + tolerance;
+      } else if (snappedX >= graphBounds.xMax - tolerance) {
+        snappedX = graphBounds.xMax - tolerance;
+      }
       
       // Store the current position immediately
       lastCursorPositionRef.current = { x: snappedX };
@@ -196,26 +312,56 @@ const GraphView = () => {
           try {
             const y = board.jc.snippet(parsedExpr, true, "x", true)(snappedX);
             // Check if y is a valid number
-            //if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+            if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+              // Clamp y position to prevent crossing vertical boundaries
+              // let clampedY = y;
+              // if (clampedY <= graphBounds.yMin + tolerance) {
+              //   clampedY = graphBounds.yMin + tolerance;
+              // } else if (clampedY >= graphBounds.yMax - tolerance) {
+              //   clampedY = graphBounds.yMax - tolerance;
+              // }
+              
+              // Show cursor and update position
+              cursor.show();
               cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, y]);
               cursorPositions.push({
                 functionId: func.id,
                 x: snappedX.toFixed(2),
-                y: y.toFixed(2)
+                y: y.toFixed(2),
+                mouseY: mouseY !== null ? mouseY.toFixed(2) : null
               });
-            //} else {
-            //  console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
-              //cursor.hide();
-            //}
+            } else {
+              console.warn(`Invalid y value for function ${func.id} at x=${snappedX}: ${y}`);
+              // Hide cursor visually but still pass the invalid y value for sonification
+              cursor.hide();
+              // Position cursor at a point outside the visible area when function is invalid
+              cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, graphBounds.yMax + 10]);
+              // Still pass the invalid y value to cursor positions for sonification detection
+              cursorPositions.push({
+                functionId: func.id,
+                x: snappedX.toFixed(2),
+                y: y.toString(), // Pass the invalid y value as string to preserve NaN/undefined
+                mouseY: mouseY !== null ? mouseY.toFixed(2) : null
+              });
+            }
           } catch (err) {
             console.error(`Error updating cursor for function ${func.id}:`, err);
+            // Hide cursor but still update its position to keep exploration moving
             cursor.hide();
+            // Position cursor at a point outside the visible area when function is invalid
+            cursor.setPositionDirectly(JXG.COORDS_BY_USER, [snappedX, graphBounds.yMax + 10]);
           }
         }
       });
       
       // Update audio immediately by calling setCursorCoords right away
       setCursorCoords(cursorPositions);
+      
+      // Always ensure we have a valid last position, even if no functions are valid
+      if (cursorPositions.length === 0 && lastCursorPositionRef.current && lastCursorPositionRef.current.x !== snappedX) {
+        // If no functions are valid but we have a last position, update it to current x
+        lastCursorPositionRef.current = { x: snappedX };
+      }
       
       // Clear any pending state update
       if (pendingStateUpdateRef.current) {
@@ -227,8 +373,25 @@ const GraphView = () => {
       pendingStateUpdateRef.current = null;
       
       board.update();
+
+      // --- X axis tick logic (track last ticked index, no epsilon, not reset on resume) ---
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
+        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+        if (n !== lastTickIndexRef.current) {
+          // tickSynth.triggerAttackRelease("C6", "16n"); // Removed tick synth
+          lastTickIndexRef.current = n;
+        }
+      }
     };
     setUpdateCursor(() => updateCursors);
+
+    // Update cursors to their preserved positions after recreation
+    if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+      updateCursors(lastCursorPositionRef.current.x);
+    }
+
+    // Clear preserved positions after they've been used
+    preservedCursorPositionsRef.current.clear();
 
     if (PlayFunction.active) {
       console.log("Play mode activated!");
@@ -236,58 +399,95 @@ const GraphView = () => {
       if (PlayFunction.source === "play") {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
       } else if (PlayFunction.source === "keyboard") {
-        // Use the current cursor position if available, otherwise default to edge
+        // Use the current cursor position if available, otherwise use last known position
         if (cursorCoords && cursorCoords.length > 0 && cursorCoords[0].x !== undefined) {
           startX = parseFloat(cursorCoords[0].x);
-          // Clamp to bounds
-          if (startX > graphBounds.xMax) startX = graphBounds.xMax;
-          if (startX < graphBounds.xMin) startX = graphBounds.xMin;
+        } else if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
+          startX = lastCursorPositionRef.current.x;
         } else {
           startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
         }
+        // Clamp to bounds
+        if (startX > graphBounds.xMax) startX = graphBounds.xMax;
+        if (startX < graphBounds.xMin) startX = graphBounds.xMin;
       } else {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;
       }
       PlayFunction.x = startX;
-      PlayFunction.timer = setInterval(() => {
+      currentTimerRef.current = setInterval(() => {
+        // Guard against board not being initialized
+        if (!board || !board.jc) {
+          console.warn("Board not available for play function, stopping timer");
+          clearInterval(currentTimerRef.current);
+          currentTimerRef.current = null;
+          setPlayFunction(prev => ({ ...prev, active: false }));
+          return;
+        }
+        
         // Use direction to determine movement direction
         const actualSpeed = PlayFunction.source === "keyboard" 
           ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
           : PlayFunction.speed;
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
+        
+        // Clamp PlayFunction.x to prevent crossing boundaries
+        const tolerance = 0.02;
+        if (PlayFunction.x <= graphBounds.xMin + tolerance) {
+          PlayFunction.x = graphBounds.xMin + tolerance;
+        } else if (PlayFunction.x >= graphBounds.xMax - tolerance) {
+          PlayFunction.x = graphBounds.xMax - tolerance;
+        }
+        
         updateCursors(PlayFunction.x);
-        if ((PlayFunction.x > graphBounds.xMax) || (PlayFunction.x < graphBounds.xMin)) {
-          PlayFunction.active = false;
+        
+        // Stop play function if we've reached the boundaries
+        if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
+          clearInterval(currentTimerRef.current);
+          currentTimerRef.current = null;
+          setPlayFunction(prev => ({ ...prev, active: false }));
         }
       }, PlayFunction.interval);
     } else {
-      if (PlayFunction.timer !== null) {
-        clearInterval(PlayFunction.timer);
-        PlayFunction.timer = null;
+      if (currentTimerRef.current !== null) {
+        clearInterval(currentTimerRef.current);
+        currentTimerRef.current = null;
       }
       // Use the last known position immediately
+      if (board && board.jc) {
       if (lastCursorPositionRef.current && lastCursorPositionRef.current.x !== undefined) {
         updateCursors(lastCursorPositionRef.current.x);
       } else if (PlayFunction.x !== undefined) {
         updateCursors(PlayFunction.x);
+        }
       }
     }
 
     const moveHandler = (event) => {
-      if (!playActiveRef.current) {
+      if (!playActiveRef.current && board && board.jc) {
         const coords = board.getUsrCoordsOfMouse(event);
         const x = coords[0];
-        updateCursors(x);
+        const y = coords[1];
+        updateCursors(x, y);
       }
     };
 
     board.on("move", moveHandler, { passive: true });
 
     return () => {
+      // Clear any running timer when component unmounts or dependencies change
+      if (currentTimerRef.current !== null) {
+        clearInterval(currentTimerRef.current);
+        currentTimerRef.current = null;
+      }
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
-  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source]);
+  }, [functionDefinitions, graphBounds, PlayFunction.active, PlayFunction.source, stepSize]);
+
+  // Update playActiveRef when PlayFunction.active changes
+  useEffect(() => {
+    playActiveRef.current = PlayFunction.active;
+  }, [PlayFunction.active]);
 
   useEffect(() => {
     if (boardRef.current) {
@@ -297,7 +497,7 @@ const GraphView = () => {
         graphBounds.xMax,
         graphBounds.yMin,
       ]);
-      boardRef.current.update();
+      boardRef.current.update();  
     }
   }, [graphBounds]);
 

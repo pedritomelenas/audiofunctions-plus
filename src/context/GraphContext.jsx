@@ -1,11 +1,15 @@
-import React, { createContext, useContext, useState, useRef } from "react";
+import React, { createContext, useContext, useState, useRef, useEffect } from "react";
+import { decodeFromImportLink, getHashParameter, clearHashParameter } from "../utils/urlUtils";
 
 const GraphContext = createContext();
 
 export const GraphContextProvider = ({ children }) => {
-  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
+  // Initialize with default values first
   const [functionDefinitions, setFunctionDefinitions] = useState(initGraphObject.functions);
   const [graphSettings, setGraphSettings] = useState(initGraphObject.graphSettings);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
   const [cursorCoords, setCursorCoords] = useState([]);
   const [inputErrorMes, setInputErrorMes] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
@@ -16,23 +20,59 @@ export const GraphContextProvider = ({ children }) => {
     yMax: 10,
   });
   const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, source: null, direction: 1 });
-  const playActiveRef = useRef(false);   // reference to track if the play function is active, used in mouse move handler 
+  const playActiveRef = useRef(false);
   const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
+  const [stepSize, setStepSize] = useState(1); // Default value 1
   const inputRefs = {
     function: useRef(null),
     speed: useRef(null),
   };
 
-  ///////// currently missing features //////////
-  // boundingBox
-  // speed
-  // stepSize
-  // gridVisibility
-  // markers - setByUser
-  // axisTickResolution?
-  // min and max frequency
-  // functionFilter
+  // Load data from URL hash on component mount
+  useEffect(() => {
+    const loadFromUrl = async () => {
+      try {
+        const importData = getHashParameter('import');
+        if (importData) {
+          console.log('Found import data in URL hash:', importData);
+          const decodedData = decodeFromImportLink(importData);
+          if (decodedData) {
+            setFunctionDefinitions(decodedData.functions);
+            setGraphSettings(decodedData.graphSettings);
+            
+            // Set graph bounds from loaded settings if available
+            if (decodedData.graphSettings.defaultView) {
+              const [xMin, xMax, yMax, yMin] = decodedData.graphSettings.defaultView;
+              setGraphBounds({ xMin, xMax, yMin, yMax });
+            }
+            
+            console.log('Loaded data from import link:', decodedData);
+            
+            // Clear the hash parameter after loading
+            // clearHashParameter();
+          } else {
+            console.warn('Invalid import link data');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading import link:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFromUrl();
+  }, []);
+
+  // Don't render children until we've checked for URL parameters
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <GraphContext.Provider
@@ -58,6 +98,8 @@ export const GraphContextProvider = ({ children }) => {
         inputRefs,
         updateCursor,
         setUpdateCursor,
+        stepSize,
+        setStepSize,
       }}
     >
       {children}
@@ -66,7 +108,6 @@ export const GraphContextProvider = ({ children }) => {
 };
 
 export const useGraphContext = () => useContext(GraphContext);
-
 
 
 
@@ -110,10 +151,19 @@ const initGraphObject = {
       "functionName": "Pieces",
       "type": "piecewise_function",
       "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
-      "isActive": true,
+      "isActive": false,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
-      "pointOfInterests": [],
+      "pointOfInterests": [
+        {
+          "x": 3,
+          "y": 5,
+          "type": "isolated",
+          "label": "iso 1",         // optional
+          "color": "#FF0000",       // optional
+          "earcon": "earcon 1"      // optional
+        },
+      ],
       "landmarks": []
     }
   ],
@@ -125,6 +175,8 @@ const initGraphObject = {
       // should we differ between x and y Diffs?
       "showGrid": true,
       "showAxes": true,
-      "gridColor": "#CCCCCC"
+      "gridColor": "#CCCCCC",
+      
+      "restrictionMode": "none" // "none", "read-only"
   }
 };

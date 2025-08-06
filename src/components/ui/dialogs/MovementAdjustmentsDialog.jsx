@@ -3,20 +3,17 @@ import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react
 import { useGraphContext } from "../../../context/GraphContext";
 
 const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
-  const { PlayFunction, setPlayFunction } = useGraphContext();
+  const { PlayFunction, setPlayFunction, stepSize, setStepSize } = useGraphContext();
   const speedBackup = useRef(null);
   const stepSizeBackup = useRef(null);
   
-  // Temporary state for stepSize (no functionality yet)
-  const [tempStepSize, setTempStepSize] = React.useState(1);
-
   useEffect(() => {
     if (isOpen) {
       speedBackup.current = PlayFunction.speed;
-      stepSizeBackup.current = tempStepSize;
+      stepSizeBackup.current = stepSize;
       console.log("Open: speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
     }
-  }, [isOpen, PlayFunction.speed, tempStepSize]);
+  }, [isOpen, PlayFunction.speed, stepSize]);
 
   const handleCancel = () => {
     console.log("Cancel: restoring speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
@@ -24,7 +21,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       setPlayFunction(prev => ({ ...prev, speed: speedBackup.current }));
     }
     if (stepSizeBackup.current !== null) {
-      setTempStepSize(stepSizeBackup.current);
+      setStepSize(stepSizeBackup.current);
     }
     onClose();
   };
@@ -86,10 +83,8 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
               <input
                 id="stepsize-input"
                 type="number"
-                value={tempStepSize}
-                onChange={(e) =>
-                  setTempStepSize(parseFloat(e.target.value))
-                }
+                value={stepSize}
+                onChange={(e) => setStepSize(parseFloat(e.target.value))}
                 onKeyDown={handleKeyDown}
                 className="text-input-inner"
                 aria-label="Navigation step size"
