@@ -12,6 +12,9 @@ export const useDynamicKBarActions = () => {
   const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
   const { openDialog } = useDialog();
 
+  // Check if in read-only mode
+  const isReadOnly = graphSettings?.restrictionMode === "read-only";
+
   const ZoomBoard = useZoomBoard();
 
   const showCoordinatesAlert = () => {
@@ -307,9 +310,11 @@ export const useDynamicKBarActions = () => {
     // Edit functions
     {
       id: "change-function",
-      name: "Edit Functions",
+      name: isReadOnly ? "View Functions" : "Edit Functions",
       shortcut: ["f"],
-      keywords: "function, change function, change graph, graph, edit function, edit graph",
+      keywords: isReadOnly 
+        ? "function, view function, view graph, graph, show function, display function"
+        : "function, change function, change graph, graph, edit function, edit graph",
       //  section: "",
       perform: () => openDialog("edit-function"),
       icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
@@ -370,44 +375,42 @@ export const useDynamicKBarActions = () => {
 
 
 
-    // Import/Export
-    {
-      id: "import-export",
-      name: "Import/Export",
-      // shortcut: [""],
-      keywords: "import, export, json, file, save, load, share",
-      // perform: () => {},
-      icon: <Import className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "import-json",
-      name: "Import JSON",
-      shortcut: [""],
-      keywords: "import, json, upload, file",
-      parent: "import-export",
-      perform: () => openDialog("import-json"),
-      icon: <FileUp className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "export-json",
-      name: "Export as JSON",
-      shortcut: [""],
-      keywords: "export, json, download, save, file",
-      parent: "import-export",
-      perform: () => openDialog("export-json"),
-      icon: <FileDown className="size-5 shrink-0 opacity-70" />,
-    },
-    {
-      id: "share",
-      name: "Share",
-      shortcut: [""],
-      keywords: "share, export, link",
-      parent: "import-export",
-      perform: () => openDialog("share"),
-      icon: <Share2 className="size-5 shrink-0 opacity-70" />,
-    },
-
-
+    // Import/Export - only show if not in read-only mode
+    ...(!isReadOnly ? [
+      {
+        id: "import-export",
+        name: "Import/Export",
+        keywords: "import, export, json, file, save, load, share",
+        icon: <Import className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "import-json",
+        name: "Import JSON",
+        shortcut: [""],
+        keywords: "import, json, upload, file",
+        parent: "import-export",
+        perform: () => openDialog("import-json"),
+        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "export-json",
+        name: "Export as JSON",
+        shortcut: [""],
+        keywords: "export, json, download, save, file",
+        parent: "import-export",
+        perform: () => openDialog("export-json"),
+        icon: <FileDown className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "share",
+        name: "Share",
+        shortcut: [""],
+        keywords: "share, export, link",
+        parent: "import-export",
+        perform: () => openDialog("share"),
+        icon: <Share2 className="size-5 shrink-0 opacity-70" />,
+      }
+    ] : []),
 
 
 
@@ -459,21 +462,7 @@ export const useDynamicKBarActions = () => {
 
     
 
-  ], [isAudioEnabled, cursorCoords, functionDefinitions]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly]);
 
   return null;
 };
