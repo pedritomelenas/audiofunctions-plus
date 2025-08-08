@@ -203,11 +203,11 @@ const GraphView = () => {
       let hasError = false;
       
       // Check math spell and syntax
-      let [exprResult, errMMsg] = checkMathSpell(func.functionString);
+      let [exprResult, errMMsg, errPos] = checkMathSpell(func.functionString);
       expr = exprResult;
       
       if (errMMsg !== null) {
-        console.log("Error in ", func.functionName, ":", errMMsg);
+        console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
         setInputErrors(prev => ({ ...prev, [func.id]: `${errMMsg}. Please check your input.` }));
         hasError = true;
         expr = "0";
