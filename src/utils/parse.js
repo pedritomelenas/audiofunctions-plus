@@ -86,7 +86,7 @@ function isOneVariableFunction(expr){
         if (snodes.every((n) => allowed_constants.includes(n.name) || n.name=="x")){
             return true; 
         } else {
-            errorMessage = "Invalid variable or constant";
+            errorMessage = "Invalid expression for a function of one variable";
             errorPosition = 0;
             return false;
         }
@@ -494,25 +494,132 @@ function parsePiecewise(txt){
     return items2expr(math.parse(txt).items);
 };
 
+// this function determines the position of "separating commas" in a string
+// for instance "log(x,2),2" contains one separating comma
+function separatingCommas(txt){
+    let count=0;
+    let positionCommas=[];
+    for (let i=0;i<txt.length;i++){
+        if ((txt[i]==",") && (count==0)){ // we are not inside a function
+            positionCommas.push(i);
+        }
+        if (txt[i]=="("){
+            count++;
+        }
+        if (txt[i]==")"){
+            if (count==0){ // we have an error, we have more closing parentheses than opening ones
+                errorMessage = "Invalid expression, too many closing parentheses";
+                errorPosition = 0;
+                return [];
+            }
+            count--;
+        }
+    }
+    return positionCommas;
+}
+
+
+// this function returns {function: "fn", condition: "cn"} for the input "[fn,cn]"
+// it uses separatingCommas
+function splitFunctionCondition(txt){
+    const positions = separatingCommas(txt);
+    if (positions.length != 1) {
+        errorMessage = "Invalid function condition format";
+        return null;
+    }
+    if (txt[0] != "[" || txt[txt.length-1] != "]") {
+        errorMessage = "Invalid function condition format";
+        return null;
+    }
+    const fn = txt.slice(1, positions[0]);
+    const cn = txt.slice(positions[0] + 1, txt.length - 1);
+    return {function: fn, condition: cn};
+}
+
+// this function returns a list  [{function: "fn1", condition: "cn1"},...] for a string of the form "[[fn1,cn1],[fn2,cn2],...]"
+function listFunctionConditions(txt){
+    if (txt[0] != "[" || txt[txt.length-1] != "]") {
+        errorMessage = "Invalid piecewise format";
+        return null;
+    }
+    let parts = [];
+    let nparts = 0;
+    let current = txt.slice(1, -1).trim(); // remove the outer brackets
+    while (current.length > 0){
+        console.log("current:", current);
+        if (current[0]!="["){
+            errorMessage = "Invalid piecewise format, missing opening bracket";
+            errorPosition = nparts;
+            return null;
+        }
+        let nextClosePosition = current.indexOf("]");
+        if (nextClosePosition === -1) {
+            errorMessage = "Invalid piecewise format, missing closing bracket";
+            errorPosition = nparts;
+            return null;
+        }
+        let fncnd = splitFunctionCondition(current.slice(0, nextClosePosition + 1));
+        if (fncnd === null){
+            return null;
+        }
+        parts.push(fncnd);
+        nparts++;
+        let j=nextClosePosition + 1;
+        while(current[j] === " " || current[j] === ","){
+            j++;
+            if (j >= current.length) {
+                errorMessage = "Invalid piecewise format, unexpected end of string";
+                errorPosition = nparts;
+                return null;
+            }
+        }
+        current = current.slice(j).trim();
+    }
+    return parts;
+}
+
 // this function checks that the input is a valid function expression
 // either single or piecewise
 // if the txt is not a valid expression, it returns "0", otherwise it returns the input string parsed (if piecewise)
-export function checkMathSpell(txt_input){
+export function checkMathSpell(func){
     // we are allowing ** to be used as a power operator, so we replace it with ^
-    const txt = txt_input.replace(/\*\*/g, '^'); // replace ** with ^
+    const txt = (func.functionString).replace(/\*\*/g, '^'); // replace ** with ^
     // console.log("Checking math spell: ", txt);
     // check if its a function of one variable
     errorMessage = null; // reset error message
     errorPosition = 0; // reset error position
-    if(isOneVariableFunction(txt)){
-        // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-        return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), errorMessage, errorPosition];
+    if (func.type==="function"){
+        if(isOneVariableFunction(txt)){
+            // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
+            return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), errorMessage, errorPosition];
+        }
     }
-    // we check if the input is a piecewise function
-    if (isPiecewise(txt)){
-        // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-        const expr = transformMathConstants(math.parse(txt)).toString();
-        return [parsePiecewise(expr), errorMessage, errorPosition];
+    if (func.type==="piecewise_function"){
+        const parts = listFunctionConditions(txt);
+        console.log("Parts of piecewise function:", parts);
+        if (parts === null) {
+            return ["0", errorMessage, errorPosition];
+        }
+        for (let i=0;i<parts.length;i++){
+            const fn = parts[i].function;
+            const cn = parts[i].condition;
+            if (!(isOneVariableFunction(fn))){
+                errorMessage = "Invalid function format";
+                errorPosition = [i, 0];
+                return ["0", errorMessage, errorPosition];
+            }
+            if (!(isInequality(cn))){
+                errorMessage = "Invalid condition format";
+                errorPosition = [i, 1];
+                return ["0", errorMessage, errorPosition];
+            }
+        }
+        // we check if the input is a piecewise function
+        if (isPiecewise(txt)){
+            // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
+            const expr = transformMathConstants(math.parse(txt)).toString();
+            return [parsePiecewise(expr), errorMessage, errorPosition];
+        }
     }
     //no more options
     return ["0", errorMessage, errorPosition];

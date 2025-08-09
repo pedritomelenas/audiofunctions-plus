@@ -203,7 +203,7 @@ const GraphView = () => {
       let hasError = false;
       
       // Check math spell and syntax
-      let [exprResult, errMMsg, errPos] = checkMathSpell(func.functionString);
+      let [exprResult, errMMsg, errPos] = checkMathSpell(func);
       expr = exprResult;
       
       if (errMMsg !== null) {
