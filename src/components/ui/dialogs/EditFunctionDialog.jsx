@@ -14,6 +14,8 @@ import {
   setFunctionInstrumentN // Add this import
 } from "../../../utils/graphObjectOperations";
 
+import {separatingCommas } from "../../../utils/parse.js";
+
 const EditFunctionDialog = ({ isOpen, onClose }) => {
   const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
   const functionDefinitionsBackup = useRef(null);
@@ -397,12 +399,12 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
           } else if (char === ']') {
             bracketCount--;
             if (bracketCount === 0) {
-              // End of a part - find the last comma to split function from condition
-              // This is more reliable than using the first comma
-              const lastCommaIndex = currentPart.lastIndexOf(',');
-              if (lastCommaIndex !== -1) {
-                const func = currentPart.substring(0, lastCommaIndex).trim();
-                const condition = currentPart.substring(lastCommaIndex + 1).trim();
+              // End of a part - the comma to split function from condition
+              const commaIndices= separatingCommas(currentPart);
+              if (commaIndices.length > 0) {
+                const nextCommaIndex = commaIndices[0];
+                const func = currentPart.substring(0, nextCommaIndex).trim();
+                const condition = currentPart.substring(nextCommaIndex + 1).trim();
                 parts.push({ function: func, condition: condition });
               }
               continue;
