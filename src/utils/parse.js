@@ -9,7 +9,7 @@ let errorPosition = null; // position of the error message; 0 for regular functi
 export function isMathConstant(expr){
     try{
         math.compile(expr).evaluate() // when trying to evaluate without scope, if not a constant, throws error
-        return true;
+        return math.isNumeric(math.compile(expr).evaluate()); // we check if the result is a number
     }
     catch(ex){
         return false;
@@ -246,7 +246,7 @@ function isInequality(txt){
             return false;
         }
         if (ineq.params[1].name != "x"){
-            errorMessage = "Invalid inequality (variable must be x): " + ineq.toString();
+            errorMessage = "Invalid chain of inequalities (variable must be x): " + ineq.toString();
             return false;
         }
     }

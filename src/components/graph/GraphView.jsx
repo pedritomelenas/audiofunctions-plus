@@ -40,7 +40,7 @@ function createEndPoints(func,board){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<=, >=, ==}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
@@ -69,7 +69,7 @@ function createEndPoints(func,board){
                 }
             }
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     let fv = l[i].items[0].evaluate({x:v});
                     if (ineq.op == "!="){ 
