@@ -6,7 +6,7 @@ let errorMessage = null; // this will be used to store error messages
 let errorPosition = null; // position of the error message; 0 for regular functions, an array showing positions for a piecewise function
 
 // function to check if 'expr' is a constant, for instance, -1 or 10+2
-function isMathConstant(expr){
+export function isMathConstant(expr){
     try{
         math.compile(expr).evaluate() // when trying to evaluate without scope, if not a constant, throws error
         return true;
@@ -191,6 +191,10 @@ function isInequality(txt){
             return false;
         }
         if (ineq.args[0].type=="SymbolNode"){//equation of the form x op a
+            if(ineq.args[0].name != "x"){
+                errorMessage = "Invalid inequality (variable must be x): " + ineq.toString();
+                return false;
+            }
             //console.log("Variable first");
             if (!isMathConstant(ineq.args[1].toString())){
                 //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
@@ -200,6 +204,10 @@ function isInequality(txt){
             //console.log("Added interval: ", intervals[intervals.length-1].toString());
         }else{//equation of the form a op x
             //console.log("variable second")
+            if(ineq.args[1].name != "x"){
+                errorMessage = "Invalid inequality (variable must be x): " + ineq.toString();
+                return false;
+            }
             if (!isMathConstant(ineq.args[0].toString())){
                 //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
                 errorMessage = "Invalid inequality (constant needed): " + ineq.toString();
@@ -235,6 +243,10 @@ function isInequality(txt){
                 isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
             //console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
             errorMessage = "Invalid inequality (two constant params and a symbol): " + ineq.toString();
+            return false;
+        }
+        if (ineq.params[1].name != "x"){
+            errorMessage = "Invalid inequality (variable must be x): " + ineq.toString();
             return false;
         }
     }
@@ -515,7 +527,7 @@ function parsePiecewise(txt){
 
 // this function determines the position of "separating commas" in a string
 // for instance "log(x,2),2" contains one separating comma
-function separatingCommas(txt){
+export function separatingCommas(txt){
     let count=0;
     let positionCommas=[];
     for (let i=0;i<txt.length;i++){
