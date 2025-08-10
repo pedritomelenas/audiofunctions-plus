@@ -277,6 +277,7 @@ function isPiecewise(txt){
     // o1 and o2 are 0 or 1 depending on if a and b are included in the interval, respectively
     // for instance, [1,2,0,1] means 1 < x <= 2
     // we will also check that the intervals are disjoint
+    let partNumbers =[]; // inequalities of the form x!= a give rise to two intervals, so we keep track of the part of the function they belong to 
     for (let i=0;i<its.length;i++){
         it=its[i]; // the ith item
         // we check if the first item is a function in x
@@ -331,22 +332,29 @@ function isPiecewise(txt){
                 switch (ineq.op) {
                     case "<":
                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+                        partNumbers.push(i);
                         break;
                     case "<=": 
                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 1]);
+                        partNumbers.push(1);    
                         break;   
                     case ">":
                         intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+                        partNumbers.push(i);
                         break;
                     case ">=":
                         intervals.push([ineq.args[1].evaluate(), Infinity, 1, 0]);
+                        partNumbers.push(i);
                         break;
                     case "==":  
                         intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+                        partNumbers.push(i);
                         break;
                     case "!=":
                         intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+                        partNumbers.push(i);
                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+                        partNumbers.push(i);
                         break;
                 }
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
@@ -361,22 +369,29 @@ function isPiecewise(txt){
                 switch (ineq.op) {
                     case "<":
                         intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
+                        partNumbers.push(i);
                         break;
                     case "<=": 
                         intervals.push([ineq.args[0].evaluate(), Infinity, 1, 0]);
+                        partNumbers.push(i);
                         break;   
                     case ">":
                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 0]);
+                        partNumbers.push(i);
                         break;
                     case ">=":
                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
+                        partNumbers.push(i);
                         break;
                     case "==":  
                         intervals.push([ineq.args[0].evaluate(), ineq.args[0].evaluate(), 1, 1]);
+                        partNumbers.push(i);
                         break;
                     case "!=":
                         intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
                         intervals.push([-Infinity, ineq.args[0].evaluate(), 0, 0]);
+                        partNumbers.push(i);
+                        partNumbers.push(i);
                         break;
                 }
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
@@ -418,18 +433,22 @@ function isPiecewise(txt){
             }
             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smallerEq"){ // a<=x<=b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 1]);
+                partNumbers.push(i);
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smallerEq"){ // a<x<=b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 1]);
+                partNumbers.push(i);
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smaller"){ // a<=x<b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 0]);
+                partNumbers.push(i);
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smaller"){ // a<x<b
                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 0]);
+                partNumbers.push(i);
                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
             }
         }
@@ -445,7 +464,7 @@ function isPiecewise(txt){
         if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
             //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
             errorMessage = "Invalid piecewise format, intervals are not disjoint: " + (a[2]==0?"(":"[") +a[0].toString() + ","+ a[1].toString() + (a[3]==0?")":"]") + " and " + (b[2]==0?"(":"[") +b[0].toString() + ","+ b[1].toString() + (b[3]==0?")":"]");
-            errorPosition = [[intervals.indexOf(a),1],[intervals.indexOf(b),1]];
+            errorPosition = [[partNumbers[intervals.indexOf(a)],1],[partNumbers[intervals.indexOf(b)],1]];
             return false;
         }
         if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
