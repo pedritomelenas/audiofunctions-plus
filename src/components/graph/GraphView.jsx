@@ -131,7 +131,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode } = useGraphContext();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
@@ -145,6 +145,7 @@ const GraphView = () => {
   const prevXRef = useRef(null); // Track previous x value globally
   const divisionPointsRef = useRef([]); // Store division points
   const lastTickIndexRef = useRef(null); // Track last ticked index globally
+  const mouseTimeoutRef = useRef(null); // Track mouse movement timeout
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -376,7 +377,7 @@ const GraphView = () => {
 
       // --- X axis tick logic (track last ticked index, no epsilon, not reset on resume) ---
       if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
-        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+        let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
           // tickSynth.triggerAttackRelease("C6", "16n"); // Removed tick synth
           lastTickIndexRef.current = n;
@@ -425,9 +426,15 @@ const GraphView = () => {
         }
         
         // Use direction to determine movement direction
-        const actualSpeed = PlayFunction.source === "keyboard" 
-          ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
-          : PlayFunction.speed;
+        let actualSpeed;
+        if (PlayFunction.source === "keyboard") {
+          actualSpeed = Math.abs(PlayFunction.speed) * PlayFunction.direction;
+        } else if (PlayFunction.source === "play") {
+          // For batch sonification, use the speed directly (positive = right, negative = left)
+          actualSpeed = PlayFunction.speed;
+        } else {
+          actualSpeed = PlayFunction.speed;
+        }
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         
         // Clamp PlayFunction.x to prevent crossing boundaries
@@ -441,10 +448,25 @@ const GraphView = () => {
         updateCursors(PlayFunction.x);
         
         // Stop play function if we've reached the boundaries
-        if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
-          clearInterval(currentTimerRef.current);
-          currentTimerRef.current = null;
-          setPlayFunction(prev => ({ ...prev, active: false }));
+        // For batch sonification, only stop when reaching the opposite boundary
+        if (PlayFunction.source === "play") {
+          // For batch sonification, stop when reaching the right boundary (if speed > 0) or left boundary (if speed < 0)
+          const shouldStop = (PlayFunction.speed > 0 && PlayFunction.x >= graphBounds.xMax - tolerance) ||
+                           (PlayFunction.speed < 0 && PlayFunction.x <= graphBounds.xMin + tolerance);
+          if (shouldStop) {
+            clearInterval(currentTimerRef.current);
+            currentTimerRef.current = null;
+            setPlayFunction(prev => ({ ...prev, active: false }));
+            setExplorationMode("none");
+          }
+        } else {
+          // For keyboard exploration, stop at either boundary
+          if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
+            clearInterval(currentTimerRef.current);
+            currentTimerRef.current = null;
+            setPlayFunction(prev => ({ ...prev, active: false }));
+            setExplorationMode("none");
+          }
         }
       }, PlayFunction.interval);
     } else {
@@ -463,11 +485,21 @@ const GraphView = () => {
     }
 
     const moveHandler = (event) => {
-      if (!playActiveRef.current && board && board.jc) {
-        const coords = board.getUsrCoordsOfMouse(event);
-        const x = coords[0];
-        const y = coords[1];
-        updateCursors(x, y);
+      if (board && board.jc) {
+        // Only handle mouse movement if not in keyboard exploration mode
+        if (!playActiveRef.current) {
+          setExplorationMode("mouse");
+          const coords = board.getUsrCoordsOfMouse(event);
+          const x = coords[0];
+          const y = coords[1];
+          updateCursors(x, y);
+          
+          // Reset exploration mode to "none" after a short delay when mouse stops moving
+          clearTimeout(mouseTimeoutRef.current);
+          mouseTimeoutRef.current = setTimeout(() => {
+            setExplorationMode("none");
+          }, 100); // 100ms delay
+        }
       }
     };
 
@@ -478,6 +510,11 @@ const GraphView = () => {
       if (currentTimerRef.current !== null) {
         clearInterval(currentTimerRef.current);
         currentTimerRef.current = null;
+      }
+      // Clear mouse timeout
+      if (mouseTimeoutRef.current !== null) {
+        clearTimeout(mouseTimeoutRef.current);
+        mouseTimeoutRef.current = null;
       }
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);

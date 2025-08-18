@@ -31,7 +31,9 @@ export default function KeyboardHandler() {
         cursorCoords, 
         updateCursor,
         stepSize,
-        functionDefinitions
+        functionDefinitions,
+        setExplorationMode,
+        PlayFunction
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
@@ -102,6 +104,11 @@ export default function KeyboardHandler() {
             //B - play function
             case "b":
                 setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+                if (!PlayFunction.active) {
+                    setExplorationMode("batch");
+                } else {
+                    setExplorationMode("none");
+                }
                 break;
             //Shift-B - activate speed input
             case "B":
@@ -111,9 +118,18 @@ export default function KeyboardHandler() {
 
             //Arrows            
             case "ArrowLeft": case "ArrowRight":
+                // If batch sonification is active, stop it and keep cursor at current position
+                if (PlayFunction.active && PlayFunction.source === "play") {
+                    setPlayFunction(prev => ({ ...prev, active: false }));
+                    setExplorationMode("none");
+                    console.log("Batch sonification stopped by arrow key");
+                    break;
+                }
+                
                 let direction = 1;                               //right by default
                 if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
-                if (event.shiftKey) {
+                if (!event.shiftKey) {
+                    setExplorationMode("keyboard_stepwise");
                     let CurrentX = parseFloat(cursorCoords[0].x);
                     let NewX;
                     let IsOnGrid = CurrentX % stepSize === 0;
@@ -168,6 +184,7 @@ export default function KeyboardHandler() {
                     }
                     updateCursor(NewX);               // one step move
                 } else {
+                    setExplorationMode("keyboard_smooth");
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
                 }
                 break;
@@ -202,6 +219,8 @@ export default function KeyboardHandler() {
             }
             return prev;
           });
+          // Reset exploration mode when keyboard exploration stops
+          setExplorationMode("none");
         }
       };
   

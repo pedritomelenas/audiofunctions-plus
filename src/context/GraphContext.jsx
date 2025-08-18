@@ -19,11 +19,12 @@ export const GraphContextProvider = ({ children }) => {
     yMin: -10,
     yMax: 10,
   });
-  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 50, interval: 10, source: null, direction: 1 });
+  const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 10, interval: 10, source: null, direction: 1 });
   const playActiveRef = useRef(false);
   const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
-  const [stepSize, setStepSize] = useState(1); // Default value 1
+  const [stepSize, setStepSize] = useState(0.5); // Default value 0.5
+  const [explorationMode, setExplorationMode] = useState("none"); // "none", "mouse", "keyboard_stepwise", "keyboard_smooth"
   const inputRefs = {
     function: useRef(null),
     speed: useRef(null),
@@ -100,6 +101,8 @@ export const GraphContextProvider = ({ children }) => {
         setUpdateCursor,
         stepSize,
         setStepSize,
+        explorationMode,
+        setExplorationMode,
       }}
     >
       {children}

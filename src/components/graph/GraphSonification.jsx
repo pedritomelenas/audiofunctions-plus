@@ -19,7 +19,9 @@ const GraphSonification = () => {
     isAudioEnabled, 
     graphBounds,
     functionDefinitions,
-    stepSize // <-- get stepSize from context
+    stepSize, // <-- get stepSize from context
+    PlayFunction, // <-- get PlayFunction to detect exploration mode
+    explorationMode // <-- get exploration mode for robust detection
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -529,9 +531,10 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
-      // Handle tick sound with panning
-      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
-        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+      // Handle tick sound with panning - only in smooth exploration modes (keyboard smooth, mouse, or batch)
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && 
+          (explorationMode === "keyboard_smooth" || explorationMode === "mouse" || explorationMode === "batch")) {
+        let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
           // Update tick synth panning based on x position
           if (tickChannelRef.current) {
