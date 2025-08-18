@@ -42,6 +42,8 @@ const GraphSonification = () => {
   const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
   const pinkNoiseRef = useRef(null); // Reference to pink noise synthesizer
   const [forceRecreate, setForceRecreate] = useState(false); // State to force recreation of sonification pipeline
+  const batchTickCountRef = useRef(0); // Track tick count since batch exploration started
+  const batchResetDoneRef = useRef(false); // Track if batch reset has been done
 
   // Initialize tick synth
   useEffect(() => {
@@ -182,6 +184,10 @@ const GraphSonification = () => {
       
       // Clear last pitch classes
       lastPitchClassesRef.current.clear();
+      
+      // Reset batch exploration tracking
+      batchTickCountRef.current = 0;
+      batchResetDoneRef.current = false;
       
       // Reset the flag
       setForceRecreate(false);
@@ -464,6 +470,18 @@ const GraphSonification = () => {
       return;
     }
 
+    // Reset pitch classes when batch exploration starts
+    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play" && !batchResetDoneRef.current) {
+      console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
+      lastPitchClassesRef.current.clear();
+      batchTickCountRef.current = 0;
+      batchResetDoneRef.current = true;
+    } else if (explorationMode !== "batch") {
+      // Reset flags when not in batch mode
+      batchResetDoneRef.current = false;
+      batchTickCountRef.current = 0;
+    }
+
     // Check if any active function has a y-value below zero
     const hasNegativeY = cursorCoords.some(coord => {
       const y = parseFloat(coord.y);
@@ -565,13 +583,26 @@ const GraphSonification = () => {
           }
           tickSynthRef.current?.triggerAttackRelease("C6", "16n");
           lastTickIndexRef.current = n;
+          
+          // Increment tick count for batch exploration
+          if (explorationMode === "batch") {
+            batchTickCountRef.current++;
+          }
         }
       }
 
       // Check for special events first (this sets the boundary state)
-      await checkChartBoundaryEvents(functionId, coord);
-      await checkYAxisIntersectionEvents(functionId, coord);
-      await checkDiscontinuityEvents(functionId, coord);
+      // Skip boundary detection for the first 5 ticks of batch exploration
+      const shouldSkipBoundaryDetection = explorationMode === "batch" && batchTickCountRef.current <= 5;
+      
+      if (!shouldSkipBoundaryDetection) {
+        await checkChartBoundaryEvents(functionId, coord);
+        await checkYAxisIntersectionEvents(functionId, coord);
+        await checkDiscontinuityEvents(functionId, coord);
+      } else {
+        // Reset boundary state during skipped detection to prevent false positives
+        isAtBoundaryRef.current = false;
+      }
 
       // If at boundary, stop sonification and return
       if (isAtBoundaryRef.current) {
