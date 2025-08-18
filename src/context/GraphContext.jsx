@@ -24,7 +24,7 @@ export const GraphContextProvider = ({ children }) => {
   const timerRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
   const [stepSize, setStepSize] = useState(0.5); // Default value 0.5
-  const [explorationMode, setExplorationMode] = useState("none"); // "none", "mouse", "keyboard_stepwise", "keyboard_smooth"
+  const [explorationMode, setExplorationMode] = useState("none"); // "none", "mouse", "keyboard_stepwise", "keyboard_smooth", "batch"
   const inputRefs = {
     function: useRef(null),
     speed: useRef(null),
@@ -154,7 +154,7 @@ const initGraphObject = {
       "functionName": "Pieces",
       "type": "piecewise_function",
       "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
-      "isActive": true,
+      "isActive": false,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
       "pointOfInterests": [

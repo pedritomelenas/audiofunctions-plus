@@ -27,6 +27,7 @@ export default function KeyboardHandler() {
         setIsAudioEnabled, 
         setGraphBounds,
         inputRefs,
+        graphSettings,
         setGraphSettings,
         cursorCoords, 
         updateCursor,
@@ -61,26 +62,34 @@ export default function KeyboardHandler() {
 
         switch (event.key) {
 
-            //Switch audio on/off
-            case "p":
-                setIsAudioEnabled(prev => !prev);
-                break;
+            // //Switch audio on/off
+            // case "p":
+            //     setIsAudioEnabled(prev => !prev);
+            //     break;
 
             //Activate function input
-            case "f":
-                inputRefs.function.current?.focus();
-                event.preventDefault();
-                break;
+            // case "f":
+            //     inputRefs.function.current?.focus();
+            //     event.preventDefault();
+            //     break;
 
-            case "r": // Reset graph bounds to default
-                setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
-                updateCursor(0);
-                break;
+            // case "r": // Reset graph bounds to default
+            //     // Use defaultView from graphSettings instead of hardcoded values
+            //     const defaultView = graphSettings?.defaultView;
+            //     if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
+            //         const [xMin, xMax, yMax, yMin] = defaultView;
+            //         setGraphBounds({ xMin, xMax, yMin, yMax });
+            //     } else {
+            //         // Fallback to hardcoded values if defaultView is not available
+            //         setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+            //     }
+            //     updateCursor(0);
+            //     break;
 
-            case "g": // Tohggle grid visibility - not sure how to do and if we really need this
-                console.log("Toggle grid visibility");
-                //setGraphSettings(prev => ({ ...prev, showGrid: !prev.showGrid }));
-                break;
+            // case "g": // Tohggle grid visibility - not sure how to do and if we really need this
+            //     console.log("Toggle grid visibility");
+            //     //setGraphSettings(prev => ({ ...prev, showGrid: !prev.showGrid }));
+            //     break;
 
             //WASD to move the view, Shift to bigger steps  (maybe change step according to zoom level?)
             case "a": case "A":
@@ -111,10 +120,10 @@ export default function KeyboardHandler() {
                 }
                 break;
             //Shift-B - activate speed input
-            case "B":
-                inputRefs.speed.current?.focus();
-                event.preventDefault();
-                break;
+            // case "B":
+            //     inputRefs.speed.current?.focus();
+            //     event.preventDefault();
+            //     break;
 
             //Arrows            
             case "ArrowLeft": case "ArrowRight":
