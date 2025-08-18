@@ -557,6 +557,8 @@ const GraphView = () => {
         return; // Not preventing default to allow normal tabbing
       }
 
+
+
       // Only intercept graph-specific keys
       const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
       if (!graphKeys.includes(e.key)) {

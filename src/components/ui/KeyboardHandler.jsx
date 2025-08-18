@@ -56,9 +56,21 @@ export default function KeyboardHandler() {
             active.blur(); 
         }
 
-        if (isEditableElement(active)) return; //no response if input or textarea is focused
-
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
+
+        // Handle "b" key even when input is focused (for batch exploration)
+        if (event.key === "b" || event.key === "B") {
+            setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+            if (!PlayFunction.active) {
+                setExplorationMode("batch");
+            } else {
+                setExplorationMode("none");
+            }
+            return;
+        }
+
+        // For all other keys, don't respond if input or textarea is focused
+        if (isEditableElement(active)) return; //no response if input or textarea is focused
 
         switch (event.key) {
 
@@ -109,21 +121,6 @@ export default function KeyboardHandler() {
             case "z": case "Z":
                 ZoomBoard(event.shiftKey, pressedKeys.current.has("x"), pressedKeys.current.has("y"));
                 break;
-
-            //B - play function
-            case "b":
-                setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
-                if (!PlayFunction.active) {
-                    setExplorationMode("batch");
-                } else {
-                    setExplorationMode("none");
-                }
-                break;
-            //Shift-B - activate speed input
-            // case "B":
-            //     inputRefs.speed.current?.focus();
-            //     event.preventDefault();
-            //     break;
 
             //Arrows            
             case "ArrowLeft": case "ArrowRight":
