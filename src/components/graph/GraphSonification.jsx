@@ -33,6 +33,7 @@ const GraphSonification = () => {
   const lastTickIndexRef = useRef(null); // Track last ticked index
   const tickSynthRef = useRef(null); // Reference to tick synth
   const tickChannelRef = useRef(null); // Reference to tick channel for panning
+  const isAtBoundaryRef = useRef(false); // Track if cursor is at a boundary
   
   const { getInstrumentByName } = useInstruments();
   const { isEditFunctionDialogOpen } = useDialog();
@@ -469,8 +470,30 @@ const GraphSonification = () => {
       return !isNaN(y) && isFinite(y) && y < 0;
     });
 
-    // Only start pink noise if there's a negative y value
-    if (hasNegativeY) {
+    // Check if any cursor is at a boundary (we need to check this before processing individual coordinates)
+    let isAnyAtBoundary = false;
+    for (const coord of cursorCoords) {
+      const x = parseFloat(coord.x);
+      const y = parseFloat(coord.y);
+      
+      // Calculate tolerance based on current graph bounds to be more robust with zoom
+      const xRange = graphBounds.xMax - graphBounds.xMin;
+      const yRange = graphBounds.yMax - graphBounds.yMin;
+      const tolerance = Math.max(0.02, Math.min(xRange, yRange) * 0.001); // Adaptive tolerance
+      
+      const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < tolerance * 0.1;
+      const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < tolerance * 0.1;
+      const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < tolerance * 0.1;
+      const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < tolerance * 0.1;
+      
+      if (isAtLeftBoundary || isAtRightBoundary || isAtBottomBoundary || isAtTopBoundary) {
+        isAnyAtBoundary = true;
+        break;
+      }
+    }
+
+    // Only start pink noise if there's a negative y value AND not at a boundary
+    if (hasNegativeY && !isAnyAtBoundary) {
       startPinkNoise();
     } else {
       stopPinkNoise();
@@ -545,6 +568,17 @@ const GraphSonification = () => {
         }
       }
 
+      // Check for special events first (this sets the boundary state)
+      await checkChartBoundaryEvents(functionId, coord);
+      await checkYAxisIntersectionEvents(functionId, coord);
+      await checkDiscontinuityEvents(functionId, coord);
+
+      // If at boundary, stop sonification and return
+      if (isAtBoundaryRef.current) {
+        stopTone(functionId);
+        return;
+      }
+
       // Get the function's instrument configuration
       const functionIndex = getFunctionIndexById(functionDefinitions, functionId);
       const instrumentConfig = getInstrumentByName(getFunctionInstrumentN(functionDefinitions, functionIndex));
@@ -572,11 +606,6 @@ const GraphSonification = () => {
         // Stop the tone for this function when it's not valid or outside bounds
         stopTone(functionId);
       }
-
-      // Check for special events
-      await checkChartBoundaryEvents(functionId, coord);
-      await checkYAxisIntersectionEvents(functionId, coord);
-      await checkDiscontinuityEvents(functionId, coord);
     });
   }, [cursorCoords, isAudioEnabled, isEditFunctionDialogOpen, functionDefinitions, graphBounds, stepSize]);
 
@@ -584,13 +613,17 @@ const GraphSonification = () => {
   const checkChartBoundaryEvents = async (functionId, coords) => {
     const x = parseFloat(coords.x);
     const y = parseFloat(coords.y);
-    const tolerance = 0.02; // Same tolerance as in GraphView
+    
+    // Calculate tolerance based on current graph bounds to be more robust with zoom
+    const xRange = graphBounds.xMax - graphBounds.xMin;
+    const yRange = graphBounds.yMax - graphBounds.yMin;
+    const tolerance = Math.max(0.02, Math.min(xRange, yRange) * 0.001); // Adaptive tolerance
     
     // Check if cursor is at any of the four boundaries (cursor is clamped, so it can't go beyond)
-    const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < 0.001;
-    const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < 0.001;
-    const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < 0.001;
-    const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < 0.001;
+    const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < tolerance * 0.1;
+    const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < tolerance * 0.1;
+    const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < tolerance * 0.1;
+    const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < tolerance * 0.1;
     
     // Get previous boundary state for this function
     const prevState = prevBoundaryStateRef.current.get(functionId) || {
@@ -604,9 +637,12 @@ const GraphSonification = () => {
     else if (isAtBottomBoundary) boundaryKey = `${functionId}_bottom`;
     else if (isAtTopBoundary) boundaryKey = `${functionId}_top`;
     
-    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}`);
+    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}, graphBounds=${JSON.stringify(graphBounds)}`);
     
     if (boundaryKey) {
+      // Set boundary state to true when at boundary
+      isAtBoundaryRef.current = true;
+      
       // Check if we haven't recently triggered this specific boundary to avoid spam
       const lastTriggered = boundaryTriggeredRef.current.get(boundaryKey);
       const now = Date.now();
@@ -616,6 +652,9 @@ const GraphSonification = () => {
         boundaryTriggeredRef.current.set(boundaryKey, now);
         console.log(`Chart boundary event triggered for function ${functionId} at boundary: ${boundaryKey}`);
       }
+    } else {
+      // Clear boundary state when not at boundary
+      isAtBoundaryRef.current = false;
     }
     
     // Update the previous boundary state
