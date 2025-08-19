@@ -81,7 +81,7 @@ export default function KeyboardHandler() {
     const ZoomBoard = useZoomBoard();
   
     useEffect(() => {
-      const handleKeyDown = (event) => {
+      const handleKeyDown = async (event) => {
         pressedKeys.current.add(event.key.toLowerCase());   // Store the pressed key in the set
         
         const activeFunctions = getActiveFunctions(functionDefinitions);
@@ -201,7 +201,11 @@ export default function KeyboardHandler() {
                             sl = l.filter(e => (NewX < e) && (e < CurrentX));
                         }
                         if (sl.length > 0) {
-                            console.log("There are points of interest in the way");
+                            try {
+                                await audioSampleManager.playSample("notification", { volume: -15 });
+                            } catch (error) {
+                                console.warn("Failed to play notification sound:", error);
+                            }
                         }
                         
                         // Move cursor and update last keydown time
