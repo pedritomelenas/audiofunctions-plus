@@ -195,17 +195,17 @@ export default function KeyboardHandler() {
                 }
                 break;
             case "ArrowUp":
-                if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed + (Math.abs(prev.speed+0.5) >= 10 ? 10 : 1) })); // Increase speed with Ctrl + Up
-                    break;
-                }
+                // if (event.shiftKey) {
+                //     setPlayFunction(prev => ({ ...prev, speed: prev.speed + (Math.abs(prev.speed+0.5) >= 10 ? 10 : 1) })); // Increase speed with Ctrl + Up
+                //     break;
+                // }
                 console.log("Up arrow pressed");
                 break;
             case "ArrowDown":
-                if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed - (Math.abs(prev.speed-0.5) >= 10 ? 10 : 1) })); // Decrease speed with Ctrl + Down
-                    break;
-                }
+                // if (event.shiftKey) {
+                //     setPlayFunction(prev => ({ ...prev, speed: prev.speed - (Math.abs(prev.speed-0.5) >= 10 ? 10 : 1) })); // Decrease speed with Ctrl + Down
+                //     break;
+                // }
                 console.log("Down arrow pressed");
                 break;
 
