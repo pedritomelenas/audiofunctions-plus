@@ -160,7 +160,7 @@ export const useDynamicKBarActions = () => {
     {
       id: "play-function",
       name: "Play Function",
-      shortcut: ["b"],
+      // shortcut: ["b"], // Removed to avoid conflict with keyboard handler
       keywords: "play, run, complete, automatic, auto, autoplay",
       parent: "quick-options",
       perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},

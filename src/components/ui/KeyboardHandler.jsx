@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useGraphContext } from "../../context/GraphContext";
+import { getActiveFunctions } from "../../utils/graphObjectOperations";
+
 
 // Export the ZoomBoard function so it can be used in other components
 export const useZoomBoard = () => {
@@ -28,7 +30,11 @@ export default function KeyboardHandler() {
         graphSettings,
         setGraphSettings,
         cursorCoords, 
-        updateCursor
+        updateCursor,
+        stepSize,
+        functionDefinitions,
+        setExplorationMode,
+        PlayFunction
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
@@ -39,6 +45,8 @@ export default function KeyboardHandler() {
     useEffect(() => {
       const handleKeyDown = (event) => {
         pressedKeys.current.add(event.key.toLowerCase());   // Store the pressed key in the set
+        
+        const activeFunctions = getActiveFunctions(functionDefinitions);
 
         const active = document.activeElement;
 
@@ -48,9 +56,21 @@ export default function KeyboardHandler() {
             active.blur(); 
         }
 
-        if (isEditableElement(active)) return; //no response if input or textarea is focused
-
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
+
+        // Handle "b" key even when input is focused (for batch exploration)
+        if (event.key === "b" || event.key === "B") {
+            setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+            if (!PlayFunction.active) {
+                setExplorationMode("batch");
+            } else {
+                setExplorationMode("none");
+            }
+            return;
+        }
+
+        // For all other keys, don't respond if input or textarea is focused
+        if (isEditableElement(active)) return; //no response if input or textarea is focused
 
         switch (event.key) {
 
@@ -102,24 +122,77 @@ export default function KeyboardHandler() {
                 ZoomBoard(event.shiftKey, pressedKeys.current.has("x"), pressedKeys.current.has("y"));
                 break;
 
-            //B - play function
-            // case "b":
-            //     setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
-            //     break;
-            //Shift-B - activate speed input
-            // case "B":
-            //     inputRefs.speed.current?.focus();
-            //     event.preventDefault();
-            //     break;
-
-            //Arrows
-            case "ArrowLeft":
-                //updateCursor(parseFloat(cursorCoords.x) - 0.1);                                        // one step move left
-                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 })); // smooth move left
-                break;
-            case "ArrowRight":
-                //updateCursor(parseFloat(cursorCoords.x) + 0.1);                                        // one step move right
-                setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));  // smooth move right
+            //Arrows            
+            case "ArrowLeft": case "ArrowRight":
+                // If batch sonification is active, stop it and keep cursor at current position
+                if (PlayFunction.active && PlayFunction.source === "play") {
+                    setPlayFunction(prev => ({ ...prev, active: false }));
+                    setExplorationMode("none");
+                    console.log("Batch sonification stopped by arrow key");
+                    break;
+                }
+                
+                let direction = 1;                               //right by default
+                if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
+                if (!event.shiftKey) {
+                    setExplorationMode("keyboard_stepwise");
+                    let CurrentX = parseFloat(cursorCoords[0].x);
+                    let NewX;
+                    let IsOnGrid = CurrentX % stepSize === 0;
+                    if (direction === 1) {
+                        NewX = IsOnGrid ? CurrentX + stepSize : Math.ceil(CurrentX / stepSize) * stepSize;
+                    } else {
+                        NewX = IsOnGrid ? CurrentX - stepSize :  Math.floor(CurrentX / stepSize) * stepSize;
+                    }
+                    let l = [];
+                    activeFunctions.forEach(func => {
+                    func.pointOfInterests.forEach((point) =>{ 
+                        l.push(point.x);
+                    }); 
+                    });
+                    let sl;
+                    // this code is for moving to the next point of interest
+                    // if (direction === 1){
+                    //     sl = l.filter(e => (CurrentX < e) && (e < NewX));
+                    // }else{
+                    //     sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                    // }
+                    // if (sl.length> 0) {
+                    //     //console.log("Filtered points of interest to be considered: (x-coordinates)  ", sl.toString());
+                    //     if (direction === 1) {
+                    //         // If moving right, snap to the next point of interest
+                    //         NewX = sl[0];
+                    //     } else {
+                    //         // If moving left, snap to the previous point of interest
+                    //         NewX = sl[sl.length - 1];
+                    //     }
+                    // }
+                    // this code is for snapping 
+                    // let snapaccuracy= stepSize/5;
+                    // if (direction === 1) {
+                    //     sl = l.filter(e => (CurrentX < e)  && (Math.abs(e-NewX) < snapaccuracy));
+                    // } else {
+                    //     sl = l.filter(e => (e < CurrentX) && (Math.abs(e-NewX) < snapaccuracy));
+                    // }
+                    // if (sl.length > 0) {
+                    //     console.log("Filtered points of interest to be considered: (x-coordinates) for snapping ", sl.toString());
+                    // }
+                    // let snappedX = sl.length > 0 ? sl[0] : NewX;
+                    // //console.log("Current X:", CurrentX, "New X:", NewX, "Snapped X:", snappedX);
+                    //updateCursor(snappedX);                                                       
+                    if (direction === 1){
+                        sl = l.filter(e => (CurrentX < e) && (e < NewX));
+                    }else{
+                        sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                    }
+                    if (sl.length> 0) {
+                        console.log("There are points of interest in the way");
+                    }
+                    updateCursor(NewX);               // one step move
+                } else {
+                    setExplorationMode("keyboard_smooth");
+                    setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
+                }
                 break;
             case "ArrowUp":
                 if (event.ctrlKey) {
@@ -152,6 +225,8 @@ export default function KeyboardHandler() {
             }
             return prev;
           });
+          // Reset exploration mode when keyboard exploration stops
+          setExplorationMode("none");
         }
       };
   
