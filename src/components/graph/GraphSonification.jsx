@@ -759,6 +759,11 @@ const GraphSonification = () => {
 
   // Helper function to play audio samples
   const playAudioSample = async (sampleName, options = {}) => {
+    // Don't play samples if audio is not enabled
+    if (!isAudioEnabled) {
+      return;
+    }
+    
     try {
       await audioSampleManager.playSample(sampleName, options);
     } catch (error) {
@@ -769,6 +774,11 @@ const GraphSonification = () => {
   // Example function to demonstrate how to play samples during sonification
   // You can call this function when specific events occur
   const triggerSampleEvent = async (eventType) => {
+    // Don't trigger samples if audio is not enabled
+    if (!isAudioEnabled) {
+      return;
+    }
+
     try {
       switch (eventType) {
         case 'chart_border':

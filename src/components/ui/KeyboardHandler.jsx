@@ -70,7 +70,8 @@ export default function KeyboardHandler() {
         functionDefinitions,
         setExplorationMode,
         PlayFunction,
-        mouseTimeoutRef
+        mouseTimeoutRef,
+        isAudioEnabled
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
@@ -221,7 +222,7 @@ export default function KeyboardHandler() {
                         } else {
                             sl = l.filter(e => (NewX < e) && (e < CurrentX));
                         }
-                        if (sl.length > 0) {
+                        if (sl.length > 0 && isAudioEnabled) {
                             try {
                                 await audioSampleManager.playSample("notification", { volume: -15 });
                             } catch (error) {
