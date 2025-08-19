@@ -169,6 +169,15 @@ export default function KeyboardHandler() {
                     console.log("Batch sonification stopped by arrow key");
                     break;
                 }
+
+                // Handle Ctrl + Arrow keys to move to bounds
+                if (event.ctrlKey && event.shiftKey) {
+                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
+                    const [xMin, xMax] = bounds;
+                    const targetX = event.key === "ArrowLeft" ? xMin : xMax;
+                    updateCursor(targetX);
+                    break;
+                }
                 
                 let direction = 1;                               //right by default
                 if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
