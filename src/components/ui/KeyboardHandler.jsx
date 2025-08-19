@@ -1,23 +1,58 @@
 import { useEffect, useRef } from "react";
 import { useGraphContext } from "../../context/GraphContext";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
+import audioSampleManager from "../../utils/audioSamples";
 
 
 // Export the ZoomBoard function so it can be used in other components
 export const useZoomBoard = () => {
-  const { setGraphBounds } = useGraphContext();
+  const { setGraphBounds, graphSettings, isAudioEnabled } = useGraphContext();
   
   return (out, xOnly = false, yOnly = false) => {
     const scaleFactor = {x: 0.9, y: 0.9};
     if (out) { scaleFactor.x = 1.1; scaleFactor.y = 1.1; }
     if (xOnly) scaleFactor.y = 1; //only x axis zoom
     if (yOnly) scaleFactor.x = 1; //only y axis zoom
-    setGraphBounds(prev => ({
-      xMin: prev.xMin * scaleFactor.x,
-      xMax: prev.xMax * scaleFactor.x,
-      yMin: prev.yMin * scaleFactor.y,
-      yMax: prev.yMax * scaleFactor.y,
-    }));
+
+    // Calculate new bounds
+    const newBounds = {
+      xMin: 0,
+      xMax: 0,
+      yMin: 0,
+      yMax: 0
+    };
+
+    setGraphBounds(prev => {
+      // Calculate new bounds
+      newBounds.xMin = prev.xMin * scaleFactor.x;
+      newBounds.xMax = prev.xMax * scaleFactor.x;
+      newBounds.yMin = prev.yMin * scaleFactor.y;
+      newBounds.yMax = prev.yMax * scaleFactor.y;
+
+      // Check if new bounds would exceed limits
+      const xDiff = Math.abs(newBounds.xMax - newBounds.xMin);
+      const yDiff = Math.abs(newBounds.yMax - newBounds.yMin);
+      
+      const minDiff = graphSettings.minBoundDifference || 0.1;
+      const maxDiff = graphSettings.maxBoundDifference || 100;
+
+      // Check if zoom would exceed limits
+      if (xDiff < minDiff || xDiff > maxDiff || yDiff < minDiff || yDiff > maxDiff) {
+        // Play deny sound if audio is enabled
+        if (isAudioEnabled) {
+          try {
+            audioSampleManager.playSample("deny", { volume: -10 }); // Lower volume to match other feedback sounds
+          } catch (error) {
+            console.warn("Failed to play deny sound:", error);
+          }
+        }
+        // Return previous bounds to prevent zoom
+        return prev;
+      }
+
+      // Return new bounds if within limits
+      return newBounds;
+    });
   };
 };
 

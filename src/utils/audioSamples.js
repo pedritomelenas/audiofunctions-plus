@@ -138,7 +138,8 @@ class AudioSampleManager {
     const filenameMap = {
       'chart_border': 'chart_border.mp3',
       'no_y': 'no_y.mp3',
-      'y_axis_intersection': 'y-axis-intersection.wav'
+      'y_axis_intersection': 'y-axis-intersection.wav',
+      'deny': 'deny.wav'
     };
     return filenameMap[sampleName];
   }
