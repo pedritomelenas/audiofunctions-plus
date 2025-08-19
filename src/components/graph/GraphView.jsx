@@ -131,7 +131,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
@@ -146,6 +146,7 @@ const GraphView = () => {
   const divisionPointsRef = useRef([]); // Store division points
   const lastTickIndexRef = useRef(null); // Track last ticked index globally
   const mouseTimeoutRef = useRef(null); // Track mouse movement timeout
+  const handlersRef = useRef({}); // Store event handlers for cleanup
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -173,7 +174,25 @@ const GraphView = () => {
       });
 
     board.removeEventHandlers(); // remove all event handlers
-    board.addPointerEventHandlers()
+    board.addPointerEventHandlers(); // Re-enable pointer handlers for mouse movement
+    
+    // Add click prevention handler
+    const container = document.getElementById('jxgbox');
+    
+    const preventClickHandler = (event) => {
+      // Prevent all mouse clicks
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    };
+
+    // Add the event listeners to prevent clicks
+    container.addEventListener('click', preventClickHandler, true);
+    container.addEventListener('mousedown', preventClickHandler, true);
+    container.addEventListener('mouseup', preventClickHandler, true);
+    
+    // Store the handler in the ref for cleanup
+    handlersRef.current = { preventClickHandler };
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
@@ -516,6 +535,15 @@ const GraphView = () => {
         clearTimeout(mouseTimeoutRef.current);
         mouseTimeoutRef.current = null;
       }
+      // Remove event handlers
+      const container = document.getElementById('jxgbox');
+      if (container) {
+        container.removeEventListener('click', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mousedown', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mouseup', handlersRef.current.preventClickHandler, true);
+      }
+      board.off('move', moveHandler);
+      
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };

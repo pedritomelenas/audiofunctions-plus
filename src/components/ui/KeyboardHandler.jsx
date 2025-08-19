@@ -69,7 +69,8 @@ export default function KeyboardHandler() {
         stepSize,
         functionDefinitions,
         setExplorationMode,
-        PlayFunction
+        PlayFunction,
+        mouseTimeoutRef
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
@@ -181,6 +182,17 @@ export default function KeyboardHandler() {
                 
                 let direction = 1;                               //right by default
                 if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
+                // First, stop any active smooth movement
+                if (PlayFunction.active && PlayFunction.source === "keyboard") {
+                    setPlayFunction(prev => ({ ...prev, active: false }));
+                }
+
+                // Clear any mouse exploration timeout
+                if (mouseTimeoutRef.current) {
+                    clearTimeout(mouseTimeoutRef.current);
+                    mouseTimeoutRef.current = null;
+                }
+
                 if (!event.shiftKey) {
                     setExplorationMode("keyboard_stepwise");
                     let CurrentX = parseFloat(cursorCoords[0].x);
