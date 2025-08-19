@@ -4,6 +4,7 @@ import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import audioSampleManager from "../../utils/audioSamples";
 
 
+
 // Export the ZoomBoard function so it can be used in other components
 export const useZoomBoard = () => {
   const { setGraphBounds, graphSettings, isAudioEnabled } = useGraphContext();
@@ -172,14 +173,7 @@ export default function KeyboardHandler() {
                     break;
                 }
 
-                // Handle Ctrl + Arrow keys to move to bounds
-                if (event.ctrlKey && event.shiftKey) {
-                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
-                    const [xMin, xMax] = bounds;
-                    const targetX = event.key === "ArrowLeft" ? xMin : xMax;
-                    updateCursor(targetX);
-                    break;
-                }
+
                 
                 let direction = 1;                               //right by default
                 if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
@@ -240,15 +234,21 @@ export default function KeyboardHandler() {
                 }
                 break;
             case "ArrowUp":
-                if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed + (Math.abs(prev.speed+0.5) >= 10 ? 10 : 1) })); // Increase speed with Ctrl + Up
+                if (event.ctrlKey || event.metaKey) {
+                    // Go to beginning with Cmd/Ctrl + Up
+                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
+                    const [xMin] = bounds;
+                    updateCursor(xMin);
                     break;
                 }
                 console.log("Up arrow pressed");
                 break;
             case "ArrowDown":
-                if (event.ctrlKey) {
-                    setPlayFunction(prev => ({ ...prev, speed: prev.speed - (Math.abs(prev.speed-0.5) >= 10 ? 10 : 1) })); // Decrease speed with Ctrl + Down
+                if (event.ctrlKey || event.metaKey) {
+                    // Go to end with Cmd/Ctrl + Down
+                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
+                    const [, xMax] = bounds;
+                    updateCursor(xMax);
                     break;
                 }
                 console.log("Down arrow pressed");
@@ -292,7 +292,7 @@ export default function KeyboardHandler() {
         document.removeEventListener("keydown", handleKeyDown);
         document.removeEventListener("keyup", handleKeyUp);
       };
-    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs]);
+    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, ZoomBoard]);
   
     return null;
   }
