@@ -38,6 +38,9 @@ export default function KeyboardHandler() {
     } = useGraphContext();
 
     const pressedKeys = useRef(new Set());
+    const lastKeyDownTime = useRef(null);
+    const HOLD_THRESHOLD = 1000; // Time in ms before allowing continuous movement
+    const KEYPRESS_THRESHOLD = 50; // Time in ms to filter out false positive keyup events (typical key repeat delay is ~30ms)
 
     // Use the exported zoom function
     const ZoomBoard = useZoomBoard();
@@ -146,49 +149,30 @@ export default function KeyboardHandler() {
                     }
                     let l = [];
                     activeFunctions.forEach(func => {
-                    func.pointOfInterests.forEach((point) =>{ 
-                        l.push(point.x);
-                    }); 
+                        func.pointOfInterests.forEach((point) =>{ 
+                            l.push(point.x);
+                        }); 
                     });
                     let sl;
-                    // this code is for moving to the next point of interest
-                    // if (direction === 1){
-                    //     sl = l.filter(e => (CurrentX < e) && (e < NewX));
-                    // }else{
-                    //     sl = l.filter(e => (NewX < e) && (e < CurrentX));
-                    // }
-                    // if (sl.length> 0) {
-                    //     //console.log("Filtered points of interest to be considered: (x-coordinates)  ", sl.toString());
-                    //     if (direction === 1) {
-                    //         // If moving right, snap to the next point of interest
-                    //         NewX = sl[0];
-                    //     } else {
-                    //         // If moving left, snap to the previous point of interest
-                    //         NewX = sl[sl.length - 1];
-                    //     }
-                    // }
-                    // this code is for snapping 
-                    // let snapaccuracy= stepSize/5;
-                    // if (direction === 1) {
-                    //     sl = l.filter(e => (CurrentX < e)  && (Math.abs(e-NewX) < snapaccuracy));
-                    // } else {
-                    //     sl = l.filter(e => (e < CurrentX) && (Math.abs(e-NewX) < snapaccuracy));
-                    // }
-                    // if (sl.length > 0) {
-                    //     console.log("Filtered points of interest to be considered: (x-coordinates) for snapping ", sl.toString());
-                    // }
-                    // let snappedX = sl.length > 0 ? sl[0] : NewX;
-                    // //console.log("Current X:", CurrentX, "New X:", NewX, "Snapped X:", snappedX);
-                    //updateCursor(snappedX);                                                       
-                    if (direction === 1){
-                        sl = l.filter(e => (CurrentX < e) && (e < NewX));
-                    }else{
-                        sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                    
+                    const currentTime = Date.now();
+                    
+                    // If this is the first keydown or enough time has passed since last movement
+                    if (!lastKeyDownTime.current || (currentTime - lastKeyDownTime.current) >= HOLD_THRESHOLD) {
+                        // Check for points of interest
+                        if (direction === 1){
+                            sl = l.filter(e => (CurrentX < e) && (e < NewX));
+                        } else {
+                            sl = l.filter(e => (NewX < e) && (e < CurrentX));
+                        }
+                        if (sl.length > 0) {
+                            console.log("There are points of interest in the way");
+                        }
+                        
+                        // Move cursor and update last keydown time
+                        updateCursor(NewX);
+                        lastKeyDownTime.current = currentTime;
                     }
-                    if (sl.length> 0) {
-                        console.log("There are points of interest in the way");
-                    }
-                    updateCursor(NewX);               // one step move
                 } else {
                     setExplorationMode("keyboard_smooth");
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
@@ -227,6 +211,16 @@ export default function KeyboardHandler() {
           });
           // Reset exploration mode when keyboard exploration stops
           setExplorationMode("none");
+          
+          const currentTime = Date.now();
+          const timeSinceLastKeyDown = currentTime - (lastKeyDownTime.current || 0);
+          
+          // Case 1: If it's a very quick keyup (< KEYPRESS_THRESHOLD), it's likely a false positive during key holding
+          // Case 2: If it's a normal human keypress (> KEYPRESS_THRESHOLD but < HOLD_THRESHOLD), reset the timer
+          // Case 3: If it's after the hold threshold, also reset the timer
+          if (timeSinceLastKeyDown > KEYPRESS_THRESHOLD) {
+            lastKeyDownTime.current = null;
+          }
         }
       };
   
