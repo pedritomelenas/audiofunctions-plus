@@ -117,7 +117,8 @@ const ShareDialog = ({ isOpen, onClose }) => {
                 Share
               </DialogTitle>
               <Description id="dialog-description" className="text-descriptions">
-                Configure sharing settings for your functions and graphs.
+                Share the current state including all defined functions with their sonifications, speed and step-size values, the current view, and the active function. 
+                Configure additional sharing settings below.
               </Description>
             </div>
             
@@ -141,12 +142,12 @@ const ShareDialog = ({ isOpen, onClose }) => {
                       Control how users can interact with shared graphs
                     </p>
                   </div>
-                  <div className="text-input-outer min-w-32">
+                  <div className="text-input-outer pr-1.5 min-w-40">
                     <select
                       id="restriction-mode"
                       value={shareSettings.restrictionMode}
                       onChange={(e) => updateShareSetting('restrictionMode', e.target.value)}
-                      className="text-input-inner"
+                      className="grow text-input-inner"
                       aria-label="Restriction mode"
                     >
                       <option value="none">None</option>
