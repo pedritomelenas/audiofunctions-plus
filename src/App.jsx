@@ -52,7 +52,7 @@ const KBarWrapper = () => {
           e.target.style.top = '-40px';
         }}
       >
-        Skip to chart
+        Skip to chart. Enable chart keyboard interaction.
       </a>
       
       <PaletteActions />

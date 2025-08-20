@@ -76,6 +76,14 @@ export const GraphContextProvider = ({ children }) => {
     );
   }
 
+  // Utility function to focus the chart
+  const focusChart = () => {
+    const chartElement = document.getElementById('chart');
+    if (chartElement) {
+      chartElement.focus();
+    }
+  };
+
   return (
     <GraphContext.Provider
       value={{
@@ -105,6 +113,7 @@ export const GraphContextProvider = ({ children }) => {
         setStepSize,
         explorationMode,
         setExplorationMode,
+        focusChart,
       }}
     >
       {children}

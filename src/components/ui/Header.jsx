@@ -9,10 +9,14 @@ import { useGraphContext } from "../../context/GraphContext";
  */
 const Header = () => {
   const { query } = useKBar();
-  const { isAudioEnabled, setIsAudioEnabled } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, focusChart } = useGraphContext();
   
   const toggleAudio = () => {
     setIsAudioEnabled(prev => !prev);
+    // Move focus to chart after toggling audio
+    setTimeout(() => {
+      focusChart();
+    }, 0);
   };
 
   return (
