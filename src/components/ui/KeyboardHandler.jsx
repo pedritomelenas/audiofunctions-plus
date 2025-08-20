@@ -164,6 +164,7 @@ export default function KeyboardHandler() {
                 break;
 
             //Arrows            
+
             case "ArrowLeft": case "ArrowRight":
                 // If batch sonification is active, stop it and keep cursor at current position
                 if (PlayFunction.active && PlayFunction.source === "play") {
@@ -173,6 +174,23 @@ export default function KeyboardHandler() {
                     break;
                 }
 
+                // Handle Cmd/Ctrl + Left/Right for cursor positioning
+                if (event.ctrlKey || event.metaKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
+                    if (event.key === "ArrowLeft") {
+                        // Go to beginning with Cmd/Ctrl + Left
+                        const [xMin] = bounds;
+                        updateCursor(xMin);
+                    } else {
+                        // Go to end with Cmd/Ctrl + Right
+                        const [, xMax] = bounds;
+                        updateCursor(xMax);
+                    }
+                    break;
+                }
 
                 
                 let direction = 1;                               //right by default
@@ -232,26 +250,6 @@ export default function KeyboardHandler() {
                     setExplorationMode("keyboard_smooth");
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
                 }
-                break;
-            case "ArrowUp":
-                if (event.ctrlKey || event.metaKey) {
-                    // Go to beginning with Cmd/Ctrl + Up
-                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
-                    const [xMin] = bounds;
-                    updateCursor(xMin);
-                    break;
-                }
-                console.log("Up arrow pressed");
-                break;
-            case "ArrowDown":
-                if (event.ctrlKey || event.metaKey) {
-                    // Go to end with Cmd/Ctrl + Down
-                    const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
-                    const [, xMax] = bounds;
-                    updateCursor(xMax);
-                    break;
-                }
-                console.log("Down arrow pressed");
                 break;
 
             default:
