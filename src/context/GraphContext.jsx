@@ -124,7 +124,7 @@ const initGraphObject = {
       "type": "function",
       "functionString": "sin(x)",
       "isActive": true,
-      "instrument": "organ",
+      "instrument": "clarinet",
       "color": "#0000FF",           // optional
       "pointOfInterests": [
         {
