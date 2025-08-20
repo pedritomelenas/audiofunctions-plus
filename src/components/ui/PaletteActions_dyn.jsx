@@ -12,8 +12,9 @@ export const useDynamicKBarActions = () => {
   const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
   const { openDialog } = useDialog();
 
-  // Check if in read-only mode
+  // Check if in read-only or full-restriction mode
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
+  const isFullyRestricted = graphSettings?.restrictionMode === "full-restriction";
 
   const ZoomBoard = useZoomBoard();
 
@@ -307,18 +308,19 @@ export const useDynamicKBarActions = () => {
     }),
     */
 
-    // Edit functions
-    {
-      id: "change-function",
-      name: isReadOnly ? "View Functions" : "Edit Functions",
-      shortcut: ["f"],
-      keywords: isReadOnly 
-        ? "function, view function, view graph, graph, show function, display function"
-        : "function, change function, change graph, graph, edit function, edit graph",
-      //  section: "",
-      perform: () => openDialog("edit-function"),
-      icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
-    },
+    // Edit functions - only show if not in full-restriction mode
+    ...(!isFullyRestricted ? [
+      {
+        id: "change-function",
+        name: isReadOnly ? "View Functions" : "Edit Functions",
+        shortcut: ["f"],
+        keywords: isReadOnly 
+          ? "function, view function, view graph, graph, show function, display function"
+          : "function, change function, change graph, graph, edit function, edit graph",
+        perform: () => openDialog("edit-function"),
+        icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
+      }
+    ] : []),
 
 
 
@@ -376,7 +378,7 @@ export const useDynamicKBarActions = () => {
 
 
     // Import/Export - only show if not in read-only mode
-    ...(!isReadOnly ? [
+    ...(!isReadOnly && !isFullyRestricted ? [
       {
         id: "import-export",
         name: "Import/Export",

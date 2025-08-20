@@ -134,23 +134,27 @@ const ShareDialog = ({ isOpen, onClose }) => {
             <div className="flex-1 overflow-y-auto px-6 space-y-6" role="main" aria-label="Share content">
               {/* Restriction Mode */}
               <div>
-                <h3 className="text-md font-semibold text-titles mb-4">Restriction Mode</h3>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="restriction-mode"
-                    checked={shareSettings.restrictionMode === "read-only"}
-                    onChange={(e) => updateShareSetting('restrictionMode', e.target.checked ? "read-only" : "none")}
-                    className="h-4 w-4 accent-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background border-input bg-background rounded"
-                    aria-describedby="restriction-mode-description"
-                  />
-                  <label htmlFor="restriction-mode" className="text-sm text-titles cursor-pointer">
-                    Enable read-only mode
-                  </label>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-md font-semibold text-titles mb-1">Restriction Mode</h3>
+                    <p className="text-sm text-descriptions">
+                      Control how users can interact with shared graphs
+                    </p>
+                  </div>
+                  <div className="text-input-outer min-w-32">
+                    <select
+                      id="restriction-mode"
+                      value={shareSettings.restrictionMode}
+                      onChange={(e) => updateShareSetting('restrictionMode', e.target.value)}
+                      className="text-input-inner"
+                      aria-label="Restriction mode"
+                    >
+                      <option value="none">None</option>
+                      <option value="read-only">Read Only</option>
+                      <option value="full-restriction">Full Restriction</option>
+                    </select>
+                  </div>
                 </div>
-                <p id="restriction-mode-description" className="text-sm text-descriptions mt-1">
-                  When enabled, shared graphs will be read-only for viewers
-                </p>
               </div>
 
               {/* Advanced Options Toggle */}
