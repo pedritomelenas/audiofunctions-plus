@@ -3,8 +3,6 @@ import { useGraphContext } from "../../context/GraphContext";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import audioSampleManager from "../../utils/audioSamples";
 
-
-
 // Export the ZoomBoard function so it can be used in other components
 export const useZoomBoard = () => {
   const { setGraphBounds, graphSettings, isAudioEnabled } = useGraphContext();
@@ -85,21 +83,18 @@ export default function KeyboardHandler() {
   
     useEffect(() => {
       const handleKeyDown = async (event) => {
-        pressedKeys.current.add(event.key.toLowerCase());   // Store the pressed key in the set
-        
-        const activeFunctions = getActiveFunctions(functionDefinitions);
-
         const active = document.activeElement;
 
-        // Blur the input field on Escape or Enter key press
-        if (isEditableElement(active) && (event.key === "Escape" || event.key === "Enter")) {
-            //event.preventDefault();  //not sure with this
-            active.blur(); 
+        // Only handle events when the chart (role="application") is focused
+        if (!active || active.getAttribute('role') !== 'application') {
+          return;
         }
 
+        pressedKeys.current.add(event.key.toLowerCase());   // Store the pressed key in the set
+        const activeFunctions = getActiveFunctions(functionDefinitions);
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
 
-        // Handle "b" key even when input is focused (for batch exploration)
+        // Handle "b" key for batch exploration
         if (event.key === "b" || event.key === "B") {
             setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
             if (!PlayFunction.active) {
@@ -110,41 +105,7 @@ export default function KeyboardHandler() {
             return;
         }
 
-        // For all other keys, don't respond if input or textarea is focused
-        if (isEditableElement(active)) return; //no response if input or textarea is focused
-
         switch (event.key) {
-
-            // //Switch audio on/off
-            // case "p":
-            //     setIsAudioEnabled(prev => !prev);
-            //     break;
-
-            //Activate function input
-            // case "f":
-            //     inputRefs.function.current?.focus();
-            //     event.preventDefault();
-            //     break;
-
-            // case "r": // Reset graph bounds to default
-            //     // Use defaultView from graphSettings instead of hardcoded values
-            //     const defaultView = graphSettings?.defaultView;
-            //     if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
-            //         const [xMin, xMax, yMax, yMin] = defaultView;
-            //         setGraphBounds({ xMin, xMax, yMin, yMax });
-            //     } else {
-            //         // Fallback to hardcoded values if defaultView is not available
-            //         setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
-            //     }
-            //     updateCursor(0);
-            //     break;
-
-            // case "g": // Tohggle grid visibility - not sure how to do and if we really need this
-            //     console.log("Toggle grid visibility");
-            //     //setGraphSettings(prev => ({ ...prev, showGrid: !prev.showGrid }));
-            //     break;
-
-            //WASD to move the view, Shift to bigger steps  (maybe change step according to zoom level?)
             case "a": case "A":
                 setGraphBounds(prev => ({ ...prev, xMin: prev.xMin - step, xMax: prev.xMax - step }));
                 break;
@@ -158,12 +119,9 @@ export default function KeyboardHandler() {
                 setGraphBounds(prev => ({ ...prev, yMin: prev.yMin - step, yMax: prev.yMax - step }));
                 break;
 
-            //Z and Shift-Z for zoom in/out, with X or Y changes one axis only
             case "z": case "Z":
                 ZoomBoard(event.shiftKey, pressedKeys.current.has("x"), pressedKeys.current.has("y"));
                 break;
-
-            //Arrows            
 
             case "ArrowLeft": case "ArrowRight":
                 // If batch sonification is active, stop it and keep cursor at current position
@@ -192,7 +150,6 @@ export default function KeyboardHandler() {
                     break;
                 }
 
-                
                 let direction = 1;                               //right by default
                 if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
                 // First, stop any active smooth movement
@@ -254,10 +211,17 @@ export default function KeyboardHandler() {
 
             default:
                 break;
-          }
+        }
       };
 
       const handleKeyUp = (e) => {
+        const active = document.activeElement;
+  
+        // Only handle events when the chart (role="application") is focused
+        if (!active || active.getAttribute('role') !== 'application') {
+          return;
+        }
+
         pressedKeys.current.delete(e.key.toLowerCase());
         // If the arrow keys are released, stop move but maintain the last cursor position
         if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -274,9 +238,6 @@ export default function KeyboardHandler() {
           const currentTime = Date.now();
           const timeSinceLastKeyDown = currentTime - (lastKeyDownTime.current || 0);
           
-          // Case 1: If it's a very quick keyup (< KEYPRESS_THRESHOLD), it's likely a false positive during key holding
-          // Case 2: If it's a normal human keypress (> KEYPRESS_THRESHOLD but < HOLD_THRESHOLD), reset the timer
-          // Case 3: If it's after the hold threshold, also reset the timer
           if (timeSinceLastKeyDown > KEYPRESS_THRESHOLD) {
             lastKeyDownTime.current = null;
           }
@@ -293,15 +254,4 @@ export default function KeyboardHandler() {
     }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, ZoomBoard]);
   
     return null;
-  }
-
-function isEditableElement(el) {
-// This function checks if the currently focused element is editable
-// (like an input field or a textarea) to prevent keyboard shortcuts from triggering actions when the user is typing.
-    return (
-    el &&
-    (el.tagName === "INPUT" ||
-      el.tagName === "TEXTAREA" ||
-      el.isContentEditable)
-  );
 }

@@ -566,6 +566,13 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
+  // Focus the chart when component mounts
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.focus();
+    }
+  }, []);
+
   // useEffect(() => {
   //   const wrapper = wrapperRef.current;
   //   if (!wrapper) return;
@@ -613,10 +620,26 @@ const GraphView = () => {
   return (
     <div 
       ref={wrapperRef}
+      id="chart"
       role="application"
       tabIndex={0}
       aria-label="Interactive graph."
-      style={{ outline: 'none', width: "100%", height: "100%" }}
+      style={{ 
+        outline: 'none', 
+        width: "100%", 
+        height: "100%",
+        border: '2px solid transparent',
+        borderRadius: '4px',
+        transition: 'border-color 0.2s ease'
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = 'var(--color-primary)';
+        e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'transparent';
+        e.target.style.boxShadow = 'none';
+      }}
     >
       <div 
         ref={graphContainerRef}
