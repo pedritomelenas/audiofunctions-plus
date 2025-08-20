@@ -7,10 +7,10 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
   const { graphBounds, graphSettings, setGraphSettings, functionDefinitions } = useGraphContext();
   const [statusMessage, setStatusMessage] = useState('');
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   
   // Local state for export settings (not saved until export is clicked)
   const [exportSettings, setExportSettings] = useState({
-    defaultView: [-10, 10, 10, -10],
     minBoundDifference: 0.1,
     maxBoundDifference: 100,
     restrictionMode: "none"
@@ -20,14 +20,14 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setExportSettings({
-        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
         minBoundDifference: graphSettings.minBoundDifference || 0.1,
         maxBoundDifference: graphSettings.maxBoundDifference || 100,
         restrictionMode: graphSettings.restrictionMode || "none"
       });
+      setShowAdvancedOptions(false);
       announceStatus('Export dialog opened.');
     }
-  }, [isOpen, graphBounds, graphSettings]);
+  }, [isOpen, graphSettings]);
 
   // Announce status changes to screen readers
   const announceStatus = (message) => {
@@ -61,10 +61,9 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
   };
 
   const handleExport = () => {
-    // Update graph settings with export settings (excluding restrictionMode)
+    // Update graph settings with export settings
     setGraphSettings(prevSettings => ({
       ...prevSettings,
-      defaultView: exportSettings.defaultView,
       minBoundDifference: exportSettings.minBoundDifference,
       maxBoundDifference: exportSettings.maxBoundDifference
     }));
@@ -74,7 +73,6 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
       functions: functionDefinitions,
       graphSettings: {
         ...graphSettings,
-        defaultView: exportSettings.defaultView,
         minBoundDifference: exportSettings.minBoundDifference,
         maxBoundDifference: exportSettings.maxBoundDifference,
         restrictionMode: exportSettings.restrictionMode
@@ -110,12 +108,6 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
     }));
   };
 
-  const updateDefaultView = (index, value) => {
-    const newDefaultView = [...exportSettings.defaultView];
-    newDefaultView[index] = parseFloat(value);
-    updateExportSetting('defaultView', newDefaultView);
-  };
-
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
       <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
@@ -126,7 +118,7 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
               Export JSON
             </DialogTitle>
             <Description id="dialog-description" className="text-descriptions">
-              Configure export settings for your functions and graphs.
+              Export the current state including all defined functions with their sonifications, movement adjustment values, the current view, and the active function. Configure additional export settings below.
             </Description>
           </div>
           
@@ -141,113 +133,98 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 space-y-6" role="main" aria-label="Export content">
-            {/* Default View Settings */}
-            <div>
-              <h3 className="text-md font-semibold text-titles mb-4">Default View</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    X Min:
-                  </div>
-                  <input
-                    type="number"
-                    value={exportSettings.defaultView[0]}
-                    onChange={(e) => updateDefaultView(0, e.target.value)}
-                    className="text-input-inner"
-                    aria-label="X minimum for default view"
-                  />
-                </div>
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    X Max:
-                  </div>
-                  <input
-                    type="number"
-                    value={exportSettings.defaultView[1]}
-                    onChange={(e) => updateDefaultView(1, e.target.value)}
-                    className="text-input-inner"
-                    aria-label="X maximum for default view"
-                  />
-                </div>
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    Y Max:
-                  </div>
-                  <input
-                    type="number"
-                    value={exportSettings.defaultView[2]}
-                    onChange={(e) => updateDefaultView(2, e.target.value)}
-                    className="text-input-inner"
-                    aria-label="Y maximum for default view"
-                  />
-                </div>
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    Y Min:
-                  </div>
-                  <input
-                    type="number"
-                    value={exportSettings.defaultView[3]}
-                    onChange={(e) => updateDefaultView(3, e.target.value)}
-                    className="text-input-inner"
-                    aria-label="Y minimum for default view"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bound Differences */}
-            <div>
-              <h3 className="text-md font-semibold text-titles mb-4">Zoom limits</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    Min Axis Interval:
-                  </div>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={exportSettings.minBoundDifference}
-                    onChange={(e) => updateExportSetting('minBoundDifference', parseFloat(e.target.value))}
-                    className="text-input-inner"
-                    aria-label="Minimum bound difference"
-                  />
-                </div>
-                <div className="text-input-outer">
-                  <div className="text-input-label">
-                    Max Axis Interval:
-                  </div>
-                  <input
-                    type="number"
-                    step="1"
-                    value={exportSettings.maxBoundDifference}
-                    onChange={(e) => updateExportSetting('maxBoundDifference', parseFloat(e.target.value))}
-                    className="text-input-inner"
-                    aria-label="Maximum bound difference"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Restriction Mode */}
             <div>
-              <h3 className="text-md font-semibold text-titles mb-4">Restriction Mode</h3>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="restriction-mode"
-                  checked={exportSettings.restrictionMode === "read-only"}
-                  onChange={(e) => updateExportSetting('restrictionMode', e.target.checked ? "read-only" : "none")}
-                  className="h-4 w-4 accent-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background border-input bg-background rounded"
-                  aria-describedby="restriction-mode-description"
-                />
-                <label htmlFor="restriction-mode" className="text-sm text-titles cursor-pointer">
-                  Enable read-only mode
-                </label>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-md font-semibold text-titles mb-1">Restriction Mode</h3>
+                  <p className="text-sm text-descriptions">
+                    Control how users can interact with exported graphs
+                  </p>
+                </div>
+                <div className="text-input-outer pr-1.5 min-w-40">
+                  <select
+                    id="restriction-mode"
+                    value={exportSettings.restrictionMode}
+                    onChange={(e) => updateExportSetting('restrictionMode', e.target.value)}
+                    className="grow text-input-inner"
+                    aria-label="Restriction mode"
+                  >
+                    <option value="none">None</option>
+                    <option value="read-only">Read Only</option>
+                    <option value="full-restriction">Full Restriction</option>
+                  </select>
+                </div>
               </div>
-              <p id="restriction-mode-description" className="text-sm text-descriptions mt-1">
-                When enabled, exported graphs will be read-only for viewers
-              </p>
+            </div>
+
+            {/* Advanced Options Toggle */}
+            <div>
+              <div
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="flex items-center space-x-2 text-md font-semibold text-titles cursor-pointer select-none"
+                aria-expanded={showAdvancedOptions}
+                aria-controls="advanced-options"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setShowAdvancedOptions(!showAdvancedOptions);
+                  }
+                }}
+              >
+                <svg
+                  className={`w-4 h-4 transition-transform ${showAdvancedOptions ? 'rotate-90' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span>Advanced options</span>
+              </div>
+
+              {/* Collapsible Advanced Options */}
+              {showAdvancedOptions && (
+                <div
+                  id="advanced-options"
+                  className="mt-4 animate-in slide-in-from-top-2 duration-300"
+                >
+                  {/* Zoom Limits */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-titles mb-3">Zoom limits</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="text-input-outer">
+                        <div className="text-input-label">
+                          Min Axis Interval:
+                        </div>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={exportSettings.minBoundDifference}
+                          onChange={(e) => updateExportSetting('minBoundDifference', parseFloat(e.target.value))}
+                          className="text-input-inner"
+                          aria-label="Minimum bound difference"
+                        />
+                      </div>
+                      <div className="text-input-outer">
+                        <div className="text-input-label">
+                          Max Axis Interval:
+                        </div>
+                        <input
+                          type="number"
+                          step="1"
+                          value={exportSettings.maxBoundDifference}
+                          onChange={(e) => updateExportSetting('maxBoundDifference', parseFloat(e.target.value))}
+                          className="text-input-inner"
+                          aria-label="Maximum bound difference"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
