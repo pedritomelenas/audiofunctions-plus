@@ -566,49 +566,49 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
+  // useEffect(() => {
+  //   const wrapper = wrapperRef.current;
+  //   if (!wrapper) return;
 
-    const handleKeyDown = (e) => {
-      // only handle key events when the wrapper is focused
-      if (document.activeElement !== wrapper) return;
+  //   const handleKeyDown = (e) => {
+  //     // only handle key events when the wrapper is focused
+  //     if (document.activeElement !== wrapper) return;
 
-      // ESCAPE to exit the application
-      if (e.key === 'Escape') {
-        wrapper.blur(); // Focus entfernen
-        return;
-      }
+  //     // ESCAPE to exit the application
+  //     if (e.key === 'Escape') {
+  //       wrapper.blur(); // Focus entfernen
+  //       return;
+  //     }
       
-      // TAB to allow normal tabbing through elements
-      if (e.key === 'Tab') {
-        return; // Not preventing default to allow normal tabbing
-      }
+  //     // TAB to allow normal tabbing through elements
+  //     if (e.key === 'Tab') {
+  //       return; // Not preventing default to allow normal tabbing
+  //     }
 
 
 
-      // Only intercept graph-specific keys
-      const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
-      if (!graphKeys.includes(e.key)) {
-        return; // Other keys are passed through normally
-      }
+  //     // Only intercept graph-specific keys
+  //     const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
+  //     if (!graphKeys.includes(e.key)) {
+  //       return; // Other keys are passed through normally
+  //     }
       
-      e.preventDefault();
-      e.stopPropagation();
+  //     e.preventDefault();
+  //     e.stopPropagation();
       
-      switch (e.key) {
-        case 'ArrowLeft':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
-          break;
-        case 'ArrowRight':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
-          break;
-      }
-    };
+  //     switch (e.key) {
+  //       case 'ArrowLeft':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
+  //         break;
+  //       case 'ArrowRight':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
+  //         break;
+  //     }
+  //   };
 
-    wrapper.addEventListener('keydown', handleKeyDown);
-    return () => wrapper.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  //   wrapper.addEventListener('keydown', handleKeyDown);
+  //   return () => wrapper.removeEventListener('keydown', handleKeyDown);
+  // }, []);
 
   return (
     <div 
@@ -620,6 +620,8 @@ const GraphView = () => {
     >
       <div 
         ref={graphContainerRef}
+        aria-hidden="true"
+        role="presentation"
         id="jxgbox" 
         style={{ width: "100%", height: "100%", outline: 'none' }}
       />
