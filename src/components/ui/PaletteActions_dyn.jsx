@@ -8,11 +8,13 @@ import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
 import { useAnnouncement } from '../../context/AnnouncementContext';
+import { useInfoToast } from '../../context/InfoToastContext';
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, graphBounds, setGraphBounds, updateCursor } = useGraphContext();
   const { openDialog } = useDialog();
   const { announce } = useAnnouncement();
+  const { showInfoToast } = useInfoToast();
   
   // Check if in read-only or full-restriction mode
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
@@ -29,12 +31,26 @@ export const useDynamicKBarActions = () => {
     const messages = cursorCoords.map(coord => {
         const functionIndex = functionDefinitions.findIndex(f => f.id === coord.functionId);
         const functionName = getFunctionNameN(functionDefinitions, functionIndex) || `Function ${functionIndex + 1}`;
-        return `${functionName}: x = ${coord.x}, y = ${coord.y}`;
+        const roundedX = Number(coord.x).toFixed(2);
+        const roundedY = Number(coord.y).toFixed(2);
+        return `${functionName}: x = ${roundedX}, y = ${roundedY}`;
     });
 
     const message = messages.join('\n');
     announce(`Current Coordinates:\n\n${message}`);
+    showInfoToast(`Current Coordinates:\n\n${message}`);
   };
+
+  const showViewBounds = () => {
+    const { xMin, xMax, yMin, yMax } = graphBounds;
+    const roundedXMin = Number(xMin).toFixed(2);
+    const roundedXMax = Number(xMax).toFixed(2);
+    const roundedYMin = Number(yMin).toFixed(2);
+    const roundedYMax = Number(yMax).toFixed(2);
+    const message = `Current View Bounds:\n\nX: [${roundedXMin}, ${roundedXMax}]\nY: [${roundedYMin}, ${roundedYMax}]`;
+    announce(message);
+    showInfoToast(message);
+  }
 
   // Switch to next active function
   const switchToNextFunction = () => {
@@ -69,6 +85,7 @@ export const useDynamicKBarActions = () => {
     // Announce the switch
     const functionName = getFunctionNameN(functionDefinitions, nextIndex) || `Function ${nextIndex + 1}`;
     announce(`Switched to ${functionName}`);
+    showInfoToast(`${functionName}`, 1500);
   };
 
   // Show specific function and hide all others
@@ -85,6 +102,7 @@ export const useDynamicKBarActions = () => {
     // Announce the switch
     const functionName = getFunctionNameN(functionDefinitions, targetIndex) || `Function ${targetIndex + 1}`;
     announce(`Switched to ${functionName}`);
+    showInfoToast(`${functionName}`, 1500);
   };
 
   // Toggle sonification type for active function
@@ -105,6 +123,7 @@ export const useDynamicKBarActions = () => {
     setFunctionDefinitions(updatedDefinitions);
 
     announce(`Sonification type changed to ${sonificationType}`);
+    showInfoToast(`Sonification: ${sonificationType}`);
     
     console.log(`Sonification type changed to ${sonificationType} (${newInstrument}) for active function`);
   };
@@ -136,10 +155,6 @@ export const useDynamicKBarActions = () => {
 
 
     {
-      id: "toggle-audio",
-      name: isAudioEnabled ? "Stop Audio" : "Start Audio",
-      shortcut: ["p"],
-      keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
       perform: () => setIsAudioEnabled(prev => !prev),
       icon: isAudioEnabled 
@@ -151,9 +166,18 @@ export const useDynamicKBarActions = () => {
       id: "show-coordinates",
       name: "Show Current Coordinates",
       shortcut: ["c"],
-      keywords: "coordinates position cursor show alert accessibility",
+      keywords: "coordinates position location",
       parent: "quick-options",
       perform: showCoordinates,
+      icon: <MapPin className="size-5 shrink-0 opacity-70" />,
+    },
+    {
+      id: "show-view-bounds",
+      name: "Show current view bounds",
+      shortcut: ["v"],
+      keywords: "bound view range axis",
+      parent: "quick-options",
+      perform: showViewBounds,
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -210,6 +234,7 @@ export const useDynamicKBarActions = () => {
           updateCursor(0);
           
           announce("View reset to default values");
+          showInfoToast("Default view", 1500);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -384,6 +409,7 @@ export const useDynamicKBarActions = () => {
         updateCursor(0);
 
         announce("View reset to default values");
+        showInfoToast("Default view", 1500);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
