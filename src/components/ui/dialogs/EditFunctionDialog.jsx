@@ -224,8 +224,11 @@ const getInstrumentIcon = (instrumentName) => {
 };
 
 const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
-  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
+  
+  const functionId = functionDefinitions[index]?.id;
+  const hasError = functionId && inputErrors[functionId];
   
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -269,11 +272,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
   };
 
   return (
-    <div 
-      className="mb-4" 
-      role="group" 
-      aria-labelledby={`function-${index}-label`}
-    >
+    <div className="mb-4" role="group" aria-labelledby={`function-${index}-label`}>
       <label
         id={`function-${index}-label`}
         htmlFor={`function-${index}`}
@@ -281,57 +280,144 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
       >
         Function {index + 1}
       </label>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {/* Input-Feld */}
-        <div className="text-input-outer grow">
-          <div className="text-input-label" aria-hidden="true">
-            f(x)=
-          </div>          <input
-            id={`function-${index}`}
-            name="function"
-            type="text"
-            placeholder="e.g., x^2 + 2*x - 1"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="text-input-inner grow"
-            aria-label={`Function ${index + 1} mathematical expression`}
-            aria-description="Mathematical expression."
-          />
+      
+      <div className="mt-2">
+        <div className="flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <div 
+              className={`text-input-outer ${hasError ? 'error-border error-input' : ''}`}
+              aria-describedby={hasError ? `function-${index}-error` : undefined}
+            >
+              <div className="text-input-label " aria-hidden="true">f(x)=</div>
+              <input
+                id={`function-${index}`}
+                type="text"
+                placeholder="e.g., x^2 + 2*x - 1"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="text-input-inner flex-1"
+                aria-invalid={hasError ? 'true' : 'false'}
+                aria-describedby={hasError ? `function-${index}-error` : undefined}
+              />
+            </div>
+          </div>
+
+          {/* Control buttons */}
+          <div className="flex gap-2 flex-shrink-0" role="group" aria-label={`Function ${index + 1} actions`}>
+            <button
+              type="button"
+              className="btn-neutral"
+              onClick={handleInstrumentChange}
+              onKeyDown={handleInstrumentKeyDown}
+              aria-label={`Change instrument for function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
+              title={`Change instrument for function ${index + 1}. Current: ${instrument}`}
+            >
+              {getInstrumentIcon(instrument)}
+              <span className="sr-only">{instrument}</span>
+            </button>
+            <button
+              type="button"
+              className="btn-neutral"
+              aria-label={`Delete function ${index + 1}`}
+              onClick={onDelete}
+            >
+              <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-2 sm:flex-row" role="group" aria-label={`Function ${index + 1} actions`}>
-          <button
-            type="button"
-            className="btn-neutral"
-            onClick={handleInstrumentChange}
-            onKeyDown={handleInstrumentKeyDown}
-            aria-label={`Change instrument for function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
-            title={`Change instrument for function ${index + 1}. Current: ${instrument}`}
+        {/* Error display for regular functions */}
+        {hasError && (
+          <div 
+            id={`function-${index}-error`}
+            className="error-message"
+            role="alert"
+            aria-live="polite"
           >
-            {getInstrumentIcon(instrument)}
-            <span className="sr-only">{instrument}</span>
-          </button>
-          <button
-            type="button"
-            className="btn-neutral"
-            aria-label={`Delete function ${index + 1}`}
-            onClick={onDelete}
-          >
-            <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
-          </button>
-        </div>
+            <span className="error-icon" aria-hidden="true">⚠️</span>
+            {inputErrors[functionId]}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
+// Add this helper function to parse error positions for piecewise functions
+const parseErrorPosition = (errPos) => {
+  if (!errPos) return null;
+  
+  // errPos can be a number (for general errors) or array like [partIndex, fieldIndex] for piecewise errors
+  if (typeof errPos === 'number') {
+    return { general: true, position: errPos };
+  }
+  
+  if (Array.isArray(errPos)) {
+    // For piecewise functions: [partIndex, fieldIndex] where fieldIndex 0=function, 1=condition
+    if (errPos.length === 2) {
+      return { 
+        general: false, 
+        partIndex: errPos[0], 
+        fieldIndex: errPos[1],
+        fieldType: errPos[1] === 0 ? 'function' : 'condition'
+      };
+    }
+  }
+  
+  return null;
+};
+
+// Enhanced error display component for piecewise functions
+const PiecewiseErrorDisplay = ({ functionId, errorMessage, errorPosition, parts }) => {
+  const parsedError = parseErrorPosition(errorPosition);
+  
+  if (!errorMessage) return null;
+
+  // General error affecting the whole piecewise function
+  if (!parsedError || parsedError.general) {
+    return (
+      <div 
+        className="error-message mt-2"
+        role="alert"
+        aria-live="polite"
+      >
+        <span className="error-icon" aria-hidden="true">⚠️</span>
+        {errorMessage}
+      </div>
+    );
+  }
+
+  // Specific error for a part of the piecewise function
+  const { partIndex, fieldType } = parsedError;
+  const partNumber = partIndex + 1;
+  
+  return (
+    <div 
+      className="error-message mt-2"
+      role="alert"
+      aria-live="polite"
+    >
+      <span className="error-icon" aria-hidden="true">⚠️</span>
+      <strong>Part {partNumber} ({fieldType}):</strong> {errorMessage}
+    </div>
+  );
+};
+
 const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept }) => {
-  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
   const needsUpdateRef = useRef(false);
   
+  // Get error information for this function
+  const functionId = functionDefinitions[index]?.id;
+  const errorInfo = inputErrors[functionId];
+  
+  // Parse error message and position if available
+  const errorMessage = errorInfo?.split(' in ')[0] || errorInfo;
+  const errorPositionMatch = errorInfo?.match(/in (.+)$/);
+  const errorPosition = errorPositionMatch ? JSON.parse(errorPositionMatch[1]) : null;
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -466,6 +552,13 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       const newParts = [...prev];
       newParts[partIndex] = { ...newParts[partIndex], [field]: value };
       needsUpdateRef.current = true;
+      
+      // Provide immediate feedback for common errors
+      const validationError = validatePart(partIndex, field, value);
+      if (validationError) {
+        console.warn(validationError);
+      }
+      
       return newParts;
     });
   };
@@ -480,6 +573,115 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       needsUpdateRef.current = false;
     }
   }, [parts, onChange]);
+  // Enhanced part validation
+  const validatePart = (partIndex, field, value) => {
+    if (!value || value.trim() === '') {
+      return null; // Empty values are handled by the main validation
+    }
+    
+    try {
+      if (field === 'function') {
+        // Validate function expression
+        const { isOneVariableFunction } = require('../../../utils/parse');
+        if (!isOneVariableFunction(value)) {
+          return `Invalid function expression in part ${partIndex + 1}`;
+        }
+      } else if (field === 'condition') {
+        // Validate condition/inequality
+        const { isInequality } = require('../../../utils/parse');
+        if (!isInequality(value)) {
+          return `Invalid condition in part ${partIndex + 1}`;
+        }
+      }
+    } catch (err) {
+      return `Syntax error in part ${partIndex + 1} ${field}`;
+    }
+    
+    return null;
+  };
+
+  // Enhanced part component with error highlighting
+  const renderPart = (part, partIndex) => {
+    const parsedError = parseErrorPosition(errorPosition);
+    const hasPartError = parsedError && !parsedError.general && parsedError.partIndex === partIndex;
+    const functionHasError = hasPartError && parsedError.fieldType === 'function';
+    const conditionHasError = hasPartError && parsedError.fieldType === 'condition';
+
+    return (
+      <div 
+        key={partIndex} 
+        className="mb-4 last:mb-0"
+        role="group"
+        aria-label={`Part ${partIndex + 1} of ${parts.length}`}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Function input with error highlighting */}
+          <div className="text-input-outer flex-1 min-w-0">
+            <div className="text-input-label" aria-hidden="true">
+              f(x)=
+            </div>
+            <input
+              id={`piecewise-function-${index}-part-${partIndex}-function`}
+              type="text"
+              value={part.function}
+              onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`text-input-inner w-full grow ${functionHasError ? 'error-border' : ''}`}
+              placeholder="e.g., x^2 + 1"
+              aria-label={`Function expression for part ${partIndex + 1}`}
+              aria-invalid={functionHasError ? 'true' : 'false'}
+              aria-describedby={functionHasError ? `piecewise-${index}-part-${partIndex}-function-error` : undefined}
+            />
+          </div>
+
+          {/* Condition input with error highlighting */}
+          <div className="text-input-outer flex-1 min-w-0">
+            <div className="text-input-label" aria-hidden="true">
+              if
+            </div>
+            <input
+              id={`piecewise-function-${index}-part-${partIndex}-condition`}
+              type="text"
+              value={part.condition}
+              onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`text-input-inner w-full grow ${conditionHasError ? 'error-border' : ''}`}
+              placeholder="e.g., x < 0 or x >= 1"
+              aria-label={`Condition for part ${partIndex + 1}`}
+              aria-invalid={conditionHasError ? 'true' : 'false'}
+              aria-describedby={conditionHasError ? `piecewise-${index}-part-${partIndex}-condition-error` : undefined}
+            />
+          </div>
+
+          {/* Remove part button */}
+          {parts.length > 1 && (
+            <button
+              type="button"
+              className="btn-neutral"
+              aria-label={`Remove part ${partIndex + 1} of piecewise function ${index + 1}`}
+              onClick={() => removePart(partIndex)}
+            >
+              <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        
+        {/* Part-specific error messages */}
+        {hasPartError && (
+          <div 
+            id={`piecewise-${index}-part-${partIndex}-${parsedError.fieldType}-error`}
+            className="error-message mt-1"
+            role="alert"
+            aria-live="polite"
+          >
+            <span className="error-icon" aria-hidden="true">⚠️</span>
+            {errorMessage}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div 
       className="mb-4" 
@@ -497,73 +699,19 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       
       {/* Bordered container for piecewise function parts */}
       <div 
-        className="mt-2 border border-gray-mddk rounded-lg p-4 bg-background"
+        className={`mt-2 border rounded-lg p-4 bg-background ${errorInfo ? 'border-red-500' : 'border-gray-mddk'}`}
         role="group"
         aria-label={`Piecewise function ${index + 1} parts`}
       >
-        {parts.map((part, partIndex) => (
-          <div 
-            key={partIndex} 
-            className="mb-4 last:mb-0"
-            role="group"
-            aria-label={`Part ${partIndex + 1} of ${parts.length}`}
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Function input */}
-              <div className="text-input-outer flex-1 min-w-0">
-                <div className="text-input-label" aria-hidden="true">
-                  f(x)=
-                </div>                <input
-                  id={`piecewise-function-${index}-part-${partIndex}-function`}
-                  type="text"
-                  value={part.function}
-                  onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="text-input-inner w-full grow"
-                  placeholder="e.g., x^2 + 1"
-                  aria-label={`Function expression for part ${partIndex + 1}`}
-                  aria-description="Function expression."
-                />
-              </div>
-
-              {/* Condition input */}
-              <div className="text-input-outer flex-1 min-w-0">
-                <div className="text-input-label" aria-hidden="true">
-                  if
-                </div>                <input
-                  id={`piecewise-function-${index}-part-${partIndex}-condition`}
-                  type="text"
-                  value={part.condition}
-                  onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="text-input-inner w-full grow"
-                  placeholder="e.g., x < 0 or x >= 1"
-                  aria-label={`Condition for part ${partIndex + 1}`}
-                  aria-description="Condition when this part applies."
-                />
-              </div>
-
-              {/* Remove part button (only show if more than 1 part) */}
-              {parts.length > 1 && (
-                <button
-                  type="button"
-                  className="btn-neutral"
-                  aria-label={`Remove part ${partIndex + 1} of piecewise function ${index + 1}`}
-                  onClick={() => removePart(partIndex)}
-                >
-                  <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+        {parts.map((part, partIndex) => renderPart(part, partIndex))}
         
         {/* Add part button and control buttons */}
         <div 
           className="flex gap-2 mt-2 pt-3 items-center"
           role="group" 
           aria-label={`Piecewise function ${index + 1} controls`}
-        >          <button
+        >
+          <button
             type="button"
             onClick={addPart}
             className="btn-neutral flex-1"
@@ -594,6 +742,14 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
           </button>
         </div>
       </div>
+
+      {/* General piecewise function error display */}
+      <PiecewiseErrorDisplay 
+        functionId={functionId}
+        errorMessage={errorMessage}
+        errorPosition={errorPosition}
+        parts={parts}
+      />
     </div>
   );
 };
