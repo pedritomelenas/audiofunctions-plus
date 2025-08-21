@@ -123,7 +123,7 @@ export const useDynamicKBarActions = () => {
     setFunctionDefinitions(updatedDefinitions);
 
     announce(`Sonification type changed to ${sonificationType}`);
-    showInfoToast(`Sonification: ${sonificationType}`);
+    showInfoToast(`Sonification: ${sonificationType}`, 1500);
     
     console.log(`Sonification type changed to ${sonificationType} (${newInstrument}) for active function`);
   };
