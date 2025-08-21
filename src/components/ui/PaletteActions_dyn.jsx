@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music, Ruler } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN, setFunctionInstrumentN, getFunctionInstrumentN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -155,6 +155,10 @@ export const useDynamicKBarActions = () => {
 
 
     {
+      id: "toggle-audio",
+      name: isAudioEnabled ? "Stop Audio" : "Start Audio",
+      shortcut: ["p"],
+      keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
       perform: () => setIsAudioEnabled(prev => !prev),
       icon: isAudioEnabled 
@@ -178,7 +182,7 @@ export const useDynamicKBarActions = () => {
       keywords: "bound view range axis",
       parent: "quick-options",
       perform: showViewBounds,
-      icon: <MapPin className="size-5 shrink-0 opacity-70" />,
+      icon: <Ruler className="size-5 shrink-0 opacity-70" />,
     },
 
     // Switch function
