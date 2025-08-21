@@ -599,8 +599,11 @@ function listFunctionConditions(txt){
         }
         let fncnd = splitFunctionCondition(current.slice(0, nextClosePosition + 1));
         if (fncnd === null){
+            errorMessage = "Wrong function expression or condition";
+            errorPosition = nparts;
             return null;
         }
+        console.log("New part ",fncnd);
         parts.push(fncnd);
         nparts++;
         let j=nextClosePosition + 1;
@@ -637,6 +640,7 @@ export function checkMathSpell(func){
         const parts = listFunctionConditions(txt);
         console.log("Parts of piecewise function:", parts);
         if (parts === null) {
+            errorMessage="Invalid formad on definition or condition";
             return ["0", errorMessage, errorPosition];
         }
         for (let i=0;i<parts.length;i++){
