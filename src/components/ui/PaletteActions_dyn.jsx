@@ -7,21 +7,22 @@ import { getFunctionNameN, updateFunctionN, setFunctionInstrumentN, getFunctionI
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
+import { useAnnouncement } from '../../context/AnnouncementContext';
 
 export const useDynamicKBarActions = () => {
   const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
   const { openDialog } = useDialog();
-
+  const { announce } = useAnnouncement();
+  
   // Check if in read-only or full-restriction mode
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
   const isFullyRestricted = graphSettings?.restrictionMode === "full-restriction";
 
   const ZoomBoard = useZoomBoard();
 
-  const showCoordinatesAlert = () => {
-    console.log("Showing coordinates alert");
+  const showCoordinates = () => {
     if (!cursorCoords || cursorCoords.length === 0) {
-        alert("No cursor position available");
+        announce("No cursor position available");
         return;
     }
 
@@ -32,7 +33,7 @@ export const useDynamicKBarActions = () => {
     });
 
     const message = messages.join('\n');
-    alert(`Current Coordinates:\n\n${message}`);
+    announce(`Current Coordinates:\n\n${message}`);
   };
 
   // Switch to next active function
@@ -64,6 +65,10 @@ export const useDynamicKBarActions = () => {
     }));
     
     setFunctionDefinitions(updatedDefinitions);
+    
+    // Announce the switch
+    const functionName = getFunctionNameN(functionDefinitions, nextIndex) || `Function ${nextIndex + 1}`;
+    announce(`Switched to ${functionName}`);
   };
 
   // Show specific function and hide all others
@@ -76,6 +81,10 @@ export const useDynamicKBarActions = () => {
     }));
     
     setFunctionDefinitions(updatedDefinitions);
+    
+    // Announce the switch
+    const functionName = getFunctionNameN(functionDefinitions, targetIndex) || `Function ${targetIndex + 1}`;
+    announce(`Switched to ${functionName}`);
   };
 
   // Toggle sonification type for active function
@@ -94,6 +103,8 @@ export const useDynamicKBarActions = () => {
     
     const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, activeIndex, newInstrument);
     setFunctionDefinitions(updatedDefinitions);
+
+    announce(`Sonification type changed to ${sonificationType}`);
     
     console.log(`Sonification type changed to ${sonificationType} (${newInstrument}) for active function`);
   };
@@ -142,7 +153,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["c"],
       keywords: "coordinates position cursor show alert accessibility",
       parent: "quick-options",
-      perform: showCoordinatesAlert,
+      perform: showCoordinates,
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -192,11 +203,13 @@ export const useDynamicKBarActions = () => {
         if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
             const [xMin, xMax, yMax, yMin] = defaultView;
             setGraphBounds({ xMin, xMax, yMin, yMax });
-        } else {
+          } else {
             // Fallback to hardcoded values if defaultView is not available
             setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
-        }
-        updateCursor(0);
+          }
+          updateCursor(0);
+          
+          announce("View reset to default values");
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -369,6 +382,8 @@ export const useDynamicKBarActions = () => {
             setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
         }
         updateCursor(0);
+
+        announce("View reset to default values");
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -431,7 +446,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("system")},
+      perform: () => {setTheme("system"); announce("Theme set to system preference");},
       icon: <SunMoon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -440,7 +455,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("light")},
+      perform: () => {setTheme("light"); announce("Theme set to light mode");},
       icon: <Sun className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -449,7 +464,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("dark")},
+      perform: () => {setTheme("dark"); announce("Theme set to dark mode");},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -458,7 +473,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("high-contrast")},
+      perform: () => {setTheme("high-contrast"); announce("Theme set to high contrast mode");},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
 
