@@ -97,6 +97,9 @@ function isOneVariableFunction(expr){
         }
     }
     catch(ex){
+        console.log("Not a valid function")
+        updateErrorMessage("Invalid or incomplete expression");
+        errorPosition = 0;
         return false;
     }
 }
