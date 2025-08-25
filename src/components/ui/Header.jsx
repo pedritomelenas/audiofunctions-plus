@@ -13,10 +13,6 @@ const Header = () => {
   
   const toggleAudio = () => {
     setIsAudioEnabled(prev => !prev);
-    // Move focus to chart after toggling audio
-    setTimeout(() => {
-      focusChart();
-    }, 0);
   };
 
   return (
