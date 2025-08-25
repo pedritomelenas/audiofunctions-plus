@@ -297,25 +297,22 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
     setFunctionDefinitions(updatedDefinitions);
   };
 
-  const handleInstrumentChange = (e) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
+  const handleInstrumentChange = (e) => {    
     e.stopPropagation(); // Prevent triggering other events
     
     const currentInstrument = instrument || "clarinet"; // Default to clarinet
-    const instrumentNames = availableInstruments.map(inst => inst.name);
     
-    // Handle case where current instrument is not found in available instruments
-    let currentIndex = instrumentNames.indexOf(currentInstrument);
-    if (currentIndex === -1) {
-      currentIndex = 0; // Default to first instrument if current not found
+    // Only allow switching between clarinet and guitar
+    // If current instrument is not clarinet or guitar, default to guitar
+    let nextInstrument;
+    if (currentInstrument === "clarinet") {
+      nextInstrument = "guitar";
+    } else {
+      // For any other instrument (including guitar), switch to clarinet
+      nextInstrument = "clarinet";
     }
-    
-    const nextIndex = (currentIndex + 1) % instrumentNames.length;
-    const nextInstrument = instrumentNames[nextIndex];
 
     console.log(`Changing instrument for function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
-    console.log(`Available instruments: ${instrumentNames.join(', ')}`);
     
     const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
     setFunctionDefinitions(updatedDefinitions);
@@ -423,24 +420,21 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   };
 
   const handleInstrumentChange = (e) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
     e.stopPropagation(); // Prevent triggering other events
     
     const currentInstrument = instrument || "clarinet"; // Default to clarinet
-    const instrumentNames = availableInstruments.map(inst => inst.name);
     
-    // Handle case where current instrument is not found in available instruments
-    let currentIndex = instrumentNames.indexOf(currentInstrument);
-    if (currentIndex === -1) {
-      currentIndex = 0; // Default to first instrument if current not found
+    // Only allow switching between clarinet and guitar
+    // If current instrument is not clarinet or guitar, default to guitar
+    let nextInstrument;
+    if (currentInstrument === "clarinet") {
+      nextInstrument = "guitar";
+    } else {
+      // For any other instrument (including guitar), switch to clarinet
+      nextInstrument = "clarinet";
     }
-    
-    const nextIndex = (currentIndex + 1) % instrumentNames.length;
-    const nextInstrument = instrumentNames[nextIndex];
 
     console.log(`Changing instrument for piecewise function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
-    console.log(`Available instruments: ${instrumentNames.join(', ')}`);
     
     const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
     setFunctionDefinitions(updatedDefinitions);

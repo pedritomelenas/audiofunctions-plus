@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all, forEach } from 'mathjs'
 import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import * as Tone from "tone";
+import { useAnnouncement } from '../../context/AnnouncementContext';
 
 const config = { }
 const math = create(all, config)
@@ -132,6 +133,7 @@ const GraphView = () => {
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
   const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
+  const { announce } = useAnnouncement();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function

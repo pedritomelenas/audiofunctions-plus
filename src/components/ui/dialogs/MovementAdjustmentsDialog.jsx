@@ -30,11 +30,47 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      // Call the accept function directly
       if (onClose) {
         onClose();
       }
     }
+  };
+
+  const handleSpeedChange = (value) => {
+    if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+      setPlayFunction(prev => ({ ...prev, speed: value === '' ? value : parseFloat(value) }));
+    }
+  };
+
+  const handleStepSizeChange = (value) => {
+    if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+      setStepSize(value === '' ? value : parseFloat(value));
+    }
+  };
+
+  const handleSpeedBlur = (value) => {
+    if (value === '' || value === '-') {
+      setPlayFunction(prev => ({ ...prev, speed: 0 }));
+    }
+  };
+
+  const handleStepSizeBlur = (value) => {
+    if (value === '' || value === '-') {
+      setStepSize(0.1);
+    }
+  };
+
+  const getSpeedStep = (currentValue) => {
+    const value = parseFloat(currentValue) || 0;
+    if (value <= 1) return 0.1;
+    if (value <= 10) return 0.5;
+    return 1;
+  };
+
+  const getStepSizeStep = (currentValue) => {
+    const value = parseFloat(currentValue) || 0;
+    if (value <= 1) return 0.1;
+    return 1;
   };
 
   return (
@@ -65,13 +101,14 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
               <input
                 id="speed-input"
                 type="number"
+                step={getSpeedStep(PlayFunction.speed)}
+                min="0"
                 value={PlayFunction.speed}
-                onChange={(e) =>
-                  setPlayFunction(prev => ({ ...prev, speed: parseFloat(e.target.value) }))
-                }
+                onChange={(e) => handleSpeedChange(e.target.value)}
+                onBlur={(e) => handleSpeedBlur(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="text-input-inner"
-                aria-label="Audio playback speed"
+                aria-label="Movement speed"
               />
             </div>
 
@@ -83,8 +120,11 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
               <input
                 id="stepsize-input"
                 type="number"
+                step={getStepSizeStep(stepSize)}
+                min="0.01"
                 value={stepSize}
-                onChange={(e) => setStepSize(parseFloat(e.target.value))}
+                onChange={(e) => handleStepSizeChange(e.target.value)}
+                onBlur={(e) => handleStepSizeBlur(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="text-input-inner"
                 aria-label="Navigation step size"

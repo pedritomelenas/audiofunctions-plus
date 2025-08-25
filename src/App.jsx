@@ -10,15 +10,21 @@ import Header from './components/ui/Header';
 import { InstrumentsProvider } from './context/InstrumentsContext';
 import KeyboardHandler from "./components/ui/KeyboardHandler";
 import { PaletteActions } from './components/ui/PaletteActions_dyn';
+import { AnnouncementProvider } from './context/AnnouncementContext';
+import { InfoToastProvider } from './context/InfoToastContext';
 
 function App() {
   return (
     <InstrumentsProvider>
       <GraphContextProvider>
-        <KeyboardHandler />
-        <DialogProvider>
-          <KBarWrapper />
-        </DialogProvider>
+        <AnnouncementProvider>
+          <InfoToastProvider>
+            <KeyboardHandler />
+            <DialogProvider>
+              <KBarWrapper />
+            </DialogProvider>
+          </InfoToastProvider>
+        </AnnouncementProvider>
       </GraphContextProvider>
     </InstrumentsProvider>
   );

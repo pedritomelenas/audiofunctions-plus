@@ -349,6 +349,10 @@ button:hover {
   outline-width: var(--spacing-highlight-border);
   outline-color: var(--color-focus-border);
 }
+.text-input-outer:has(select:focus-within) {
+  outline-width: var(--spacing-highlight-border);
+  outline-color: var(--color-focus-border);
+}
 
 .text-input-inner {
   width: calc(var(--spacing) * 18);
