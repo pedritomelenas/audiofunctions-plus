@@ -131,7 +131,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
@@ -146,6 +146,7 @@ const GraphView = () => {
   const divisionPointsRef = useRef([]); // Store division points
   const lastTickIndexRef = useRef(null); // Track last ticked index globally
   const mouseTimeoutRef = useRef(null); // Track mouse movement timeout
+  const handlersRef = useRef({}); // Store event handlers for cleanup
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
@@ -173,7 +174,25 @@ const GraphView = () => {
       });
 
     board.removeEventHandlers(); // remove all event handlers
-    board.addPointerEventHandlers()
+    board.addPointerEventHandlers(); // Re-enable pointer handlers for mouse movement
+    
+    // Add click prevention handler
+    const container = document.getElementById('jxgbox');
+    
+    const preventClickHandler = (event) => {
+      // Prevent all mouse clicks
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    };
+
+    // Add the event listeners to prevent clicks
+    container.addEventListener('click', preventClickHandler, true);
+    container.addEventListener('mousedown', preventClickHandler, true);
+    container.addEventListener('mouseup', preventClickHandler, true);
+    
+    // Store the handler in the ref for cleanup
+    handlersRef.current = { preventClickHandler };
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
@@ -516,6 +535,15 @@ const GraphView = () => {
         clearTimeout(mouseTimeoutRef.current);
         mouseTimeoutRef.current = null;
       }
+      // Remove event handlers
+      const container = document.getElementById('jxgbox');
+      if (container) {
+        container.removeEventListener('click', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mousedown', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mouseup', handlersRef.current.preventClickHandler, true);
+      }
+      board.off('move', moveHandler);
+      
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
@@ -538,60 +566,85 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
+  // Focus the chart when component mounts
   useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-
-    const handleKeyDown = (e) => {
-      // only handle key events when the wrapper is focused
-      if (document.activeElement !== wrapper) return;
-
-      // ESCAPE to exit the application
-      if (e.key === 'Escape') {
-        wrapper.blur(); // Focus entfernen
-        return;
-      }
-      
-      // TAB to allow normal tabbing through elements
-      if (e.key === 'Tab') {
-        return; // Not preventing default to allow normal tabbing
-      }
-
-
-
-      // Only intercept graph-specific keys
-      const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
-      if (!graphKeys.includes(e.key)) {
-        return; // Other keys are passed through normally
-      }
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      switch (e.key) {
-        case 'ArrowLeft':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
-          break;
-        case 'ArrowRight':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
-          break;
-      }
-    };
-
-    wrapper.addEventListener('keydown', handleKeyDown);
-    return () => wrapper.removeEventListener('keydown', handleKeyDown);
+    if (wrapperRef.current) {
+      wrapperRef.current.focus();
+    }
   }, []);
+
+  // useEffect(() => {
+  //   const wrapper = wrapperRef.current;
+  //   if (!wrapper) return;
+
+  //   const handleKeyDown = (e) => {
+  //     // only handle key events when the wrapper is focused
+  //     if (document.activeElement !== wrapper) return;
+
+  //     // ESCAPE to exit the application
+  //     if (e.key === 'Escape') {
+  //       wrapper.blur(); // Focus entfernen
+  //       return;
+  //     }
+      
+  //     // TAB to allow normal tabbing through elements
+  //     if (e.key === 'Tab') {
+  //       return; // Not preventing default to allow normal tabbing
+  //     }
+
+
+
+  //     // Only intercept graph-specific keys
+  //     const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
+  //     if (!graphKeys.includes(e.key)) {
+  //       return; // Other keys are passed through normally
+  //     }
+      
+  //     e.preventDefault();
+  //     e.stopPropagation();
+      
+  //     switch (e.key) {
+  //       case 'ArrowLeft':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
+  //         break;
+  //       case 'ArrowRight':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
+  //         break;
+  //     }
+  //   };
+
+  //   wrapper.addEventListener('keydown', handleKeyDown);
+  //   return () => wrapper.removeEventListener('keydown', handleKeyDown);
+  // }, []);
 
   return (
     <div 
       ref={wrapperRef}
+      id="chart"
       role="application"
       tabIndex={0}
       aria-label="Interactive graph."
-      style={{ outline: 'none', width: "100%", height: "100%" }}
+      style={{ 
+        outline: 'none', 
+        width: "100%", 
+        height: "100%",
+        border: '2px solid transparent',
+        borderRadius: '4px',
+        transition: 'border-color 0.2s ease'
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = 'var(--color-primary)';
+        e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'transparent';
+        e.target.style.boxShadow = 'none';
+      }}
     >
       <div 
         ref={graphContainerRef}
+        aria-hidden="true"
+        role="presentation"
         id="jxgbox" 
         style={{ width: "100%", height: "100%", outline: 'none' }}
       />
