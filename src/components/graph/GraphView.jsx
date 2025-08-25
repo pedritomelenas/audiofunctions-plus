@@ -208,7 +208,24 @@ const GraphView = () => {
       
       if (errMMsg !== null) {
         console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
-        setInputErrors(prev => ({ ...prev, [func.id]: `${errMMsg}. Please check your input.` }));
+        // Store error as object for both regular and piecewise functions
+        if (func.type === "piecewise_function") {
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: `${errMMsg}. Please check your input.`,
+              position: errPos
+            }
+          }));
+        } else {
+          // For regular functions, store only message
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: `${errMMsg}. Please check your input.`
+            }
+          }));
+        }
         hasError = true;
         expr = "0";
         graphFormula = 0;
@@ -217,7 +234,12 @@ const GraphView = () => {
           graphFormula = board.jc.snippet(expr, true, "x", true);
         } catch (err) {
           console.error(`Error parsing expression for function ${func.id}: `, err);
-          setInputErrors(prev => ({ ...prev, [func.id]: `Invalid function. Please check your input.` }));
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: "Invalid function. Please check your input."
+            }
+          }));
           hasError = true;
           expr = "0";
           graphFormula = 0;
@@ -252,7 +274,12 @@ const GraphView = () => {
         } catch (endpointErr) {
           console.error(`Error creating endpoints for ${func.functionName}:`, endpointErr);
           // Update error if endpoint creation fails
-          setInputErrors(prev => ({ ...prev, [func.id]: `Error creating piecewise endpoints. Please check your input.` }));
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: "Error creating piecewise endpoints. Please check your input."
+            }
+          }));
         }
       }
 

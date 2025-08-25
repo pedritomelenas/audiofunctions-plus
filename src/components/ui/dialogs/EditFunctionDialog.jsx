@@ -228,7 +228,10 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
   const { availableInstruments } = useInstruments();
   
   const functionId = functionDefinitions[index]?.id;
-  const hasError = functionId && inputErrors[functionId];
+  const errorInfo = inputErrors[functionId];
+  
+  const hasError = functionId && errorInfo;
+  const errorMessage = errorInfo?.message;
   
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -336,7 +339,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
             aria-live="polite"
           >
             <span className="error-icon" aria-hidden="true">⚠️</span>
-            {inputErrors[functionId]}
+            {errorMessage}
           </div>
         )}
       </div>
@@ -412,11 +415,13 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   // Get error information for this function
   const functionId = functionDefinitions[index]?.id;
   const errorInfo = inputErrors[functionId];
+  console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  console.log("Piecewise error info:", errorInfo);
+  console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   
-  // Parse error message and position if available
-  const errorMessage = errorInfo?.split(' in ')[0] || errorInfo;
-  const errorPositionMatch = errorInfo?.match(/in (.+)$/);
-  const errorPosition = errorPositionMatch ? JSON.parse(errorPositionMatch[1]) : null;
+  // For piecewise functions, errorInfo is an object with message and position
+  const errorMessage = errorInfo?.message;
+  const errorPosition = errorInfo?.position;
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
