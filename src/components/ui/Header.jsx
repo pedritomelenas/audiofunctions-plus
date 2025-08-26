@@ -15,6 +15,10 @@ const Header = () => {
     setIsAudioEnabled(prev => !prev);
   };
 
+  // Detect operating system for keyboard shortcut display
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const shortcutKey = isMac ? '⌘K' : 'Ctrl+K';
+
   return (
     <header className="w-full py-2 px-4 flex justify-between border-b border-border shadow bg-background">      
       <div className="flex items-center gap-4">
@@ -26,8 +30,8 @@ const Header = () => {
         <button 
           onClick={toggleAudio}
           className="p-2  hover:text-foreground border-transparent bg-transparent"
-          // aria-label={isAudioEnabled ? "Disable Audio" : "Enable Audio"}
-          title={isAudioEnabled ? "Disable Audio" : "Enable Audio"}
+          aria-label={`${isAudioEnabled ? "Disable Audio" : "Enable Audio"}, keyboard shortcut: P`}
+          title={`${isAudioEnabled ? "Disable Audio" : "Enable Audio"} (P)`}
         >
           {isAudioEnabled ? (
             <Volume2 className="size-7 text-primary" />
@@ -39,10 +43,12 @@ const Header = () => {
         <button 
           onClick={query.toggle}
           className="btn-primary flex items-center gap-2"
-          aria-label="Open Command Palette"
+          aria-label={`Open Command Palette, keyboard shortcut: ${shortcutKey}`}
+          title={`Open Command Palette (${shortcutKey})`}
         >
           <Wand className="size-5" />
-          Actions
+          <span className="hidden sm:inline">Actions</span>
+          <span className="text-xs opacity-70 hidden md:inline" aria-hidden="true">({shortcutKey})</span>
         </button>
       </div>
     </header>
