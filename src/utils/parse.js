@@ -49,6 +49,10 @@ function isOneVariableFunction(expr){
             updateErrorMessage("Not a valid function (array)");
             return false;
         } 
+        if ("blocks" in parsed){ // an array
+            updateErrorMessage("Multiple expressions not allowed (;)");
+            return false;
+        } 
         let snodes = [... new Set(parsed.filter((n) => n.isSymbolNode))]; // symbol nodes this includes functions and variables
         const fnNodes = [... new Set(parsed.filter((n) => n.isFunctionNode))]; // function nodes
         const opNodes = [... new Set(parsed.filter((n) => n.isOperatorNode))]; // operator nodes
