@@ -132,7 +132,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrors, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
   const { announce } = useAnnouncement();
   let endpoints = [];
   let snapaccuracy;
