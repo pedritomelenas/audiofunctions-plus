@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all, forEach } from 'mathjs'
-import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
+import { checkMathSpell, transformAssingnments, transformMathConstants, functionDefPiecewiseToString } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import * as Tone from "tone";
 import { useAnnouncement } from '../../context/AnnouncementContext';
@@ -22,7 +22,15 @@ function createEndPoints(func,board){
     // we are also transforming the math constants to be able to parse them
     // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
     console.log("Creating endpoints for function: ", func);
-    const txtraw= func.functionString
+    if (func.type === "function"){
+      return [[],[]];
+    }
+    if (func.type != "piecewise_function"){
+      console.error("createEndPoints: function type not recognized");
+      return [];
+    }
+    const  txtraw = functionDefPiecewiseToString(func.functionDef);
+    console.log("Raw piecewise function string:", txtraw);
     const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
     const types_to_be_deleted= ["isolated", "unequal"]; // we remove these types of points of interest, since they will be redefined
     const filteredPoints = func.pointOfInterests.filter(

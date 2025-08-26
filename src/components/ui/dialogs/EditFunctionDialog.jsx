@@ -5,14 +5,14 @@ import { useGraphContext } from "../../../context/GraphContext";
 import { useInstruments } from "../../../context/InstrumentsContext"; // Add this import
 import { 
   getFunctionCount, 
-  getFunctionStringN, 
+  getFunctionDefN,
   getFunctionTypeN,
   getFunctionInstrumentN,
   addFunction,
   removeFunctionN,
   updateFunctionN,
   isFunctionActiveN,
-  setFunctionInstrumentN // Add this import
+  setFunctionInstrumentN
 } from "../../../utils/graphObjectOperations";
 
 import {separatingCommas } from "../../../utils/parse.js";
@@ -43,13 +43,13 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
   };
 
   const addFunctionContainer = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly) return;
     
     const newFunction = {
       id: generateUniqueId(),
       functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
       type: "function",
-      functionString: "",
+      functionDef: "",  // String für regular functions
       isActive: true,
       instrument: "clarinet",
       pointOfInterests: [],
@@ -65,13 +65,13 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
   };
 
   const addPiecewiseFunctionContainer = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly) return;
     
     const newFunction = {
       id: generateUniqueId(),
       functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
       type: "piecewise_function",
-      functionString: "[[,]]",
+      functionDef: [["", ""]],  // Array für piecewise functions
       isActive: true,
       instrument: "clarinet",
       pointOfInterests: [],
@@ -113,9 +113,9 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
     announceStatus(`${functionType} ${index + 1} deleted. Remaining functions: ${updatedDefinitions.length}`);
   };
 
-  const updateFunctionString = (index, newFunctionString) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    setFunctionDefinitions(updateFunctionN(functionDefinitions, index, { functionString: newFunctionString }));
+  const updateFunctionDef = (index, newFunctionDef) => {
+    if (isReadOnly) return;
+    setFunctionDefinitions(updateFunctionN(functionDefinitions, index, { functionDef: newFunctionDef }));
   };
   // Focus management
   useEffect(() => {
@@ -195,9 +195,9 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                 <PiecewiseFunctionContainer
                   key={functionDef.id}
                   index={index}
-                  value={getFunctionStringN(functionDefinitions, index)}
+                  value={getFunctionDefN(functionDefinitions, index)}
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
-                  onChange={(newValue) => updateFunctionString(index, newValue)}
+                  onChange={(newValue) => updateFunctionDef(index, newValue)}
                   onDelete={() => removeContainer(index)}
                   onAccept={onClose}
                   isReadOnly={isReadOnly}
@@ -206,9 +206,9 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                 <FunctionContainer
                   key={functionDef.id}
                   index={index}
-                  value={getFunctionStringN(functionDefinitions, index)}
+                  value={getFunctionDefN(functionDefinitions, index)}
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
-                  onChange={(newValue) => updateFunctionString(index, newValue)}
+                  onChange={(newValue) => updateFunctionDef(index, newValue)}
                   onDelete={() => removeContainer(index)}
                   onAccept={onClose}
                   isReadOnly={isReadOnly}
@@ -549,51 +549,12 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
 
   // Parse the piecewise function string or initialize with one empty part
   const [parts, setParts] = useState(() => {
-    if (value && typeof value === 'string' && value.startsWith('[')) {
-      try {
-        // Parse the piecewise function format: "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],...]"
-        // Remove outer brackets and split by ],[
-        const innerContent = value.slice(1, -1); // Remove outer [ ]
-        if (innerContent.trim() === '') {
-          return [{ function: '', condition: '' }];
-        }
-        
-        const parts = [];
-        let currentPart = '';
-        let bracketCount = 0;
-        
-        for (let i = 0; i < innerContent.length; i++) {
-          const char = innerContent[i];
-          if (char === '[') {
-            bracketCount++;
-            if (bracketCount === 1) {
-              currentPart = '';
-              continue;
-            }
-          } else if (char === ']') {
-            bracketCount--;
-            if (bracketCount === 0) {
-              // End of a part - the comma to split function from condition
-              const commaIndices= separatingCommas(currentPart);
-              if (commaIndices.length > 0) {
-                const nextCommaIndex = commaIndices[0];
-                const func = currentPart.substring(0, nextCommaIndex).trim();
-                const condition = currentPart.substring(nextCommaIndex + 1).trim();
-                parts.push({ function: func, condition: condition });
-              }
-              continue;
-            }
-          }
-          
-          if (bracketCount > 0) {
-            currentPart += char;
-          }
-        }
-        
-        return parts.length > 0 ? parts : [{ function: '', condition: '' }];
-      } catch (e) {
-        return [{ function: '', condition: '' }];
-      }
+    // Jetzt ist value ein Array statt String
+    if (value && Array.isArray(value)) {
+      return value.map(([func, condition]) => ({ 
+        function: func || '', 
+        condition: condition || '' 
+      }));
     }
     return [{ function: '', condition: '' }];
   });
@@ -661,10 +622,9 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   // Handle onChange calls after render is complete
   useEffect(() => {
     if (needsUpdateRef.current && parts.length > 0) {
-      // Convert back to the required format and call onChange
-      const partsArray = parts.map(part => `[${part.function},${part.condition}]`);
-      const formatted = `[${partsArray.join(',')}]`;
-      onChange(formatted);
+      // Convert back to array format für functionDef
+      const partsArray = parts.map(part => [part.function, part.condition]);
+      onChange(partsArray);  // Direkt das Array übergeben, nicht als String
       needsUpdateRef.current = false;
     }
   }, [parts, onChange]);

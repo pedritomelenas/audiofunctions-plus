@@ -39,6 +39,7 @@ function isOneVariableFunction(expr){
         }
         return arr;
     }
+    
     try{
         const parsed = math.parse(expr); // we parse the input string 
         if ("items" in parsed){ // an array
@@ -620,32 +621,49 @@ function listFunctionConditions(txt){
     return parts;
 }
 
+// function parts to a single string of the form "[[fn1,cn1],[fn2,cn2],...]"
+export function functionDefPiecewiseToString(parts){
+    let txt = "[";
+    for (let i=0;i<parts.length;i++){
+        txt+="["+parts[i][0]+","+parts[i][1]+"]";
+        if (i<parts.length-1){
+            txt+=",";
+        }
+    }
+    txt+="]";
+    return txt;
+}
+
 // this function checks that the input is a valid function expression
 // either single or piecewise
 // if the txt is not a valid expression, it returns "0", otherwise it returns the input string parsed (if piecewise)
 export function checkMathSpell(func){
-    // we are allowing ** to be used as a power operator, so we replace it with ^
-    const txt = (func.functionString).replace(/\*\*/g, '^'); // replace ** with ^
     // console.log("Checking math spell: ", txt);
     // check if its a function of one variable
     errorMessage = null; // reset error message
     errorPosition = 0; // reset error position
     if (func.type==="function"){
-        if(isOneVariableFunction(txt)){
+        // we are allowing ** to be used as a power operator, so we replace it with ^
+        const txt = (func.functionDef).replace(/\*\*/g, '^'); // replace ** with ^
+        console.log("Single function to check: ", txt);
+        if(isOneVariableFunction(txt) && txt.length>0){
             // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
             return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), errorMessage, errorPosition];
         }
+        return ["0", "Invalid function format", 0];
     }
     if (func.type==="piecewise_function"){
-        const parts = listFunctionConditions(txt);
+        // we are allowing ** to be used as a power operator, so we replace it with ^        
+        const parts = (func.functionDef).map((e) => [e[0].replace(/\*\*/g, '^'), e[1].replace(/\*\*/g, '^')]);
+        //const parts = listFunctionConditions(txt);
         console.log("Parts of piecewise function:", parts);
-        if (parts === null) {
-            errorMessage="Invalid formad on definition or condition";
-            return ["0", errorMessage, errorPosition];
-        }
+        // if (parts === null) {
+        //     errorMessage="Invalid format on definition or condition";
+        //     return ["0", errorMessage, errorPosition];
+        // }
         for (let i=0;i<parts.length;i++){
-            const fn = parts[i].function;
-            const cn = parts[i].condition;
+            const fn = parts[i][0];
+            const cn = parts[i][1];
             if (!(isOneVariableFunction(fn))){
                 errorMessage = "Invalid function format";
                 errorPosition = [i, 0];
@@ -658,6 +676,7 @@ export function checkMathSpell(func){
             }
         }
         // we check if the input is a piecewise function
+        const txt = functionDefPiecewiseToString(parts);
         if (isPiecewise(txt)){
             // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
             const expr = transformMathConstants(math.parse(txt)).toString();

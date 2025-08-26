@@ -7,13 +7,13 @@
 // =============================
 
 /**
- * Get the function string of the nth function
+ * Get the function definition of the nth function
  * @param {Array} functionDefinitions - Array of function definitions
  * @param {number} n - Function index (0-based)
- * @returns {string|null} Function string or null if not found
+ * @returns {string|Array|null} Function definition (string for regular functions, array for piecewise) or null if not found
  */
-export function getFunctionStringN(functionDefinitions, n) {
-  return functionDefinitions?.[n]?.functionString ?? null;
+export function getFunctionDefN(functionDefinitions, n) {
+  return functionDefinitions?.[n]?.functionDef ?? null;
 }
 
 /**
@@ -213,7 +213,7 @@ export function getGridColor(graphSettings) {
 export function isValidFunctionDefinition(functionDef) {
   if (!functionDef || typeof functionDef !== 'object') return false;
   
-  const requiredFields = ['id', 'functionName', 'type', 'functionString', 'isActive'];
+  const requiredFields = ['id', 'functionName', 'type', 'functionDef', 'isActive'];
   return requiredFields.every(field => functionDef.hasOwnProperty(field));
 }
 
@@ -445,25 +445,25 @@ export function toggleFunctionActiveN(functionDefinitions, n) {
 }
 
 /**
- * Set the function string of a function by ID
+ * Set the function definition of a function by ID
  * @param {Array} functionDefinitions - Array of function definitions
  * @param {string} id - Function ID
- * @param {string} functionString - New function string
+ * @param {string|Array} functionDef - New function definition (string for regular functions, array for piecewise)
  * @returns {Array} New array with updated function
  */
-export function setFunctionString(functionDefinitions, id, functionString) {
-  return updateFunction(functionDefinitions, id, { functionString });
+export function setFunctionDef(functionDefinitions, id, functionDef) {
+  return updateFunction(functionDefinitions, id, { functionDef });
 }
 
 /**
- * Set the function string of the nth function
+ * Set the function definition of the nth function
  * @param {Array} functionDefinitions - Array of function definitions
  * @param {number} n - Function index (0-based)
- * @param {string} functionString - New function string
+ * @param {string|Array} functionDef - New function definition (string for regular functions, array for piecewise)
  * @returns {Array} New array with updated function
  */
-export function setFunctionStringN(functionDefinitions, n, functionString) {
-  return updateFunctionN(functionDefinitions, n, { functionString });
+export function setFunctionDefN(functionDefinitions, n, functionDef) {
+  return updateFunctionN(functionDefinitions, n, { functionDef });
 }
 
 /**
@@ -824,17 +824,17 @@ export function setBoundDifferences(graphSettings, min, max) {
  * Create a new function definition
  * @param {string} id - Function ID
  * @param {string} name - Function name
- * @param {string} functionString - Function string
+ * @param {string|Array} functionDef - Function definition (string for regular functions, array for piecewise)
  * @param {string} type - Function type
  * @param {Object} options - Optional properties
  * @returns {Object} New function definition object
  */
-export function createFunction(id, name, functionString, type = "function", options = {}) {
+export function createFunction(id, name, functionDef, type = "function", options = {}) {
   return {
     id,
     functionName: name,
     type,
-    functionString,
+    functionDef,
     isActive: options.isActive ?? true,
     instrument: options.instrument || "clarinet",
     color: options.color || "#0000FF",
