@@ -694,7 +694,7 @@ export function checkMathSpell(func){
             const expr = transformMathConstants(math.parse(txt)).toString();
             return [parsePiecewise(expr), errorList];
         }
-        if (errorPosition===0){
+        if (errorPosition===0){ // this should not happen, just in case
             errorList.push([errorMessage, [0, 0]]);
             return ["0", errorList];
         }
