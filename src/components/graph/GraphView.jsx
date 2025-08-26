@@ -16,7 +16,7 @@ const X_AXIS_DIVISIONS = 10;
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
-// it should be previusly checked that it is a valid piecewise function or a math expression
+// it should be previously checked that it is a valid piecewise function or a math expression
 function createEndPoints(func,board){
     // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
     // we are also transforming the math constants to be able to parse them
@@ -233,10 +233,13 @@ const GraphView = () => {
       let hasError = false;
       
       // Check math spell and syntax
-      let [exprResult, errMMsg, errPos] = checkMathSpell(func);
+      let [exprResult, errList] = checkMathSpell(func);
       expr = exprResult;
+
+      console.log("List of errors: ",errList);
       
-      if (errMMsg !== null) {
+      if (errList.length>0) {
+        let [errMMsg, errPos] = errList[0]; // Take the first error for reporting
         console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
         // Store error as object for both regular and piecewise functions
         if (func.type === "piecewise_function") {

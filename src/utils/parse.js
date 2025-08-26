@@ -39,10 +39,14 @@ function isOneVariableFunction(expr){
         }
         return arr;
     }
-    
+    if (expr.length==0){
+        updateErrorMessage("Empty expression");
+        return false;
+    }
     try{
         const parsed = math.parse(expr); // we parse the input string 
         if ("items" in parsed){ // an array
+            updateErrorMessage("Not a valid function (array)");
             return false;
         } 
         let snodes = [... new Set(parsed.filter((n) => n.isSymbolNode))]; // symbol nodes this includes functions and variables
@@ -122,7 +126,7 @@ function isValidMathParse(expr){
         return true;
     }
     catch(ex){
-        updateErrorMessage("Invalid or incomplete math expression "+expr+" "+ex);
+        updateErrorMessage("Invalid math expression ");
         errorPosition = 0; // this must be changed later
         return false;
     }
@@ -231,31 +235,31 @@ function isInequality(txt){
         //if (!(keysIneq[0]=="conditionals" && keysIneq[1]=="params" && keysIneq.length==2)){
         if (!(ineq.type=="RelationalNode")){
             //console.log("Invalid input, not a valid inequality", ineq.toString());
-            updateErrorMessage("Invalid inequality: " + ineq.toString());
+            updateErrorMessage("Invalid inequality");// + ineq.toString());
             return false;
         }
         if (!(ineq.conditionals.length==2)){
             //console.log("Invalid input, not a valid chain of inequalities (more than two)", ineq.toString());
-            updateErrorMessage("Invalid chain of inequalities (more than two): " + ineq.toString());
+            updateErrorMessage("Invalid chain of inequalities (more than two)"); // + ineq.toString());
             return false;
         }
         if (!ineq.conditionals.every((e)=> e=="smaller" || e=="smallerEq")){
             //console.log("Invalid input, not a valid chain of inequalities (only < and <= are allowed)", ineq.toString());
-            updateErrorMessage("Invalid chain of inequalities (only < and <= are allowed): " + ineq.toString());
+            updateErrorMessage("Invalid chain of inequalities (only < and <= are allowed)"); // + ineq.toString());
             return false;
         }
         // we check that the arguments of the inequality are valid
         // the first and third must be constant and the second a variable
         //console.log(ineq.params);
         if (!(isMathConstant(ineq.params[0].toString()) && 
-                ineq.params[1].type=="SymbolNode") && 
-                isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
+                ineq.params[1].type=="SymbolNode" && 
+                isMathConstant(ineq.params[2].toString()))){ // the middle parameter must be a symbol a op1 x op2 b
             //console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
-            updateErrorMessage("Invalid inequality (two constant params and a symbol): " + ineq.toString());
+            updateErrorMessage("Invalid chain of inequalities (two constant params and a symbol in the middle) "); // + ineq.toString());
             return false;
         }
         if (ineq.params[1].name != "x"){
-            updateErrorMessage("Invalid chain of inequalities (variable must be x): " + ineq.toString());
+            updateErrorMessage("Invalid chain of inequalities (variable must be x)"); // + ineq.toString());
             return false;
         }
     }
@@ -636,21 +640,21 @@ export function functionDefPiecewiseToString(parts){
 
 // this function checks that the input is a valid function expression
 // either single or piecewise
-// if the txt is not a valid expression, it returns "0", otherwise it returns the input string parsed (if piecewise)
+// it returns the parsed javascript expression and a list of errors with their positions (for piecewise functions)
+// error position [i,j] means that it was produced in the ith part of the function, j=0 is the function, j=1 is the constraint
 export function checkMathSpell(func){
-    // console.log("Checking math spell: ", txt);
-    // check if its a function of one variable
-    errorMessage = null; // reset error message
-    errorPosition = 0; // reset error position
+    let errorList = []; // array of pairs [errorMessage, errorPosition]
     if (func.type==="function"){
         // we are allowing ** to be used as a power operator, so we replace it with ^
         const txt = (func.functionDef).replace(/\*\*/g, '^'); // replace ** with ^
         console.log("Single function to check: ", txt);
-        if(isOneVariableFunction(txt) && txt.length>0){
+        errorMessage = null; // reset error message
+        errorPosition = 0; // reset error position
+        if(isOneVariableFunction(txt)){
             // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
-            return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), errorMessage, errorPosition];
+            return [transformMathConstants(math.parse(txt)).toString({implicit: 'show'}), []];
         }
-        return ["0", "Invalid function format", 0];
+        return ["0", [[errorMessage, 0]]];
     }
     if (func.type==="piecewise_function"){
         // we are allowing ** to be used as a power operator, so we replace it with ^        
@@ -662,27 +666,41 @@ export function checkMathSpell(func){
         //     return ["0", errorMessage, errorPosition];
         // }
         for (let i=0;i<parts.length;i++){
+            errorMessage = null;
+            errorPosition = [i, 0];
             const fn = parts[i][0];
             const cn = parts[i][1];
             if (!(isOneVariableFunction(fn))){
-                errorMessage = "Invalid function format";
+                //errorMessage = "Invalid function format";
                 errorPosition = [i, 0];
-                return ["0", errorMessage, errorPosition];
+                //return ["0", errorMessage, errorPosition];
+                errorList.push([errorMessage, errorPosition]);
             }
             if (!(isInequality(cn))){
-                errorMessage = "Invalid condition format";
+                //errorMessage = "Invalid condition format";
                 errorPosition = [i, 1];
-                return ["0", errorMessage, errorPosition];
+                errorList.push([errorMessage, errorPosition]);
             }
+        }
+        if (errorList.length > 0) {
+            return ["0", errorList];
         }
         // we check if the input is a piecewise function
         const txt = functionDefPiecewiseToString(parts);
+        errorMessage = null;
+        errorPosition = [];
         if (isPiecewise(txt)){
             // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
             const expr = transformMathConstants(math.parse(txt)).toString();
-            return [parsePiecewise(expr), errorMessage, errorPosition];
+            return [parsePiecewise(expr), errorList];
         }
+        if (errorPosition===0){
+            errorList.push([errorMessage, [0, 0]]);
+            return ["0", errorList];
+        }
+        errorPosition.forEach((pos)=> errorList.push([errorMessage, pos]));
+        return ["0", errorList];
     }
     //no more options
-    return ["0", errorMessage, errorPosition];
+    return ["0", errorList];
 }
