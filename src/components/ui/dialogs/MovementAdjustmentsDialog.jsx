@@ -58,6 +58,9 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
     if (value === '' || value === '-') {
       setStepSize(0.1);
     }
+    if (value === '0') {
+      setStepSize(0.001); // Prevent zero step size - I didn't find a better solution....
+    }
   };
 
   const getSpeedStep = (currentValue) => {
@@ -121,7 +124,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
                 id="stepsize-input"
                 type="number"
                 step={getStepSizeStep(stepSize)}
-                min="0.01"
+                min="0"
                 value={stepSize}
                 onChange={(e) => handleStepSizeChange(e.target.value)}
                 onBlur={(e) => handleStepSizeBlur(e.target.value)}
