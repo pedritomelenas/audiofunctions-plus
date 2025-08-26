@@ -167,7 +167,11 @@ export default function KeyboardHandler() {
                     setExplorationMode("keyboard_stepwise");
                     let CurrentX = parseFloat(cursorCoords[0].x);
                     let NewX;
-                    let IsOnGrid = CurrentX % stepSize === 0;
+                    // Use a more robust approach to check if we're on the grid
+                    // This handles floating-point precision issues
+                    const epsilon = 1e-10; // Small tolerance for floating-point comparison
+                    const gridPosition = Math.round(CurrentX / stepSize) * stepSize;
+                    let IsOnGrid = Math.abs(CurrentX - gridPosition) < epsilon;
                     if (direction === 1) {
                         NewX = IsOnGrid ? CurrentX + stepSize : Math.ceil(CurrentX / stepSize) * stepSize;
                     } else {
