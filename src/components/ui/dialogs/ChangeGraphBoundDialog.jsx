@@ -21,6 +21,20 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
         onClose();
     };
 
+    const handleNumberChange = (field, value) => {
+        // Erlaube leere Strings, Minuszeichen und gültige Zahlen
+        if (value === '' || value === '-' || !isNaN(parseFloat(value))) {
+            setGraphBounds({ ...graphBounds, [field]: value === '' || value === '-' ? value : parseFloat(value) });
+        }
+    };
+
+    const handleBlur = (field, value) => {
+        // Bei Blur (Fokus verlassen) stelle sicher, dass ein gültiger Wert gesetzt wird
+        if (value === '' || value === '-') {
+            setGraphBounds({ ...graphBounds, [field]: 0 });
+        }
+    };
+
   return (
     <Dialog open={isOpen} onClose={onClose} aria-modal="true" role="dialog">
           <div className="fixed inset-0 bg-overlay" aria-hidden="true" /> {/* Overlay - grey background */}
@@ -45,10 +59,10 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
                         <input
                             id="maxY"
                             type="number"
+                            step="any"
                             value={graphBounds.yMax}
-                            onChange={(e) =>
-                                setGraphBounds({ ...graphBounds, yMax: parseFloat(e.target.value) })
-                            }
+                            onChange={(e) => handleNumberChange('yMax', e.target.value)}
+                            onBlur={(e) => handleBlur('yMax', e.target.value)}
                             aria-label="Y maximum"
                             className="text-input-inner"
                         />
@@ -64,10 +78,10 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
                         <input
                             id="minX"
                             type="number"
+                            step="any"
                             value={graphBounds.xMin}
-                            onChange={(e) =>
-                                setGraphBounds({ ...graphBounds, xMin: parseFloat(e.target.value) })
-                            }
+                            onChange={(e) => handleNumberChange('xMin', e.target.value)}
+                            onBlur={(e) => handleBlur('xMin', e.target.value)}
                             aria-label="X minimum"
                             className="text-input-inner"
                         />
@@ -79,10 +93,10 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
                         <input
                             id="maxX"
                             type="number"
+                            step="any"
                             value={graphBounds.xMax}
-                            onChange={(e) =>
-                                setGraphBounds({ ...graphBounds, xMax: parseFloat(e.target.value) })
-                            }
+                            onChange={(e) => handleNumberChange('xMax', e.target.value)}
+                            onBlur={(e) => handleBlur('xMax', e.target.value)}
                             aria-label="X maximum"
                             className="text-input-inner"
                         />
@@ -98,10 +112,10 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
                         <input
                             id="minY"
                             type="number"
+                            step="any"
                             value={graphBounds.yMin}
-                            onChange={(e) =>
-                                setGraphBounds({ ...graphBounds, yMin: parseFloat(e.target.value) })
-                            }
+                            onChange={(e) => handleNumberChange('yMin', e.target.value)}
+                            onBlur={(e) => handleBlur('yMin', e.target.value)}
                             aria-label="Y minimum"
                             className="text-input-inner"
                         />

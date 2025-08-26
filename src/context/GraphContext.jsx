@@ -22,6 +22,7 @@ export const GraphContextProvider = ({ children }) => {
   const [PlayFunction, setPlayFunction] = useState({ active: false, x: 0, speed: 10, interval: 10, source: null, direction: 1 });
   const playActiveRef = useRef(false);
   const timerRef = useRef(null);
+  const mouseTimeoutRef = useRef(null);
   const [updateCursor, setUpdateCursor] = useState(null);
   const [stepSize, setStepSize] = useState(0.5); // Default value 0.5
   const [explorationMode, setExplorationMode] = useState("none"); // "none", "mouse", "keyboard_stepwise", "keyboard_smooth", "batch"
@@ -77,6 +78,14 @@ export const GraphContextProvider = ({ children }) => {
     );
   }
 
+  // Utility function to focus the chart
+  const focusChart = () => {
+    const chartElement = document.getElementById('chart');
+    if (chartElement) {
+      chartElement.focus();
+    }
+  };
+
   return (
     <GraphContext.Provider
       value={{
@@ -100,6 +109,7 @@ export const GraphContextProvider = ({ children }) => {
         setPlayFunction,
         playActiveRef,
         timerRef,
+        mouseTimeoutRef,
         inputRefs,
         updateCursor,
         setUpdateCursor,
@@ -107,6 +117,7 @@ export const GraphContextProvider = ({ children }) => {
         setStepSize,
         explorationMode,
         setExplorationMode,
+        focusChart,
       }}
     >
       {children}
@@ -126,7 +137,7 @@ const initGraphObject = {
       "type": "function",
       "functionString": "sin(x)",
       "isActive": true,
-      "instrument": "organ",
+      "instrument": "clarinet",
       "color": "#0000FF",           // optional
       "pointOfInterests": [
         {

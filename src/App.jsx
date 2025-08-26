@@ -10,15 +10,21 @@ import Header from './components/ui/Header';
 import { InstrumentsProvider } from './context/InstrumentsContext';
 import KeyboardHandler from "./components/ui/KeyboardHandler";
 import { PaletteActions } from './components/ui/PaletteActions_dyn';
+import { AnnouncementProvider } from './context/AnnouncementContext';
+import { InfoToastProvider } from './context/InfoToastContext';
 
 function App() {
   return (
     <InstrumentsProvider>
       <GraphContextProvider>
-        <KeyboardHandler />
-        <DialogProvider>
-          <KBarWrapper />
-        </DialogProvider>
+        <AnnouncementProvider>
+          <InfoToastProvider>
+            <KeyboardHandler />
+            <DialogProvider>
+              <KBarWrapper />
+            </DialogProvider>
+          </InfoToastProvider>
+        </AnnouncementProvider>
       </GraphContextProvider>
     </InstrumentsProvider>
   );
@@ -29,6 +35,32 @@ const KBarWrapper = () => {
 
   return (
     <KBarProvider>
+      {/* Skip link for accessibility */}
+      <a
+        href="#chart"
+        className="skip-link"
+        style={{
+          position: 'absolute',
+          top: '-40px',
+          left: '6px',
+          background: 'var(--color-primary)',
+          color: 'var(--color-txt-title)',
+          padding: '8px 16px',
+          textDecoration: 'none',
+          borderRadius: '4px',
+          zIndex: 1000,
+          transition: 'top 0.3s ease'
+        }}
+        onFocus={(e) => {
+          e.target.style.top = '6px';
+        }}
+        onBlur={(e) => {
+          e.target.style.top = '-40px';
+        }}
+      >
+        Skip to chart. Enable chart keyboard interaction.
+      </a>
+      
       <PaletteActions />
       <CommandBar />
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw" }}>
