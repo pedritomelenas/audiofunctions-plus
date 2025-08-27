@@ -64,6 +64,7 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
     // Update graph settings with export settings
     setGraphSettings(prevSettings => ({
       ...prevSettings,
+      defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
       minBoundDifference: exportSettings.minBoundDifference,
       maxBoundDifference: exportSettings.maxBoundDifference
     }));
@@ -73,6 +74,7 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
       functions: functionDefinitions,
       graphSettings: {
         ...graphSettings,
+        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
         minBoundDifference: exportSettings.minBoundDifference,
         maxBoundDifference: exportSettings.maxBoundDifference,
         restrictionMode: exportSettings.restrictionMode
