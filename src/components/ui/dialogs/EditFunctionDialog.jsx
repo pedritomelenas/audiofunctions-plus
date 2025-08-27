@@ -428,6 +428,20 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
                 aria-errormessage={hasError ? `function-${index}-error` : undefined}
               />
             </div>
+            
+            {/* Error display for regular functions - moved inside the input container */}
+            {hasError && (
+              <div 
+                id={`function-${index}-error`}
+                className="error-message mt-1"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+              >
+                <span className="error-icon" aria-hidden="true">⚠️</span>
+                {errorMessage}
+              </div>
+            )}
           </div>
 
           {/* Control buttons - only show in edit mode */}
@@ -454,20 +468,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
               </button>
             </div>
           )}
-      </div>
-
-        {/* Error display for regular functions */}
-        {hasError && (
-          <div 
-            id={`function-${index}-error`}
-            className="error-message"
-            role="alert"
-            aria-live="polite"
-          >
-            <span className="error-icon" aria-hidden="true">⚠️</span>
-            {errorMessage}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -618,7 +619,10 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       >
         <div className="flex flex-wrap items-center gap-3">
           {/* Function input with error highlighting */}
-          <div className="text-input-outer flex-1 min-w-0">
+          <div 
+            className={`text-input-outer flex-1 min-w-0 ${functionHasError ? 'error-border error-input' : ''}`}
+            aria-errormessage={functionHasError ? `piecewise-${index}-part-${partIndex}-function-error` : undefined}
+          >
             <div className="text-input-label" aria-hidden="true">
               f(x)=
             </div>
@@ -628,7 +632,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
               value={part.function}
               onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
               onKeyDown={handleKeyDown}
-              className={`text-input-inner w-full grow ${functionHasError ? 'error-border' : ''}`}
+              className={`text-input-inner w-full grow`}
               placeholder="e.g., x^2 + 1"
               onFocus={handleFocus}
               aria-label={`Function expression for part ${partIndex + 1}`}
@@ -641,7 +645,10 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
           </div>
 
           {/* Condition input with error highlighting */}
-          <div className="text-input-outer flex-1 min-w-0">
+          <div 
+            className={`text-input-outer flex-1 min-w-0 ${conditionHasError ? 'error-border error-input' : ''}`}
+            aria-errormessage={conditionHasError ? `piecewise-${index}-part-${partIndex}-condition-error` : undefined}
+          >
             <div className="text-input-label" aria-hidden="true">
               if
             </div>
@@ -651,7 +658,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
               value={part.condition}
               onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
               onKeyDown={handleKeyDown}
-              className={`text-input-inner w-full grow ${conditionHasError ? 'error-border' : ''}`}
+              className={`text-input-inner w-full grow`}
               placeholder="e.g., x < 0 or x >= 1"
               onFocus={handleFocus}
               aria-label={`Condition for part ${partIndex + 1}${isReadOnly ? ' (read-only)' : ''}`}
@@ -682,10 +689,11 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
             id={`piecewise-${index}-part-${partIndex}-function-error`}
             className="error-message mt-1"
             role="alert"
-            aria-live="polite"
+            aria-live="assertive"
+            aria-atomic="true"
           >
             <span className="error-icon" aria-hidden="true">⚠️</span>
-            <strong>Function:</strong> {functionErrors[partIndex].join('. ')}. Please check your input.
+            <strong>Function:</strong> {functionErrors[partIndex].join('. ')}
           </div>
         )}
         
@@ -694,10 +702,11 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
             id={`piecewise-${index}-part-${partIndex}-condition-error`}
             className="error-message mt-1"
             role="alert"
-            aria-live="polite"
+            aria-live="assertive"
+            aria-atomic="true"
           >
             <span className="error-icon" aria-hidden="true">⚠️</span>
-            <strong>Condition:</strong> {conditionErrors[partIndex].join('. ')}. Please check your input.
+            <strong>Condition:</strong> {conditionErrors[partIndex].join('. ')}
           </div>
         )}
       </div>
@@ -772,7 +781,8 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
         <div 
           className="error-message mt-2"
           role="alert"
-          aria-live="polite"
+          aria-live="assertive"
+          aria-atomic="true"
         >
           <span className="error-icon" aria-hidden="true">⚠️</span>
           <strong>General Error:</strong> {generalError}
