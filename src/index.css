@@ -293,6 +293,12 @@ button:hover {
   outline-style: solid;
   outline-color: var(--color-contrast-border);
 }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .btn-secondary {
   background-color: var(--color-background);

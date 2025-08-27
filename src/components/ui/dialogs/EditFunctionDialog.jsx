@@ -18,13 +18,16 @@ import {
 import {separatingCommas } from "../../../utils/parse.js";
 
 const EditFunctionDialog = ({ isOpen, onClose }) => {
-  const { functionDefinitions, setFunctionDefinitions, graphSettings, focusChart } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, graphSettings, focusChart, inputErrors, setInputErrors } = useGraphContext();
   const functionDefinitionsBackup = useRef(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [focusAfterAction, setFocusAfterAction] = useState(null);
 
   // Check if dialog should be read-only
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
+
+  // Check if there are any errors that prevent saving
+  const hasErrors = Object.keys(inputErrors).length > 0;
 
   // Generate unique ID for new functions
   const generateUniqueId = () => {
@@ -160,16 +163,32 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
     if (functionDefinitionsBackup.current !== null) {
       setFunctionDefinitions(functionDefinitionsBackup.current); // restore old function definitions
     }
+    
+    // Clear all input errors when canceling
+    setInputErrors({});
+    
     onClose();
     setTimeout(() => focusChart(), 100);
   };
 
   const handleAccept = () => {
+    // Prevent saving if there are errors
+    if (hasErrors) {
+      announceStatus("Cannot save: Please fix all errors before saving.");
+      return;
+    }
+    
     onClose();
     setTimeout(() => focusChart(), 100);
   };
 
   const handleClose = () => {
+    if (hasErrors) {
+      announceStatus("Function definitions have errors. Changes discard.");
+      handleCancel();
+      return;
+    }
+
     onClose();
     setTimeout(() => focusChart(), 100);
   };
@@ -259,7 +278,10 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
 
               <button
                 onClick={handleAccept}
-                className="btn-primary sm:w-auto"
+                className={`btn-primary sm:w-auto`}
+                disabled={hasErrors}
+                aria-disabled={hasErrors}
+                title={hasErrors ? "Please fix all errors before saving" : "Save changes and close"}
               >
                 Accept
               </button>
@@ -287,16 +309,35 @@ const getInstrumentIcon = (instrumentName) => {
   }
 };
 
+// Simplified helper function to get part-specific errors
+const getPartErrors = (inputErrors, functionId) => {
+  const errorInfo = inputErrors[functionId];
+  if (!errorInfo) return { functionErrors: [], conditionErrors: [] };
+  
+  return {
+    functionErrors: errorInfo.functionErrors || [],
+    conditionErrors: errorInfo.conditionErrors || []
+  };
+};
+
+// Simplified helper function to get general function errors
+const getGeneralError = (inputErrors, functionId) => {
+  const errorInfo = inputErrors[functionId];
+  return errorInfo?.generalError || null;
+};
+
 const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept, isReadOnly }) => {
   const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
   
   const functionId = functionDefinitions[index]?.id;
-  const errorInfo = inputErrors[functionId];
   
-  const hasError = functionId && errorInfo;
-  const errorMessage = errorInfo?.message;
+  // Get error information for this function (only general errors for regular functions)
+  const generalError = getGeneralError(inputErrors, functionId);
   
+  const hasError = functionId && generalError;
+  const errorMessage = generalError; // generalError ist bereits der String, nicht ein Objekt
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -432,66 +473,6 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
   );
 };
 
-// Add this helper function to parse error positions for piecewise functions
-const parseErrorPosition = (errPos) => {
-  if (!errPos) return null;
-  
-  // errPos can be a number (for general errors) or array like [partIndex, fieldIndex] for piecewise errors
-  if (typeof errPos === 'number') {
-    return { general: true, position: errPos };
-  }
-  
-  if (Array.isArray(errPos)) {
-    // For piecewise functions: [partIndex, fieldIndex] where fieldIndex 0=function, 1=condition
-    if (errPos.length === 2) {
-      return { 
-        general: false, 
-        partIndex: errPos[0], 
-        fieldIndex: errPos[1],
-        fieldType: errPos[1] === 0 ? 'function' : 'condition'
-      };
-    }
-  }
-  
-  return null;
-};
-
-// Enhanced error display component for piecewise functions
-const PiecewiseErrorDisplay = ({ functionId, errorMessage, errorPosition, parts }) => {
-  const parsedError = parseErrorPosition(errorPosition);
-  
-  if (!errorMessage) return null;
-
-  // General error affecting the whole piecewise function
-  if (!parsedError || parsedError.general) {
-    return (
-      <div 
-        className="error-message mt-2"
-        role="alert"
-        aria-live="polite"
-      >
-        <span className="error-icon" aria-hidden="true">⚠️</span>
-        {errorMessage}
-      </div>
-    );
-  }
-
-  // Specific error for a part of the piecewise function
-  const { partIndex, fieldType } = parsedError;
-  const partNumber = partIndex + 1;
-  
-  return (
-    <div 
-      className="error-message mt-2"
-      role="alert"
-      aria-live="polite"
-    >
-      <span className="error-icon" aria-hidden="true">⚠️</span>
-      <strong>Part {partNumber} ({fieldType}):</strong> {errorMessage}
-    </div>
-  );
-};
-
 const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept, isReadOnly }) => {
   const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
@@ -499,66 +480,15 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   
   // Get error information for this function
   const functionId = functionDefinitions[index]?.id;
-  const errorInfo = inputErrors[functionId];
-  console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-  console.log("Piecewise error info:", errorInfo);
-  console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  const { functionErrors, conditionErrors } = getPartErrors(inputErrors, functionId);
+  const generalError = getGeneralError(inputErrors, functionId);
   
-  // For piecewise functions, errorInfo is an object with message and position
-  const errorMessage = errorInfo?.message;
-  const errorPosition = errorInfo?.position;
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-      // Call the accept function directly
-      if (onAccept) {
-        onAccept();
-      }
-    }
-  };
-
-  const handleFocus = () => {
-    if (isReadOnly) return; // Prevent focus changes in read-only mode
-    // Set this function as active when any of its inputs is focused
-    const updatedDefinitions = functionDefinitions.map((func, i) => ({
-      ...func,
-      isActive: i === index
-    }));
-    setFunctionDefinitions(updatedDefinitions);
-  };
-
-  const handleInstrumentChange = (e) => {
-    e.stopPropagation(); // Prevent triggering other events
-    
-    const currentInstrument = instrument || "clarinet"; // Default to clarinet
-    
-    // Only allow switching between clarinet and guitar
-    // If current instrument is not clarinet or guitar, default to guitar
-    let nextInstrument;
-    if (currentInstrument === "clarinet") {
-      nextInstrument = "guitar";
-    } else {
-      // For any other instrument (including guitar), switch to clarinet
-      nextInstrument = "clarinet";
-    }
-
-    console.log(`Changing instrument for piecewise function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
-    
-    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
-    setFunctionDefinitions(updatedDefinitions);
-  };
-
-  const handleInstrumentKeyDown = (e) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      e.stopPropagation();
-      handleInstrumentChange(e);
-    }
-  };
+  console.log("=== Piecewise Function Error Debug ===");
+  console.log("Function ID:", functionId);
+  console.log("Function errors:", functionErrors);
+  console.log("Condition errors:", conditionErrors);
+  console.log("General error:", generalError);
+  console.log("=======================================");
 
   // Parse the piecewise function string or initialize with one empty part
   const [parts, setParts] = useState(() => {
@@ -571,109 +501,113 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     }
     return [{ function: '', condition: '' }];
   });
-  
-  const addPart = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+
+  // Sync parts with parent value changes
+  useEffect(() => {
+    if (value && Array.isArray(value)) {
+      const newParts = value.map(([func, condition]) => ({ 
+        function: func || '', 
+        condition: condition || '' 
+      }));
+      setParts(newParts);
+    }
+  }, [value]);
+
+  // Update parent when parts change
+  useEffect(() => {
+    if (needsUpdateRef.current) {
+      const newValue = parts.map(part => [part.function, part.condition]);
+      onChange(newValue);
+      needsUpdateRef.current = false;
+    }
+  }, [parts, onChange]);
+
+  // Event handlers
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onAccept) {
+        onAccept();
+      }
+    }
+  };
+
+  const handleFocus = () => {
+    if (isReadOnly) return;
+    // Set this function as active when any input is focused
+    const updatedDefinitions = functionDefinitions.map((func, i) => ({
+      ...func,
+      isActive: i === index
+    }));
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
+  const handleInstrumentChange = (e) => {
+    if (isReadOnly) return;
+    e.stopPropagation();
     
-    setParts(prev => {
-      const newParts = [...prev, { function: '', condition: '' }];
-      // Announce to screen readers
-      setTimeout(() => {
-        const newPartIndex = newParts.length - 1;
-        const functionInput = document.getElementById(`piecewise-function-${index}-part-${newPartIndex}-function`);
-        if (functionInput) {
-          functionInput.focus();
-        }
-        // Announce the addition
-        const statusDiv = document.querySelector('[aria-live="polite"]');
-        if (statusDiv) {
-          statusDiv.textContent = `Part ${newPartIndex + 1} added to piecewise function ${index + 1}. Total parts: ${newParts.length}`;
-        }
-      }, 100);
+    const currentInstrument = instrument || "clarinet";
+    
+    let nextInstrument;
+    if (currentInstrument === "clarinet") {
+      nextInstrument = "guitar";
+    } else {
+      nextInstrument = "clarinet";
+    }
+
+    console.log(`Changing instrument for piecewise function ${index + 1} from ${currentInstrument} to ${nextInstrument}`);
+    
+    const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, index, nextInstrument);
+    setFunctionDefinitions(updatedDefinitions);
+  };
+
+  const handleInstrumentKeyDown = (e) => {
+    if (isReadOnly) return;
+    
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleInstrumentChange(e);
+    }
+  };
+
+  // Part management functions
+  const updatePart = (partIndex, field, newValue) => {
+    if (isReadOnly) return;
+    
+    setParts(prevParts => {
+      const newParts = [...prevParts];
+      newParts[partIndex] = { ...newParts[partIndex], [field]: newValue };
+      needsUpdateRef.current = true;
+      return newParts;
+    });
+  };
+
+  const addPart = () => {
+    if (isReadOnly) return;
+    
+    setParts(prevParts => {
+      const newParts = [...prevParts, { function: '', condition: '' }];
+      needsUpdateRef.current = true;
       return newParts;
     });
   };
 
   const removePart = (partIndex) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly || parts.length <= 1) return;
     
-    if (parts.length > 1) {
-      setParts(prev => {
-        const newParts = prev.filter((_, i) => i !== partIndex);
-        needsUpdateRef.current = true;
-        
-        // Announce the removal
-        setTimeout(() => {
-          const statusDiv = document.querySelector('[aria-live="polite"]');
-          if (statusDiv) {
-            statusDiv.textContent = `Part ${partIndex + 1} removed from piecewise function ${index + 1}. Remaining parts: ${newParts.length}`;
-          }
-        }, 100);
-        return newParts;
-      });
-    }
-  };
-  
-  const updatePart = (partIndex, field, value) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
-    setParts(prev => {
-      const newParts = [...prev];
-      newParts[partIndex] = { ...newParts[partIndex], [field]: value };
+    setParts(prevParts => {
+      const newParts = prevParts.filter((_, index) => index !== partIndex);
       needsUpdateRef.current = true;
-      
-      // Provide immediate feedback for common errors
-      const validationError = validatePart(partIndex, field, value);
-      if (validationError) {
-        console.warn(validationError);
-      }
-      
       return newParts;
     });
   };
 
-  // Handle onChange calls after render is complete
-  useEffect(() => {
-    if (needsUpdateRef.current && parts.length > 0) {
-      // Convert back to array format für functionDef
-      const partsArray = parts.map(part => [part.function, part.condition]);
-      onChange(partsArray);  // Direkt das Array übergeben, nicht als String
-      needsUpdateRef.current = false;
-    }
-  }, [parts, onChange]);
-  // Enhanced part validation
-  const validatePart = (partIndex, field, value) => {
-    if (!value || value.trim() === '') {
-      return null; // Empty values are handled by the main validation
-    }
-    
-    try {
-      if (field === 'function') {
-        // Validate function expression
-        const { isOneVariableFunction } = require('../../../utils/parse');
-        if (!isOneVariableFunction(value)) {
-          return `Invalid function expression in part ${partIndex + 1}`;
-        }
-      } else if (field === 'condition') {
-        // Validate condition/inequality
-        const { isInequality } = require('../../../utils/parse');
-        if (!isInequality(value)) {
-          return `Invalid condition in part ${partIndex + 1}`;
-        }
-      }
-    } catch (err) {
-      return `Syntax error in part ${partIndex + 1} ${field}`;
-    }
-    
-    return null;
-  };
-
-  // Enhanced part component with error highlighting
+  // Enhanced part component with specific error highlighting
   const renderPart = (part, partIndex) => {
-    const parsedError = parseErrorPosition(errorPosition);
-    const hasPartError = parsedError && !parsedError.general && parsedError.partIndex === partIndex;
-    const functionHasError = hasPartError && parsedError.fieldType === 'function';
-    const conditionHasError = hasPartError && parsedError.fieldType === 'condition';
+    const functionHasError = functionErrors[partIndex] && functionErrors[partIndex].length > 0;
+    const conditionHasError = conditionErrors[partIndex] && conditionErrors[partIndex].length > 0;
 
     return (
       <div 
@@ -700,7 +634,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
               aria-label={`Function expression for part ${partIndex + 1}`}
               aria-invalid={functionHasError ? 'true' : 'false'}
               aria-describedby={isReadOnly ? "Function expression. Read-only mode active." : "Function expression."}
-              aria-errormessage={functionHasError ? `Error in function expression for part ${partIndex + 1}` : undefined}
+              aria-errormessage={functionHasError ? `piecewise-${index}-part-${partIndex}-function-error` : undefined}
               readOnly={isReadOnly}
               tabIndex={0}
             />
@@ -743,15 +677,27 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
         </div>
         
         {/* Part-specific error messages */}
-        {hasPartError && (
+        {functionHasError && (
           <div 
-            id={`piecewise-${index}-part-${partIndex}-${parsedError.fieldType}-error`}
+            id={`piecewise-${index}-part-${partIndex}-function-error`}
             className="error-message mt-1"
             role="alert"
             aria-live="polite"
           >
             <span className="error-icon" aria-hidden="true">⚠️</span>
-            {errorMessage}
+            <strong>Function:</strong> {functionErrors[partIndex].join('. ')}. Please check your input.
+          </div>
+        )}
+        
+        {conditionHasError && (
+          <div 
+            id={`piecewise-${index}-part-${partIndex}-condition-error`}
+            className="error-message mt-1"
+            role="alert"
+            aria-live="polite"
+          >
+            <span className="error-icon" aria-hidden="true">⚠️</span>
+            <strong>Condition:</strong> {conditionErrors[partIndex].join('. ')}. Please check your input.
           </div>
         )}
       </div>
@@ -775,7 +721,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       
       {/* Bordered container for piecewise function parts */}
       <div 
-        className={`mt-2 border rounded-lg p-4 bg-background ${errorInfo ? 'border-red-500' : 'border-gray-mddk'}`}
+        className={`mt-2 border rounded-lg p-4 bg-background ${generalError || functionErrors.some(e => e && e.length > 0) || conditionErrors.some(e => e && e.length > 0) ? 'border-red-500' : 'border-gray-mddk'}`}
         role="group"
         aria-label={`Piecewise function ${index + 1} parts`}
       >
@@ -822,12 +768,16 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       </div>
 
       {/* General piecewise function error display */}
-      <PiecewiseErrorDisplay 
-        functionId={functionId}
-        errorMessage={errorMessage}
-        errorPosition={errorPosition}
-        parts={parts}
-      />
+      {generalError && (
+        <div 
+          className="error-message mt-2"
+          role="alert"
+          aria-live="polite"
+        >
+          <span className="error-icon" aria-hidden="true">⚠️</span>
+          <strong>General Error:</strong> {generalError}
+        </div>
+      )}
     </div>
   );
 };

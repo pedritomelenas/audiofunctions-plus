@@ -238,31 +238,94 @@ const GraphView = () => {
 
       console.log("List of errors: ",errList);
       
-      if (errList.length>0) {
-        let [errMMsg, errPos] = errList[0]; // Take the first error for reporting
-        console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
-        // Store error as object for both regular and piecewise functions
+      // Clear all existing errors for this function first
+      setInputErrors(prev => {
+        const newErrors = { ...prev };
+        // Remove all entries for this function (including part-specific errors)
+        Object.keys(newErrors).forEach(key => {
+          if (key === func.id || key.startsWith(`${func.id}_part_`)) {
+            delete newErrors[key];
+          }
+        });
+        return newErrors;
+      });
+      
+      if (errList.length > 0) {
+        // Process all errors, not just the first one
+        let functionErrors = [];
+        let conditionErrors = [];
+        let generalError = null;
+        
+        errList.forEach(([errMMsg, errPos]) => {
+          console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
+          
+          if (func.type === "piecewise_function") {
+            // Check if errPos is an array of positions (for overlap errors)
+            if (Array.isArray(errPos) && errPos.length > 0 && Array.isArray(errPos[0])) {
+              // Multiple positions (e.g., overlap errors: [[0,1],[1,1]])
+              errPos.forEach(([partIndex, fieldIndex]) => {
+                if (fieldIndex === 0) {
+                  // Function error
+                  if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                  functionErrors[partIndex].push(errMMsg);
+                } else {
+                  // Condition error
+                  if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                  conditionErrors[partIndex].push(errMMsg);
+                }
+              });
+            } else if (Array.isArray(errPos) && errPos.length === 2 && typeof errPos[0] === 'number') {
+              // Single specific part error: errPos = [partIndex, fieldIndex]
+              const [partIndex, fieldIndex] = errPos;
+              if (fieldIndex === 0) {
+                // Function error
+                if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                functionErrors[partIndex].push(errMMsg);
+              } else {
+                // Condition error
+                if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                conditionErrors[partIndex].push(errMMsg);
+              }
+            } else {
+              // General piecewise function error
+              generalError = errMMsg;
+            }
+          } else {
+            // Regular function error
+            generalError = errMMsg;
+          }
+        });
+        
+        // Build error object for this function
         if (func.type === "piecewise_function") {
           setInputErrors(prev => ({ 
             ...prev, 
             [func.id]: {
-              message: `${errMMsg}. Please check your input.`,
-              position: errPos
+              functionErrors: functionErrors,
+              conditionErrors: conditionErrors,
+              generalError: generalError
             }
           }));
         } else {
-          // For regular functions, store only message
           setInputErrors(prev => ({ 
             ...prev, 
             [func.id]: {
-              message: `${errMMsg}. Please check your input.`
+              generalError: generalError
             }
           }));
         }
+        
         hasError = true;
         expr = "0";
         graphFormula = 0;
       } else {
+        // Clear errors if no issues found
+        setInputErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[func.id];
+          return newErrors;
+        });
+        
         try {
           graphFormula = board.jc.snippet(expr, true, "x", true);
         } catch (err) {
@@ -270,22 +333,13 @@ const GraphView = () => {
           setInputErrors(prev => ({ 
             ...prev, 
             [func.id]: {
-              message: "Invalid function. Please check your input."
+              generalError: "Invalid function. Please check your input."
             }
           }));
           hasError = true;
           expr = "0";
           graphFormula = 0;
         }
-      }
-
-      // Clear error if no issues found
-      if (!hasError) {
-        setInputErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[func.id];
-          return newErrors;
-        });
       }
 
       // Store the parsed expression
@@ -310,7 +364,8 @@ const GraphView = () => {
           setInputErrors(prev => ({ 
             ...prev, 
             [func.id]: {
-              message: "Error creating piecewise endpoints. Please check your input."
+              message: "Error creating piecewise endpoints. Please check your input.",
+              isGeneral: true
             }
           }));
         }
