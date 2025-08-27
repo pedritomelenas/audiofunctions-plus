@@ -59,7 +59,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       setStepSize(0.1);
     }
     if (value === '0') {
-      setStepSize(0.001); // Prevent zero step size - I didn't find a better solution....
+      setStepSize(0.01); // Prevent zero step size - I didn't find a better solution....
     }
   };
 
