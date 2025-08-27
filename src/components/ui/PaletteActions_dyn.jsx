@@ -11,7 +11,7 @@ import { useAnnouncement } from '../../context/AnnouncementContext';
 import { useInfoToast } from '../../context/InfoToastContext';
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, graphBounds, setGraphBounds, updateCursor } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, graphBounds, setGraphBounds, updateCursor, focusChart } = useGraphContext();
   const { openDialog } = useDialog();
   const { announce } = useAnnouncement();
   const { showInfoToast } = useInfoToast();
@@ -160,7 +160,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["p"],
       keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
-      perform: () => setIsAudioEnabled(prev => !prev),
+      perform: () => {setIsAudioEnabled(prev => !prev); setTimeout(() => focusChart(), 100);},
       icon: isAudioEnabled 
         ? <VolumeX className="size-5 shrink-0 opacity-70" /> 
         : <Volume2 className="size-5 shrink-0 opacity-70" />,
@@ -172,7 +172,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["c"],
       keywords: "coordinates position location",
       parent: "quick-options",
-      perform: showCoordinates,
+      perform: () => {showCoordinates; setTimeout(() => focusChart(), 100);},
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -181,7 +181,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["v"],
       keywords: "bound view range axis",
       parent: "quick-options",
-      perform: showViewBounds,
+      perform: () => {showViewBounds(); setTimeout(() => focusChart(), 100);},
       icon: <Ruler className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -192,7 +192,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["n"],
       keywords: "switch, function, next, rotate, cycle",
       parent: "quick-options",
-      perform: switchToNextFunction,
+      perform: () => {switchToNextFunction(); setTimeout(() => focusChart(), 100);},
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
     
@@ -203,7 +203,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: ["b"], // Removed to avoid conflict with keyboard handler
       keywords: "play, run, complete, automatic, auto, autoplay",
       parent: "quick-options",
-      perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},
+      perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active })); setTimeout(() => focusChart(), 100);},
       icon: <Play className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -214,7 +214,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["i"],
       keywords: "sonification, instrument, discrete, continuous, guitar, clarinet, toggle",
       parent: "quick-options",
-      perform: toggleSonificationType,
+      perform: () => {toggleSonificationType(); setTimeout(() => focusChart(), 100);},
       icon: <Music className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -239,6 +239,8 @@ export const useDynamicKBarActions = () => {
           
           announce("View reset to default values");
           showInfoToast("Default view", 1500);
+
+          setTimeout(() => focusChart(), 100);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -288,7 +290,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["n"],
       keywords: "switch, function, next, rotate, cycle",
       parent: "select-function",
-      perform: switchToNextFunction,
+      perform: () => {switchToNextFunction(); setTimeout(() => focusChart(), 100);},
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -302,7 +304,7 @@ export const useDynamicKBarActions = () => {
         shortcut: index < 9 ? [(index + 1).toString()] : undefined, // Add hotkeys 1-9 for first 9 functions
         keywords: `function, show, display, ${functionName}`,
         parent: "select-function",
-        perform: () => showOnlyFunction(index),
+        perform: () => {showOnlyFunction(index); setTimeout(() => focusChart(), 100);},
         icon: <Eye className="size-5 shrink-0 opacity-70" />,
       };
     }),
@@ -359,7 +361,7 @@ export const useDynamicKBarActions = () => {
         keywords: isReadOnly 
           ? "function, view function, view graph, graph, show function, display function"
           : "function, change function, change graph, graph, edit function, edit graph",
-        perform: () => openDialog("edit-function"),
+        perform: () => {openDialog("edit-function");},
         icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
       }
     ] : []),
@@ -414,6 +416,8 @@ export const useDynamicKBarActions = () => {
 
         announce("View reset to default values");
         showInfoToast("Default view", 1500);
+
+        setTimeout(() => focusChart(), 100);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -509,7 +513,7 @@ export const useDynamicKBarActions = () => {
 
     
 
-  ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly]);
+  ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly, focusChart]);
 
   return null;
 };

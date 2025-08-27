@@ -3,7 +3,7 @@ import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react
 import { useGraphContext } from "../../../context/GraphContext";
 
 const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
-  const { PlayFunction, setPlayFunction, stepSize, setStepSize } = useGraphContext();
+  const { PlayFunction, setPlayFunction, stepSize, setStepSize, focusChart } = useGraphContext();
   const speedBackup = useRef(null);
   const stepSizeBackup = useRef(null);
   
@@ -24,6 +24,17 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       setStepSize(stepSizeBackup.current);
     }
     onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleAccept = () => {
+    onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => focusChart(), 100);
   };
 
   const handleKeyDown = (e) => {
@@ -31,7 +42,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       e.preventDefault();
       e.stopPropagation();
       if (onClose) {
-        onClose();
+        handleAccept();
       }
     }
   };
@@ -77,12 +88,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onClose={onClose} 
-      aria-modal="true" 
-      role="dialog"
-    >
+    <Dialog open={isOpen} onClose={handleClose} aria-modal="true" role="dialog">
       <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="w-full max-w-lg bg-background rounded-lg p-6 shadow-lg">
@@ -146,7 +152,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleAccept}
               className="btn-primary"
             >
               Accept

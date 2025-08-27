@@ -16,7 +16,7 @@ import {
 } from "../../../utils/graphObjectOperations";
 
 const EditFunctionDialog = ({ isOpen, onClose }) => {
-  const { functionDefinitions, setFunctionDefinitions, graphSettings } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, graphSettings, focusChart } = useGraphContext();
   const functionDefinitionsBackup = useRef(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [focusAfterAction, setFocusAfterAction] = useState(null);
@@ -159,8 +159,21 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
       setFunctionDefinitions(functionDefinitionsBackup.current); // restore old function definitions
     }
     onClose();
-  };  return (
-    <Dialog open={isOpen} onClose={onClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleAccept = () => {
+    onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  return (
+    <Dialog open={isOpen} onClose={handleClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
       <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="w-full max-w-lg max-h-[90vh] bg-background rounded-lg shadow-lg flex flex-col">
@@ -197,7 +210,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
                   onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
-                  onAccept={onClose}
+                  onAccept={handleAccept}
                   isReadOnly={isReadOnly}
                 />
               ) : (
@@ -208,7 +221,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
                   onChange={(newValue) => updateFunctionString(index, newValue)}
                   onDelete={() => removeContainer(index)}
-                  onAccept={onClose}
+                  onAccept={handleAccept}
                   isReadOnly={isReadOnly}
                 />
               )
@@ -243,7 +256,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
               </button>
 
               <button
-                onClick={onClose}
+                onClick={handleAccept}
                 className="btn-primary sm:w-auto"
               >
                 Accept
