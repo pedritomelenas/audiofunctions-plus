@@ -172,7 +172,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["c"],
       keywords: "coordinates position location",
       parent: "quick-options",
-      perform: () => {showCoordinates; setTimeout(() => focusChart(), 100);},
+      perform: () => {showCoordinates(); setTimeout(() => focusChart(), 100);},
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
     },
     {
