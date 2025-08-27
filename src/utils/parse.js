@@ -492,14 +492,42 @@ function isPiecewise(txt){
         const b = sortedIntervals[i+1];
         if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
             //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
-            updateErrorMessage("Invalid piecewise format, intervals are not disjoint: " + (a[2]==0?"(":"[") +a[0].toString() + ","+ a[1].toString() + (a[3]==0?")":"]") + " and " + (b[2]==0?"(":"[") +b[0].toString() + ","+ b[1].toString() + (b[3]==0?")":"]"));
-            errorPosition = [[partNumbers[intervals.indexOf(a)],1],[partNumbers[intervals.indexOf(b)],1]];
+            
+            // Find the original indices of the overlapping intervals
+            const aIndex = intervals.findIndex(interval => 
+                interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
+            );
+            const bIndex = intervals.findIndex((interval, idx) => 
+                idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
+            );
+            
+            // Use partNumbers to get the correct part indices
+            const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
+            const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
+            
+            // Create user-friendly error message
+            updateErrorMessage(`Overlap detected between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Please adjust the conditions to avoid overlap`);
+            errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
             return false;
         }
         if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
             //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
-            updateErrorMessage("Invalid piecewise format, intervals are not disjoint: " + (a[2]==0?"(":"[") +a[0].toString() + ","+ a[1].toString() + (a[3]==0?")":"]") + " and " + (b[2]==0?"(":"[") +b[0].toString() + ","+ b[1].toString() + (b[3]==0?")":"]"));
-            errorPosition = [[intervals.indexOf(a),1],[intervals.indexOf(b),1]];
+            
+            // Find the original indices of the overlapping intervals
+            const aIndex = intervals.findIndex(interval => 
+                interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
+            );
+            const bIndex = intervals.findIndex((interval, idx) => 
+                idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
+            );
+            
+            // Use partNumbers to get the correct part indices
+            const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
+            const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
+            
+            // Create user-friendly error message
+            updateErrorMessage(`Boundary conflict between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Both parts include the same point. Please use < or > instead of <= or >=`);
+            errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
             return false;
         }
     }
