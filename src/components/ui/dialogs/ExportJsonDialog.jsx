@@ -64,6 +64,7 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
     // Update graph settings with export settings
     setGraphSettings(prevSettings => ({
       ...prevSettings,
+      defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
       minBoundDifference: exportSettings.minBoundDifference,
       maxBoundDifference: exportSettings.maxBoundDifference
     }));
@@ -73,6 +74,7 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
       functions: functionDefinitions,
       graphSettings: {
         ...graphSettings,
+        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
         minBoundDifference: exportSettings.minBoundDifference,
         maxBoundDifference: exportSettings.maxBoundDifference,
         restrictionMode: exportSettings.restrictionMode
@@ -150,9 +152,9 @@ const ExportJsonDialog = ({ isOpen, onClose }) => {
                     className="grow text-input-inner"
                     aria-label="Restriction mode"
                   >
-                    <option value="none">None</option>
-                    <option value="read-only">Read Only</option>
-                    <option value="full-restriction">Full Restriction</option>
+                    <option value="none" className="bg-background text-txt">None</option>
+                    <option value="read-only" className="bg-background text-txt">Read Only</option>
+                    <option value="full-restriction" className="bg-background text-txt">Full Restriction</option>
                   </select>
                 </div>
               </div>

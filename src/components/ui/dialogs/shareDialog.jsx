@@ -60,6 +60,7 @@ const ShareDialog = ({ isOpen, onClose }) => {
     // Update graph settings with share settings
     setGraphSettings(prevSettings => ({
       ...prevSettings,
+      defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
       minBoundDifference: shareSettings.minBoundDifference,
       maxBoundDifference: shareSettings.maxBoundDifference
     }));
@@ -69,6 +70,7 @@ const ShareDialog = ({ isOpen, onClose }) => {
       functions: functionDefinitions,
       graphSettings: {
         ...graphSettings,
+        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
         minBoundDifference: shareSettings.minBoundDifference,
         maxBoundDifference: shareSettings.maxBoundDifference,
         restrictionMode: shareSettings.restrictionMode
@@ -104,6 +106,48 @@ const ShareDialog = ({ isOpen, onClose }) => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleSaveAsFile = () => {
+    // Update graph settings with share settings (defaultView is already set)
+    setGraphSettings(prevSettings => ({
+      ...prevSettings,
+      defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
+      minBoundDifference: shareSettings.minBoundDifference,
+      maxBoundDifference: shareSettings.maxBoundDifference
+    }));
+    
+    // Create export data object (same as share data)
+    const exportData = {
+      functions: functionDefinitions,
+      graphSettings: {
+        ...graphSettings,
+        defaultView: [graphBounds.xMin, graphBounds.xMax, graphBounds.yMax, graphBounds.yMin],
+        minBoundDifference: shareSettings.minBoundDifference,
+        maxBoundDifference: shareSettings.maxBoundDifference,
+        restrictionMode: shareSettings.restrictionMode
+      }
+    };
+    
+    try {
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audiofunctions-export.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      announceStatus('JSON file downloaded successfully.');
+      onClose();
+    } catch (err) {
+      announceStatus('Error downloading JSON file.');
+      console.error('Download error:', err);
+    }
   };
 
   return (
@@ -150,9 +194,9 @@ const ShareDialog = ({ isOpen, onClose }) => {
                       className="grow text-input-inner"
                       aria-label="Restriction mode"
                     >
-                      <option value="none">None</option>
-                      <option value="read-only">Read Only</option>
-                      <option value="full-restriction">Full Restriction</option>
+                      <option value="none" className="bg-background text-txt">None</option>
+                      <option value="read-only" className="bg-background text-txt">Read Only</option>
+                      <option value="full-restriction" className="bg-background text-txt">Full Restriction</option>
                     </select>
                   </div>
                 </div>
@@ -236,6 +280,13 @@ const ShareDialog = ({ isOpen, onClose }) => {
                   className="btn-secondary sm:w-auto"
                 >
                   Cancel
+                </button>
+
+                <button
+                  onClick={handleSaveAsFile}
+                  className="btn-secondary sm:w-auto"
+                >
+                  Save as file
                 </button>
 
                 <button

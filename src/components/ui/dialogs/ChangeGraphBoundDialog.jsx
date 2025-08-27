@@ -3,7 +3,7 @@ import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react
 import { useGraphContext } from "../../../context/GraphContext";
 
 const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
-    const { graphBounds, setGraphBounds } = useGraphContext();
+    const { graphBounds, setGraphBounds, focusChart } = useGraphContext();
     const graphBoundsBackup = useRef(null);
 
     useEffect(() => {
@@ -19,6 +19,17 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
             setGraphBounds(graphBoundsBackup.current); // reuse old graph bounds
         }
         onClose();
+        setTimeout(() => focusChart(), 100);
+    };
+
+    const handleAccept = () => {
+        onClose();
+        setTimeout(() => focusChart(), 100);
+    };
+
+    const handleClose = () => {
+        onClose();
+        setTimeout(() => focusChart(), 100);
     };
 
     const handleNumberChange = (field, value) => {
@@ -36,7 +47,7 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
     };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} aria-modal="true" role="dialog">
+    <Dialog open={isOpen} onClose={handleClose} aria-modal="true" role="dialog">
           <div className="fixed inset-0 bg-overlay" aria-hidden="true" /> {/* Overlay - grey background */}
           <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
             <DialogPanel className="w-full max-w-lg bg-background rounded-lg p-6 shadow-lg">
@@ -134,7 +145,7 @@ const ChangeGraphBoundDialog = ({ isOpen, onClose }) => {
                 </button>
     
                 <button
-                  onClick={onClose}
+                  onClick={handleAccept}
                   className="btn-primary"
                 >
                   Accept
