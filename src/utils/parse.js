@@ -504,267 +504,268 @@ function isListOfCompatibleInequalities(cnds){
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
 // the only double (chains) inequalities allowed are of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
-function isPiecewise(txt){
-    // we first check that the input is a valid math expression
-    if (!(isValidMathParse(txt))){
-        //console.log("Invalid input: could not parse");
-        return false;
-    }
-    const parsed = math.parse(txt); // we parse the string txt
-    if (!("items" in parsed)){ // not a piecewise function
-      return false;
-    }
-    const its = parsed.items; //list of items, each item should be a pair [expr,ineq]
-    if (!its.every((e)=> "items" in e)){
-        //console.log("Invalid input, not an array of arrays");
-        updateErrorMessage("Invalid piecewise format, not an array of arrays");
-        errorPosition = 0;
-        return false;
-    }
-    // so we check that all items are pairs 
-    if (!its.every((e)=> e.items.length==2)){
-        //console.log("Invalid input, not a list of pairs");
-        updateErrorMessage("Invalid piecewise format, not a list of pairs");
-        errorPosition = 0;
-        return false;
-    }
-    // now we check that the first item is a function and the second is an inequality
-    let it; //single item
-    let intervals = []; // we will store the intervals of the inequalities
-    // each interval will be of the form [a,b,o1,o2] where a and b are the bounds of the interval,
-    // o1 and o2 are 0 or 1 depending on if a and b are included in the interval, respectively
-    // for instance, [1,2,0,1] means 1 < x <= 2
-    // we will also check that the intervals are disjoint
-    let partNumbers =[]; // inequalities of the form x!= a give rise to two intervals, so we keep track of the part of the function they belong to 
-    for (let i=0;i<its.length;i++){
-        it=its[i]; // the ith item
-        // we check if the first item is a function in x
-        if (!(isOneVariableFunction(it.items[0].toString()))){
-            //console.log("Invalid input, not a valid function", it.items[0].toString());
-            updateErrorMessage("Invalid piecewise format, not a valid function: " + it.items[0].toString());
-            errorPosition = [[i,0]];
-            return false;
-        }
-        // now we check that the second item is an inequality
-        const ineq=transformAssingnments(it.items[1]); // we change the assignments into equalities
-        console.log(ineq.toString()+" is valid: "+isInequality(ineq.toString()));
-        if (!isInequality(ineq.toString())){
-            errorPosition=[[i,1]];
-            return false;
-        }
-        if ("op" in ineq){ //that is a single inequality or an equality
-            // we check if op is ==, <, >, <=, >=
-            if (ineq.op != "<" && ineq.op != ">" && 
-                ineq.op != "<=" && ineq.op != ">=" && 
-                ineq.op != "==" && ineq.op != "!="){
-                //console.log("Invalid input, not a valid inequality (wrong relations)", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid inequality (wrong relations): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            // we check that the number of arguments of the inequality are valid 
-            // this is probably not necessary, since the parser should check this
-            if (ineq.args.length!=2){
-                //console.log("Invalid input, not a valid inequality", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid inequality (wrong number of arguments): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }    
-            // we check that the arguments of the inequality are valid
-            // one must be constant and the other a variable
-            const typeArgs = new Set(ineq.args.map((e)=> e.type));
-            if (!typeArgs.has("SymbolNode")){ // at least one must be variable
-                //console.log("Invalid input, not a valid inequality (variable needed))", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid inequality (variable needed): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            if (ineq.args[0].type=="SymbolNode"){//equation of the form x op a
-                //console.log("Variable first");
-                if (!isMathConstant(ineq.args[1].toString())){
-                    //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
-                    updateErrorMessage("Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString());
-                    errorPosition = [[i,1]];
-                    return false;
-                }
-                switch (ineq.op) {
-                    case "<":
-                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
-                        partNumbers.push(i);
-                        break;
-                    case "<=": 
-                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 1]);
-                        partNumbers.push(1);    
-                        break;   
-                    case ">":
-                        intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
-                        partNumbers.push(i);
-                        break;
-                    case ">=":
-                        intervals.push([ineq.args[1].evaluate(), Infinity, 1, 0]);
-                        partNumbers.push(i);
-                        break;
-                    case "==":  
-                        intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
-                        partNumbers.push(i);
-                        break;
-                    case "!=":
-                        intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
-                        partNumbers.push(i);
-                        intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
-                        partNumbers.push(i);
-                        break;
-                }
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }else{//equation of the form a op x
-                //console.log("variable second")
-                if (!isMathConstant(ineq.args[0].toString())){
-                    //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
-                    updateErrorMessage("Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString());
-                    errorPosition = [[i,1]];
-                    return false;
-                }
-                switch (ineq.op) {
-                    case "<":
-                        intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
-                        partNumbers.push(i);
-                        break;
-                    case "<=": 
-                        intervals.push([ineq.args[0].evaluate(), Infinity, 1, 0]);
-                        partNumbers.push(i);
-                        break;   
-                    case ">":
-                        intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 0]);
-                        partNumbers.push(i);
-                        break;
-                    case ">=":
-                        intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
-                        partNumbers.push(i);
-                        break;
-                    case "==":  
-                        intervals.push([ineq.args[0].evaluate(), ineq.args[0].evaluate(), 1, 1]);
-                        partNumbers.push(i);
-                        break;
-                    case "!=":
-                        intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
-                        intervals.push([-Infinity, ineq.args[0].evaluate(), 0, 0]);
-                        partNumbers.push(i);
-                        partNumbers.push(i);
-                        break;
-                }
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }
-            // need to check now that the other argument is constant
-        }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
-            // the values a and b are the first and last arguments of the inequality
-            // console.log(ineq.toString()," ",ineq.conditionals.length);
-            //const keysIneq = Object.keys(ineq);
-            //if (!(keysIneq[0]=="conditionals" && keysIneq[1]=="params" && keysIneq.length==2)){
-            if (!(ineq.type=="RelationalNode")){
-                //console.log("Invalid input, not a valid inequality", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid inequality: " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            if (!(ineq.conditionals.length==2)){
-                //console.log("Invalid input, not a valid chain of inequalities (more than two)", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid chain of inequalities (more than two): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            if (!ineq.conditionals.every((e)=> e=="smaller" || e=="smallerEq")){
-                //console.log("Invalid input, not a valid chain of inequalities (only < and <= are allowed)", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid chain of inequalities (only < and <= are allowed): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            // we check that the arguments of the inequality are valid
-            // the first and third must be constant and the second a variable
-            //console.log(ineq.params);
-            if (!(isMathConstant(ineq.params[0].toString()) && 
-                  ineq.params[1].type=="SymbolNode") && 
-                  isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
-                //console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
-                updateErrorMessage("Invalid piecewise format, not a valid inequality (two constant params and a symbol): " + ineq.toString());
-                errorPosition = [[i,1]];
-                return false;
-            }
-            if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smallerEq"){ // a<=x<=b
-                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 1]);
-                partNumbers.push(i);
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }
-            if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smallerEq"){ // a<x<=b
-                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 1]);
-                partNumbers.push(i);
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }
-            if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smaller"){ // a<=x<b
-                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 0]);
-                partNumbers.push(i);
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }
-            if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smaller"){ // a<x<b
-                intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 0]);
-                partNumbers.push(i);
-                //console.log("Added interval: ", intervals[intervals.length-1].toString());
-            }
-        }
-    } 
-    //console.log("Intervals: ", intervals.map((e)=> e.toString()));    
-    // now it remains to check that the intervals are disjoint     
-    // first we sort the intervals by their first element
-    let sortedIntervals=intervals.toSorted((a,b)=> (a[0]-b[0]==0) ? (a[1]-b[1]) : (a[0]-b[0]));
-    //console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
-    for (let i=0;i<intervals.length-1;i++){
-        const a = sortedIntervals[i];
-        const b = sortedIntervals[i+1];
-        if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
-            //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+// legacy, and thus commented
+// function isPiecewise(txt){
+//     // we first check that the input is a valid math expression
+//     if (!(isValidMathParse(txt))){
+//         //console.log("Invalid input: could not parse");
+//         return false;
+//     }
+//     const parsed = math.parse(txt); // we parse the string txt
+//     if (!("items" in parsed)){ // not a piecewise function
+//       return false;
+//     }
+//     const its = parsed.items; //list of items, each item should be a pair [expr,ineq]
+//     if (!its.every((e)=> "items" in e)){
+//         //console.log("Invalid input, not an array of arrays");
+//         updateErrorMessage("Invalid piecewise format, not an array of arrays");
+//         errorPosition = 0;
+//         return false;
+//     }
+//     // so we check that all items are pairs 
+//     if (!its.every((e)=> e.items.length==2)){
+//         //console.log("Invalid input, not a list of pairs");
+//         updateErrorMessage("Invalid piecewise format, not a list of pairs");
+//         errorPosition = 0;
+//         return false;
+//     }
+//     // now we check that the first item is a function and the second is an inequality
+//     let it; //single item
+//     let intervals = []; // we will store the intervals of the inequalities
+//     // each interval will be of the form [a,b,o1,o2] where a and b are the bounds of the interval,
+//     // o1 and o2 are 0 or 1 depending on if a and b are included in the interval, respectively
+//     // for instance, [1,2,0,1] means 1 < x <= 2
+//     // we will also check that the intervals are disjoint
+//     let partNumbers =[]; // inequalities of the form x!= a give rise to two intervals, so we keep track of the part of the function they belong to 
+//     for (let i=0;i<its.length;i++){
+//         it=its[i]; // the ith item
+//         // we check if the first item is a function in x
+//         if (!(isOneVariableFunction(it.items[0].toString()))){
+//             //console.log("Invalid input, not a valid function", it.items[0].toString());
+//             updateErrorMessage("Invalid piecewise format, not a valid function: " + it.items[0].toString());
+//             errorPosition = [[i,0]];
+//             return false;
+//         }
+//         // now we check that the second item is an inequality
+//         const ineq=transformAssingnments(it.items[1]); // we change the assignments into equalities
+//         console.log(ineq.toString()+" is valid: "+isInequality(ineq.toString()));
+//         if (!isInequality(ineq.toString())){
+//             errorPosition=[[i,1]];
+//             return false;
+//         }
+//         if ("op" in ineq){ //that is a single inequality or an equality
+//             // we check if op is ==, <, >, <=, >=
+//             if (ineq.op != "<" && ineq.op != ">" && 
+//                 ineq.op != "<=" && ineq.op != ">=" && 
+//                 ineq.op != "==" && ineq.op != "!="){
+//                 //console.log("Invalid input, not a valid inequality (wrong relations)", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid inequality (wrong relations): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             // we check that the number of arguments of the inequality are valid 
+//             // this is probably not necessary, since the parser should check this
+//             if (ineq.args.length!=2){
+//                 //console.log("Invalid input, not a valid inequality", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid inequality (wrong number of arguments): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }    
+//             // we check that the arguments of the inequality are valid
+//             // one must be constant and the other a variable
+//             const typeArgs = new Set(ineq.args.map((e)=> e.type));
+//             if (!typeArgs.has("SymbolNode")){ // at least one must be variable
+//                 //console.log("Invalid input, not a valid inequality (variable needed))", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid inequality (variable needed): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             if (ineq.args[0].type=="SymbolNode"){//equation of the form x op a
+//                 //console.log("Variable first");
+//                 if (!isMathConstant(ineq.args[1].toString())){
+//                     //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+//                     updateErrorMessage("Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString());
+//                     errorPosition = [[i,1]];
+//                     return false;
+//                 }
+//                 switch (ineq.op) {
+//                     case "<":
+//                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "<=": 
+//                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 1]);
+//                         partNumbers.push(1);    
+//                         break;   
+//                     case ">":
+//                         intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case ">=":
+//                         intervals.push([ineq.args[1].evaluate(), Infinity, 1, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "==":  
+//                         intervals.push([ineq.args[1].evaluate(), ineq.args[1].evaluate(), 1, 1]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "!=":
+//                         intervals.push([ineq.args[1].evaluate(), Infinity, 0, 0]);
+//                         partNumbers.push(i);
+//                         intervals.push([-Infinity, ineq.args[1].evaluate(), 0, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                 }
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }else{//equation of the form a op x
+//                 //console.log("variable second")
+//                 if (!isMathConstant(ineq.args[0].toString())){
+//                     //console.log("Invalid input, not a valid inequality (constant needed))", ineq.toString());
+//                     updateErrorMessage("Invalid piecewise format, not a valid inequality (constant needed): " + ineq.toString());
+//                     errorPosition = [[i,1]];
+//                     return false;
+//                 }
+//                 switch (ineq.op) {
+//                     case "<":
+//                         intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "<=": 
+//                         intervals.push([ineq.args[0].evaluate(), Infinity, 1, 0]);
+//                         partNumbers.push(i);
+//                         break;   
+//                     case ">":
+//                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 0]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case ">=":
+//                         intervals.push([ -Infinity,ineq.args[0].evaluate(), 0, 1]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "==":  
+//                         intervals.push([ineq.args[0].evaluate(), ineq.args[0].evaluate(), 1, 1]);
+//                         partNumbers.push(i);
+//                         break;
+//                     case "!=":
+//                         intervals.push([ineq.args[0].evaluate(), Infinity, 0, 0]);
+//                         intervals.push([-Infinity, ineq.args[0].evaluate(), 0, 0]);
+//                         partNumbers.push(i);
+//                         partNumbers.push(i);
+//                         break;
+//                 }
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }
+//             // need to check now that the other argument is constant
+//         }else{ // now we have a an inequality of the form a<=x<=b, a<x<=b, a<=x<b or a<x<b
+//             // the values a and b are the first and last arguments of the inequality
+//             // console.log(ineq.toString()," ",ineq.conditionals.length);
+//             //const keysIneq = Object.keys(ineq);
+//             //if (!(keysIneq[0]=="conditionals" && keysIneq[1]=="params" && keysIneq.length==2)){
+//             if (!(ineq.type=="RelationalNode")){
+//                 //console.log("Invalid input, not a valid inequality", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid inequality: " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             if (!(ineq.conditionals.length==2)){
+//                 //console.log("Invalid input, not a valid chain of inequalities (more than two)", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid chain of inequalities (more than two): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             if (!ineq.conditionals.every((e)=> e=="smaller" || e=="smallerEq")){
+//                 //console.log("Invalid input, not a valid chain of inequalities (only < and <= are allowed)", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid chain of inequalities (only < and <= are allowed): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             // we check that the arguments of the inequality are valid
+//             // the first and third must be constant and the second a variable
+//             //console.log(ineq.params);
+//             if (!(isMathConstant(ineq.params[0].toString()) && 
+//                   ineq.params[1].type=="SymbolNode") && 
+//                   isMathConstant(ineq.params[2].toString())){ // the middle parameter must be a symbol a op1 x op2 b
+//                 //console.log("Invalid input, not a valid inequality; two constant params and a symbol", ineq.toString());
+//                 updateErrorMessage("Invalid piecewise format, not a valid inequality (two constant params and a symbol): " + ineq.toString());
+//                 errorPosition = [[i,1]];
+//                 return false;
+//             }
+//             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smallerEq"){ // a<=x<=b
+//                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 1]);
+//                 partNumbers.push(i);
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }
+//             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smallerEq"){ // a<x<=b
+//                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 1]);
+//                 partNumbers.push(i);
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }
+//             if (ineq.conditionals[0]=="smallerEq" && ineq.conditionals[1]=="smaller"){ // a<=x<b
+//                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 1, 0]);
+//                 partNumbers.push(i);
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }
+//             if (ineq.conditionals[0]=="smaller" && ineq.conditionals[1]=="smaller"){ // a<x<b
+//                 intervals.push([ineq.params[0].evaluate(), ineq.params[2].evaluate(), 0, 0]);
+//                 partNumbers.push(i);
+//                 //console.log("Added interval: ", intervals[intervals.length-1].toString());
+//             }
+//         }
+//     } 
+//     //console.log("Intervals: ", intervals.map((e)=> e.toString()));    
+//     // now it remains to check that the intervals are disjoint     
+//     // first we sort the intervals by their first element
+//     let sortedIntervals=intervals.toSorted((a,b)=> (a[0]-b[0]==0) ? (a[1]-b[1]) : (a[0]-b[0]));
+//     //console.log("Intervals sorted: ", intervals.map((e)=> e.toString()));    
+//     for (let i=0;i<intervals.length-1;i++){
+//         const a = sortedIntervals[i];
+//         const b = sortedIntervals[i+1];
+//         if (a[1]> b[0]){ // if the end of the first interval is greater than the start of the second interval
+//             //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
             
-            // Find the original indices of the overlapping intervals
-            const aIndex = intervals.findIndex(interval => 
-                interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
-            );
-            const bIndex = intervals.findIndex((interval, idx) => 
-                idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
-            );
+//             // Find the original indices of the overlapping intervals
+//             const aIndex = intervals.findIndex(interval => 
+//                 interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
+//             );
+//             const bIndex = intervals.findIndex((interval, idx) => 
+//                 idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
+//             );
             
-            // Use partNumbers to get the correct part indices
-            const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
-            const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
+//             // Use partNumbers to get the correct part indices
+//             const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
+//             const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
             
-            // Create user-friendly error message
-            updateErrorMessage(`Overlap detected between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Please adjust the conditions to avoid overlap`);
-            errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
-            return false;
-        }
-        if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
-            //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
+//             // Create user-friendly error message
+//             updateErrorMessage(`Overlap detected between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Please adjust the conditions to avoid overlap`);
+//             errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
+//             return false;
+//         }
+//         if (a[1]==b[0] && a[3]*b[2]==1){ // if the end of the first interval is equal to the start of the second interval
+//             //console.log("Intervals are not disjoint: ", a.toString(), b.toString());
             
-            // Find the original indices of the overlapping intervals
-            const aIndex = intervals.findIndex(interval => 
-                interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
-            );
-            const bIndex = intervals.findIndex((interval, idx) => 
-                idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
-            );
+//             // Find the original indices of the overlapping intervals
+//             const aIndex = intervals.findIndex(interval => 
+//                 interval[0] === a[0] && interval[1] === a[1] && interval[2] === a[2] && interval[3] === a[3]
+//             );
+//             const bIndex = intervals.findIndex((interval, idx) => 
+//                 idx !== aIndex && interval[0] === b[0] && interval[1] === b[1] && interval[2] === b[2] && interval[3] === b[3]
+//             );
             
-            // Use partNumbers to get the correct part indices
-            const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
-            const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
+//             // Use partNumbers to get the correct part indices
+//             const aPartIndex = aIndex >= 0 && aIndex < partNumbers.length ? partNumbers[aIndex] : aIndex;
+//             const bPartIndex = bIndex >= 0 && bIndex < partNumbers.length ? partNumbers[bIndex] : bIndex;
             
-            // Create user-friendly error message
-            updateErrorMessage(`Boundary conflict between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Both parts include the same point. Please use < or > instead of <= or >=`);
-            errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
-            return false;
-        }
-    }
-    return true;
-}
+//             // Create user-friendly error message
+//             updateErrorMessage(`Boundary conflict between Part ${aPartIndex + 1} and Part ${bPartIndex + 1}. Both parts include the same point. Please use < or > instead of <= or >=`);
+//             errorPosition = [[aPartIndex, 1], [bPartIndex, 1]]; // Both conditions have errors
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
 // the output is a translation of the input string into a javascript expression "C ? A : B"
-// the input has already been checked with isPiecewise
+// the input has already been checked to be piecewise
 function parsePiecewise(txt){
     // simplifyConstant is a function that simplifies the constants in the expression
     // it also uses implicit multiplication  
@@ -946,17 +947,20 @@ export function checkMathSpell(func){
             }
         }
         //console.log("Inequalities are compatible? ",isListOfCompatibleInequalities(parts.map((e)=>e[1])));
+        let compatIneq = false;
+        console.log("Error in conditions?", errorInConditions);
+        if(!errorInConditions){ //if there are no errors in conditions, we check for compatibility of constraints
+            compatIneq = isListOfCompatibleInequalities(parts.map((e)=>e[1]));
+        }
         if (errorList.length > 0) {
-            if (!errorInConditions && !isListOfCompatibleInequalities(parts.map((e)=>e[1]))){
+            if (!errorInConditions && !compatIneq){
                 errorPosition.forEach((pos)=> errorList.push([errorMessage, pos]));
             }
             return ["0", errorList];
         }
-        // we check if the input is a piecewise function
-        const txt = functionDefPiecewiseToString(parts);
-        errorMessage = null;
-        errorPosition = [];
-        if (isPiecewise(txt)){
+        // for the input to be a piecewise function, the only thing left to see is if the constraints are compatible
+        if (compatIneq){
+            const txt = functionDefPiecewiseToString(parts);
             // jessiecode does does not understand E, e, pi, we translate them to mathjs constants
             const expr = transformMathConstants(math.parse(txt)).toString();
             return [parsePiecewise(expr), errorList];
