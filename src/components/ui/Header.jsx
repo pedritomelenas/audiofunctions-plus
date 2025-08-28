@@ -17,7 +17,7 @@ const Header = () => {
 
   // Detect operating system for keyboard shortcut display
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const shortcutKey = isMac ? '⌘K' : 'Ctrl+K';
+  const shortcutKey = isMac ? '⌘+K' : 'Ctrl+K';
 
   return (
     <header className="w-full py-2 px-4 flex justify-between border-b border-border shadow bg-background">      

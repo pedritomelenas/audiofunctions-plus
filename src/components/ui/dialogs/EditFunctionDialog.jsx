@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Delete, Music, Wind, Zap, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
-import { useInstruments } from "../../../context/InstrumentsContext"; // Add this import
+import { useInstruments } from "../../../context/InstrumentsContext";
+import {useInfoToast} from "../../../context/InfoToastContext"
 import { 
   getFunctionCount, 
   getFunctionDefN,
@@ -19,6 +20,7 @@ import {
 
 const EditFunctionDialog = ({ isOpen, onClose }) => {
   const { functionDefinitions, setFunctionDefinitions, graphSettings, focusChart, inputErrors, setInputErrors } = useGraphContext();
+  const {showInfoToast} = useInfoToast();
   const functionDefinitionsBackup = useRef(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [focusAfterAction, setFocusAfterAction] = useState(null);
@@ -168,6 +170,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
     setInputErrors({});
     
     onClose();
+    showInfoToast("Changes discarded", 1500)
     setTimeout(() => focusChart(), 100);
   };
 
@@ -184,7 +187,7 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
 
   const handleClose = () => {
     if (hasErrors) {
-      announceStatus("Function definitions have errors. Changes discard.");
+      announceStatus("Function definitions have errors. Changes discarded.");
       handleCancel();
       return;
     }
