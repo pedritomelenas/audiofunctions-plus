@@ -13,7 +13,7 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       stepSizeBackup.current = stepSize;
       console.log("Open: speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
     }
-  }, [isOpen, PlayFunction.speed, stepSize]);
+  }, [isOpen]);
 
   const handleCancel = () => {
     console.log("Cancel: restoring speed =", speedBackup.current, "stepSize =", stepSizeBackup.current);
@@ -44,6 +44,11 @@ const MovementAdjustmentsDialog = ({ isOpen, onClose }) => {
       if (onClose) {
         handleAccept();
       }
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancel();
     }
   };
 
