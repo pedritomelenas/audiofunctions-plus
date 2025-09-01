@@ -166,7 +166,7 @@
     --color-elem-background: #0a0a0a; 
     --color-border: var(--color-hc-border);
     --color-hover-border: var(--color-hc-accent);
-    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 80%);
+    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 0%);
     --color-focus-border: var(--color-hc-accent);
     --color-contrast-border: var(--color-hc-link); 
     
@@ -381,6 +381,21 @@ button:hover {
   outline-style: solid;
   outline-offset: -5px !important;
   outline-color: var(--color-hc-link);
+  color: var(--color-hc-background) !important; /* Schwarze Schrift */
+  font-weight: 700 !important; /* Fette Schrift */
+}
+
+/* Icons und Shortcuts in gehighlighteten Elementen auch schwarz machen */
+[data-theme="high-contrast"] .high-contrast-highlight-border svg {
+  color: var(--color-hc-background) !important; /* Schwarze Icons */
+}
+
+[data-theme="high-contrast"] .high-contrast-highlight-border .opacity-70 {
+  opacity: 1 !important; /* Vollständige Deckkraft für bessere Sichtbarkeit */
+}
+
+[data-theme="high-contrast"] .high-contrast-highlight-border .text-txt-subtitle {
+  color: var(--color-hc-background) !important; /* Schwarze Shortcuts */
 }
 
 
