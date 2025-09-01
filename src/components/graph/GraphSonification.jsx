@@ -19,7 +19,9 @@ const GraphSonification = () => {
     isAudioEnabled, 
     graphBounds,
     functionDefinitions,
-    stepSize // <-- get stepSize from context
+    stepSize, // <-- get stepSize from context
+    PlayFunction, // <-- get PlayFunction to detect exploration mode
+    explorationMode // <-- get exploration mode for robust detection
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -31,6 +33,7 @@ const GraphSonification = () => {
   const lastTickIndexRef = useRef(null); // Track last ticked index
   const tickSynthRef = useRef(null); // Reference to tick synth
   const tickChannelRef = useRef(null); // Reference to tick channel for panning
+  const isAtBoundaryRef = useRef(false); // Track if cursor is at a boundary
   
   const { getInstrumentByName } = useInstruments();
   const { isEditFunctionDialogOpen } = useDialog();
@@ -39,6 +42,8 @@ const GraphSonification = () => {
   const lastPitchClassesRef = useRef(new Map()); // Map to store last pitch class for discrete instruments
   const pinkNoiseRef = useRef(null); // Reference to pink noise synthesizer
   const [forceRecreate, setForceRecreate] = useState(false); // State to force recreation of sonification pipeline
+  const batchTickCountRef = useRef(0); // Track tick count since batch exploration started
+  const batchResetDoneRef = useRef(false); // Track if batch reset has been done
 
   // Initialize tick synth
   useEffect(() => {
@@ -179,6 +184,10 @@ const GraphSonification = () => {
       
       // Clear last pitch classes
       lastPitchClassesRef.current.clear();
+      
+      // Reset batch exploration tracking
+      batchTickCountRef.current = 0;
+      batchResetDoneRef.current = false;
       
       // Reset the flag
       setForceRecreate(false);
@@ -461,14 +470,48 @@ const GraphSonification = () => {
       return;
     }
 
+    // Reset pitch classes when batch exploration starts
+    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play" && !batchResetDoneRef.current) {
+      console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
+      lastPitchClassesRef.current.clear();
+      batchTickCountRef.current = 0;
+      batchResetDoneRef.current = true;
+    } else if (explorationMode !== "batch") {
+      // Reset flags when not in batch mode
+      batchResetDoneRef.current = false;
+      batchTickCountRef.current = 0;
+    }
+
     // Check if any active function has a y-value below zero
     const hasNegativeY = cursorCoords.some(coord => {
       const y = parseFloat(coord.y);
       return !isNaN(y) && isFinite(y) && y < 0;
     });
 
-    // Only start pink noise if there's a negative y value
-    if (hasNegativeY) {
+    // Check if any cursor is at a boundary (we need to check this before processing individual coordinates)
+    let isAnyAtBoundary = false;
+    for (const coord of cursorCoords) {
+      const x = parseFloat(coord.x);
+      const y = parseFloat(coord.y);
+      
+      // Calculate tolerance based on current graph bounds to be more robust with zoom
+      const xRange = graphBounds.xMax - graphBounds.xMin;
+      const yRange = graphBounds.yMax - graphBounds.yMin;
+      const tolerance = Math.max(0.02, Math.min(xRange, yRange) * 0.001); // Adaptive tolerance
+      
+      const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < tolerance * 0.1;
+      const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < tolerance * 0.1;
+      const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < tolerance * 0.1;
+      const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < tolerance * 0.1;
+      
+      if (isAtLeftBoundary || isAtRightBoundary || isAtBottomBoundary || isAtTopBoundary) {
+        isAnyAtBoundary = true;
+        break;
+      }
+    }
+
+    // Only start pink noise if there's a negative y value AND not at a boundary
+    if (hasNegativeY && !isAnyAtBoundary) {
       startPinkNoise();
     } else {
       stopPinkNoise();
@@ -529,9 +572,10 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
-      // Handle tick sound with panning
-      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
-        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+      // Handle tick sound with panning - only in smooth exploration modes (keyboard smooth, mouse, or batch)
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && 
+          (explorationMode === "keyboard_smooth" || explorationMode === "mouse" || explorationMode === "batch")) {
+        let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
           // Update tick synth panning based on x position
           if (tickChannelRef.current) {
@@ -539,7 +583,31 @@ const GraphSonification = () => {
           }
           tickSynthRef.current?.triggerAttackRelease("C6", "16n");
           lastTickIndexRef.current = n;
+          
+          // Increment tick count for batch exploration
+          if (explorationMode === "batch") {
+            batchTickCountRef.current++;
+          }
         }
+      }
+
+      // Check for special events first (this sets the boundary state)
+      // Skip boundary detection for the first 5 ticks of batch exploration
+      const shouldSkipBoundaryDetection = explorationMode === "batch" && batchTickCountRef.current <= 5;
+      
+      if (!shouldSkipBoundaryDetection) {
+        await checkChartBoundaryEvents(functionId, coord);
+        await checkYAxisIntersectionEvents(functionId, coord);
+        await checkDiscontinuityEvents(functionId, coord);
+      } else {
+        // Reset boundary state during skipped detection to prevent false positives
+        isAtBoundaryRef.current = false;
+      }
+
+      // If at boundary, stop sonification and return
+      if (isAtBoundaryRef.current) {
+        stopTone(functionId);
+        return;
       }
 
       // Get the function's instrument configuration
@@ -569,11 +637,6 @@ const GraphSonification = () => {
         // Stop the tone for this function when it's not valid or outside bounds
         stopTone(functionId);
       }
-
-      // Check for special events
-      await checkChartBoundaryEvents(functionId, coord);
-      await checkYAxisIntersectionEvents(functionId, coord);
-      await checkDiscontinuityEvents(functionId, coord);
     });
   }, [cursorCoords, isAudioEnabled, isEditFunctionDialogOpen, functionDefinitions, graphBounds, stepSize]);
 
@@ -581,13 +644,17 @@ const GraphSonification = () => {
   const checkChartBoundaryEvents = async (functionId, coords) => {
     const x = parseFloat(coords.x);
     const y = parseFloat(coords.y);
-    const tolerance = 0.02; // Same tolerance as in GraphView
+    
+    // Calculate tolerance based on current graph bounds to be more robust with zoom
+    const xRange = graphBounds.xMax - graphBounds.xMin;
+    const yRange = graphBounds.yMax - graphBounds.yMin;
+    const tolerance = Math.max(0.02, Math.min(xRange, yRange) * 0.001); // Adaptive tolerance
     
     // Check if cursor is at any of the four boundaries (cursor is clamped, so it can't go beyond)
-    const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < 0.001;
-    const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < 0.001;
-    const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < 0.001;
-    const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < 0.001;
+    const isAtLeftBoundary = Math.abs(x - (graphBounds.xMin + tolerance)) < tolerance * 0.1;
+    const isAtRightBoundary = Math.abs(x - (graphBounds.xMax - tolerance)) < tolerance * 0.1;
+    const isAtBottomBoundary = Math.abs(y - (graphBounds.yMin + tolerance)) < tolerance * 0.1;
+    const isAtTopBoundary = Math.abs(y - (graphBounds.yMax - tolerance)) < tolerance * 0.1;
     
     // Get previous boundary state for this function
     const prevState = prevBoundaryStateRef.current.get(functionId) || {
@@ -601,9 +668,12 @@ const GraphSonification = () => {
     else if (isAtBottomBoundary) boundaryKey = `${functionId}_bottom`;
     else if (isAtTopBoundary) boundaryKey = `${functionId}_top`;
     
-    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}`);
+    console.log(`Boundary check for function ${functionId}: boundaryKey=${boundaryKey}, x=${x}, y=${y}, graphBounds=${JSON.stringify(graphBounds)}`);
     
     if (boundaryKey) {
+      // Set boundary state to true when at boundary
+      isAtBoundaryRef.current = true;
+      
       // Check if we haven't recently triggered this specific boundary to avoid spam
       const lastTriggered = boundaryTriggeredRef.current.get(boundaryKey);
       const now = Date.now();
@@ -613,6 +683,9 @@ const GraphSonification = () => {
         boundaryTriggeredRef.current.set(boundaryKey, now);
         console.log(`Chart boundary event triggered for function ${functionId} at boundary: ${boundaryKey}`);
       }
+    } else {
+      // Clear boundary state when not at boundary
+      isAtBoundaryRef.current = false;
     }
     
     // Update the previous boundary state
@@ -686,6 +759,11 @@ const GraphSonification = () => {
 
   // Helper function to play audio samples
   const playAudioSample = async (sampleName, options = {}) => {
+    // Don't play samples if audio is not enabled
+    if (!isAudioEnabled) {
+      return;
+    }
+    
     try {
       await audioSampleManager.playSample(sampleName, options);
     } catch (error) {
@@ -696,6 +774,11 @@ const GraphSonification = () => {
   // Example function to demonstrate how to play samples during sonification
   // You can call this function when specific events occur
   const triggerSampleEvent = async (eventType) => {
+    // Don't trigger samples if audio is not enabled
+    if (!isAudioEnabled) {
+      return;
+    }
+
     try {
       switch (eventType) {
         case 'chart_border':

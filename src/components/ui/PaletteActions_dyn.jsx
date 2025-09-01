@@ -1,38 +1,56 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music, Ruler } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN, setFunctionInstrumentN, getFunctionInstrumentN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
 import { setTheme } from "../../utils/theme"; // Import the theme utility
 import { useZoomBoard } from "./KeyboardHandler"; // Import the zoom utility
+import { useAnnouncement } from '../../context/AnnouncementContext';
+import { useInfoToast } from '../../context/InfoToastContext';
 
 export const useDynamicKBarActions = () => {
-  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, setGraphBounds, updateCursor } = useGraphContext();
+  const { isAudioEnabled, setIsAudioEnabled, cursorCoords, functionDefinitions, setFunctionDefinitions, setPlayFunction, graphSettings, graphBounds, setGraphBounds, updateCursor, focusChart } = useGraphContext();
   const { openDialog } = useDialog();
-
-  // Check if in read-only mode
+  const { announce } = useAnnouncement();
+  const { showInfoToast } = useInfoToast();
+  
+  // Check if in read-only or full-restriction mode
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
+  const isFullyRestricted = graphSettings?.restrictionMode === "full-restriction";
 
   const ZoomBoard = useZoomBoard();
 
-  const showCoordinatesAlert = () => {
-    console.log("Showing coordinates alert");
+  const showCoordinates = () => {
     if (!cursorCoords || cursorCoords.length === 0) {
-        alert("No cursor position available");
+        announce("No cursor position available");
         return;
     }
 
     const messages = cursorCoords.map(coord => {
         const functionIndex = functionDefinitions.findIndex(f => f.id === coord.functionId);
         const functionName = getFunctionNameN(functionDefinitions, functionIndex) || `Function ${functionIndex + 1}`;
-        return `${functionName}: x = ${coord.x}, y = ${coord.y}`;
+        const roundedX = Number(coord.x).toFixed(2);
+        const roundedY = Number(coord.y).toFixed(2);
+        return `${functionName}: x = ${roundedX}, y = ${roundedY}`;
     });
 
     const message = messages.join('\n');
-    alert(`Current Coordinates:\n\n${message}`);
+    announce(`Current Coordinates:\n\n${message}`);
+    showInfoToast(`Current Coordinates:\n\n${message}`);
   };
+
+  const showViewBounds = () => {
+    const { xMin, xMax, yMin, yMax } = graphBounds;
+    const roundedXMin = Number(xMin).toFixed(2);
+    const roundedXMax = Number(xMax).toFixed(2);
+    const roundedYMin = Number(yMin).toFixed(2);
+    const roundedYMax = Number(yMax).toFixed(2);
+    const message = `Current View Bounds:\n\nX: [${roundedXMin}, ${roundedXMax}]\nY: [${roundedYMin}, ${roundedYMax}]`;
+    announce(message);
+    showInfoToast(message);
+  }
 
   // Switch to next active function
   const switchToNextFunction = () => {
@@ -63,6 +81,11 @@ export const useDynamicKBarActions = () => {
     }));
     
     setFunctionDefinitions(updatedDefinitions);
+    
+    // Announce the switch
+    const functionName = getFunctionNameN(functionDefinitions, nextIndex) || `Function ${nextIndex + 1}`;
+    announce(`Switched to ${functionName}`);
+    showInfoToast(`${functionName}`, 1500);
   };
 
   // Show specific function and hide all others
@@ -75,6 +98,11 @@ export const useDynamicKBarActions = () => {
     }));
     
     setFunctionDefinitions(updatedDefinitions);
+    
+    // Announce the switch
+    const functionName = getFunctionNameN(functionDefinitions, targetIndex) || `Function ${targetIndex + 1}`;
+    announce(`Switched to ${functionName}`);
+    showInfoToast(`${functionName}`, 1500);
   };
 
   // Toggle sonification type for active function
@@ -93,6 +121,9 @@ export const useDynamicKBarActions = () => {
     
     const updatedDefinitions = setFunctionInstrumentN(functionDefinitions, activeIndex, newInstrument);
     setFunctionDefinitions(updatedDefinitions);
+
+    announce(`Sonification type changed to ${sonificationType}`);
+    showInfoToast(`Sonification: ${sonificationType}`, 1500);
     
     console.log(`Sonification type changed to ${sonificationType} (${newInstrument}) for active function`);
   };
@@ -129,7 +160,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["p"],
       keywords: "audio, sound, enable, disable, start, stop, toggle",
       parent: "quick-options",
-      perform: () => setIsAudioEnabled(prev => !prev),
+      perform: () => {setIsAudioEnabled(prev => !prev); setTimeout(() => focusChart(), 100);},
       icon: isAudioEnabled 
         ? <VolumeX className="size-5 shrink-0 opacity-70" /> 
         : <Volume2 className="size-5 shrink-0 opacity-70" />,
@@ -139,10 +170,19 @@ export const useDynamicKBarActions = () => {
       id: "show-coordinates",
       name: "Show Current Coordinates",
       shortcut: ["c"],
-      keywords: "coordinates position cursor show alert accessibility",
+      keywords: "coordinates position location",
       parent: "quick-options",
-      perform: showCoordinatesAlert,
+      perform: () => {showCoordinates(); setTimeout(() => focusChart(), 100);},
       icon: <MapPin className="size-5 shrink-0 opacity-70" />,
+    },
+    {
+      id: "show-view-bounds",
+      name: "Show current view bounds",
+      shortcut: ["v"],
+      keywords: "bound view range axis",
+      parent: "quick-options",
+      perform: () => {showViewBounds(); setTimeout(() => focusChart(), 100);},
+      icon: <Ruler className="size-5 shrink-0 opacity-70" />,
     },
 
     // Switch function
@@ -152,7 +192,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["n"],
       keywords: "switch, function, next, rotate, cycle",
       parent: "quick-options",
-      perform: switchToNextFunction,
+      perform: () => {switchToNextFunction(); setTimeout(() => focusChart(), 100);},
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
     
@@ -160,10 +200,10 @@ export const useDynamicKBarActions = () => {
     {
       id: "play-function",
       name: "Play Function",
-      shortcut: ["b"],
+      shortcut: ["b"], // Removed to avoid conflict with keyboard handler
       keywords: "play, run, complete, automatic, auto, autoplay",
       parent: "quick-options",
-      perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));},
+      perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active })); setTimeout(() => focusChart(), 100);},
       icon: <Play className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -174,7 +214,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["i"],
       keywords: "sonification, instrument, discrete, continuous, guitar, clarinet, toggle",
       parent: "quick-options",
-      perform: toggleSonificationType,
+      perform: () => {toggleSonificationType(); setTimeout(() => focusChart(), 100);},
       icon: <Music className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -191,11 +231,16 @@ export const useDynamicKBarActions = () => {
         if (defaultView && Array.isArray(defaultView) && defaultView.length === 4) {
             const [xMin, xMax, yMax, yMin] = defaultView;
             setGraphBounds({ xMin, xMax, yMin, yMax });
-        } else {
+          } else {
             // Fallback to hardcoded values if defaultView is not available
             setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
-        }
-        updateCursor(0);
+          }
+          updateCursor(0);
+          
+          announce("View reset to default values");
+          showInfoToast("Default view", 1500);
+
+          setTimeout(() => focusChart(), 100);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -245,7 +290,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["n"],
       keywords: "switch, function, next, rotate, cycle",
       parent: "select-function",
-      perform: switchToNextFunction,
+      perform: () => {switchToNextFunction(); setTimeout(() => focusChart(), 100);},
       icon: <ListRestart className="size-5 shrink-0 opacity-70" />,
     },
 
@@ -259,7 +304,7 @@ export const useDynamicKBarActions = () => {
         shortcut: index < 9 ? [(index + 1).toString()] : undefined, // Add hotkeys 1-9 for first 9 functions
         keywords: `function, show, display, ${functionName}`,
         parent: "select-function",
-        perform: () => showOnlyFunction(index),
+        perform: () => {showOnlyFunction(index); setTimeout(() => focusChart(), 100);},
         icon: <Eye className="size-5 shrink-0 opacity-70" />,
       };
     }),
@@ -307,18 +352,19 @@ export const useDynamicKBarActions = () => {
     }),
     */
 
-    // Edit functions
-    {
-      id: "change-function",
-      name: isReadOnly ? "View Functions" : "Edit Functions",
-      shortcut: ["f"],
-      keywords: isReadOnly 
-        ? "function, view function, view graph, graph, show function, display function"
-        : "function, change function, change graph, graph, edit function, edit graph",
-      //  section: "",
-      perform: () => openDialog("edit-function"),
-      icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
-    },
+    // Edit functions - only show if not in full-restriction mode
+    ...(!isFullyRestricted ? [
+      {
+        id: "change-function",
+        name: isReadOnly ? "View Functions" : "Edit Functions",
+        shortcut: ["f"],
+        keywords: isReadOnly 
+          ? "function, view function, view graph, graph, show function, display function"
+          : "function, change function, change graph, graph, edit function, edit graph",
+        perform: () => {openDialog("edit-function");},
+        icon: <ChartSpline className="size-5 shrink-0 opacity-70" />,
+      }
+    ] : []),
 
 
 
@@ -367,6 +413,11 @@ export const useDynamicKBarActions = () => {
             setGraphBounds({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
         }
         updateCursor(0);
+
+        announce("View reset to default values");
+        showInfoToast("Default view", 1500);
+
+        setTimeout(() => focusChart(), 100);
       },
       icon: <RotateCcw className="size-5 shrink-0 opacity-70" />,
     },
@@ -376,30 +427,13 @@ export const useDynamicKBarActions = () => {
 
 
     // Import/Export - only show if not in read-only mode
-    ...(!isReadOnly ? [
+    ...(!isReadOnly && !isFullyRestricted ? [
       {
         id: "import-export",
         name: "Import/Export",
         keywords: "import, export, json, file, save, load, share",
         icon: <Import className="size-5 shrink-0 opacity-70" />,
-      },
-      {
-        id: "import-json",
-        name: "Import JSON",
-        shortcut: [""],
-        keywords: "import, json, upload, file",
-        parent: "import-export",
-        perform: () => openDialog("import-json"),
-        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
-      },
-      {
-        id: "export-json",
-        name: "Export as JSON",
-        shortcut: [""],
-        keywords: "export, json, download, save, file",
-        parent: "import-export",
-        perform: () => openDialog("export-json"),
-        icon: <FileDown className="size-5 shrink-0 opacity-70" />,
+        priority: Priority.LOW      
       },
       {
         id: "share",
@@ -409,6 +443,24 @@ export const useDynamicKBarActions = () => {
         parent: "import-export",
         perform: () => openDialog("share"),
         icon: <Share2 className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "import-json",
+        name: "Import from file",
+        shortcut: [""],
+        keywords: "import, json, upload, file",
+        parent: "import-export",
+        perform: () => openDialog("import-json"),
+        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "export-json",
+        name: "Export as file",
+        shortcut: [""],
+        keywords: "export, json, download, save, file",
+        parent: "import-export",
+        perform: () => openDialog("export-json"),
+        icon: <FileDown className="size-5 shrink-0 opacity-70" />,
       }
     ] : []),
 
@@ -429,7 +481,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("system")},
+      perform: () => {setTheme("system"); announce("Theme set to system preference");},
       icon: <SunMoon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -438,7 +490,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("light")},
+      perform: () => {setTheme("light"); announce("Theme set to light mode");},
       icon: <Sun className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -447,7 +499,7 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("dark")},
+      perform: () => {setTheme("dark"); announce("Theme set to dark mode");},
       icon: <Moon className="size-5 shrink-0 opacity-70" />,
     },
     {
@@ -456,13 +508,13 @@ export const useDynamicKBarActions = () => {
       // shortcut: [""],
       keywords: "theme",
       parent: "change-theme",
-      perform: () => {setTheme("high-contrast")},
+      perform: () => {setTheme("high-contrast"); announce("Theme set to high contrast mode");},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
 
     
 
-  ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly]);
+  ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly, focusChart]);
 
   return null;
 };

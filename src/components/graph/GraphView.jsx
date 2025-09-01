@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all, forEach } from 'mathjs'
-import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
+import { checkMathSpell, transformAssingnments, transformMathConstants, functionDefPiecewiseToString } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import * as Tone from "tone";
+import { useAnnouncement } from '../../context/AnnouncementContext';
 
 const config = { }
 const math = create(all, config)
@@ -15,13 +16,21 @@ const X_AXIS_DIVISIONS = 10;
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
-// it should be previusly checked that it is a valid piecewise function or a math expression
+// it should be previously checked that it is a valid piecewise function or a math expression
 function createEndPoints(func,board){
     // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
     // we are also transforming the math constants to be able to parse them
     // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
     console.log("Creating endpoints for function: ", func);
-    const txtraw= func.functionString
+    if (func.type === "function"){
+      return [[],[]];
+    }
+    if (func.type != "piecewise_function"){
+      console.error("createEndPoints: function type not recognized");
+      return [];
+    }
+    const  txtraw = functionDefPiecewiseToString(func.functionDef);
+    console.log("Raw piecewise function string:", txtraw);
     const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
     const types_to_be_deleted= ["isolated", "unequal"]; // we remove these types of points of interest, since they will be redefined
     const filteredPoints = func.pointOfInterests.filter(
@@ -40,7 +49,7 @@ function createEndPoints(func,board){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<=, >=, ==}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
@@ -69,7 +78,7 @@ function createEndPoints(func,board){
                 }
             }
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     let fv = l[i].items[0].evaluate({x:v});
                     if (ineq.op == "!="){ 
@@ -131,7 +140,8 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrors, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
+  const { announce } = useAnnouncement();
   let endpoints = [];
   let snapaccuracy;
   const graphObjectsRef = useRef(new Map()); // Store graph objects for each function
@@ -145,14 +155,17 @@ const GraphView = () => {
   const prevXRef = useRef(null); // Track previous x value globally
   const divisionPointsRef = useRef([]); // Store division points
   const lastTickIndexRef = useRef(null); // Track last ticked index globally
+  const mouseTimeoutRef = useRef(null); // Track mouse movement timeout
+  const handlersRef = useRef({}); // Store event handlers for cleanup
 
   useEffect(() => {
     const board = JXG.JSXGraph.initBoard("jxgbox", {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       grid: {
         cssClass: "grid",
-        gridX: stepSize, // Grid-Abstand für X-Achse
-        gridY: stepSize, // Grid-Abstand für Y-Achse
+        majorStep: stepSize
+        // gridX: stepSize, // Grid-Abstand für X-Achse
+        // gridY: stepSize, // Grid-Abstand für Y-Achse
       },      
       axis: {
         cssClass: "axis", 
@@ -172,7 +185,25 @@ const GraphView = () => {
       });
 
     board.removeEventHandlers(); // remove all event handlers
-    board.addPointerEventHandlers()
+    board.addPointerEventHandlers(); // Re-enable pointer handlers for mouse movement
+    
+    // Add click prevention handler
+    const container = document.getElementById('jxgbox');
+    
+    const preventClickHandler = (event) => {
+      // Prevent all mouse clicks
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    };
+
+    // Add the event listeners to prevent clicks
+    container.addEventListener('click', preventClickHandler, true);
+    container.addEventListener('mousedown', preventClickHandler, true);
+    container.addEventListener('mouseup', preventClickHandler, true);
+    
+    // Store the handler in the ref for cleanup
+    handlersRef.current = { preventClickHandler };
 
     boardRef.current = board;
     snapaccuracy = 3/board.unitX;
@@ -198,16 +229,117 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
-      let expr = checkMathSpell(func.functionString);
+      let expr;
+      let hasError = false;
+      
+      // Check math spell and syntax
+      let [exprResult, errList] = checkMathSpell(func);
+      expr = exprResult;
 
-      try {
-        graphFormula = board.jc.snippet(expr, true, "x", true);
-        setInputErrorMes(null);
-      } catch (err) {
-        console.error(`Error parsing expression for function ${func.id}: `, err);
-        setInputErrorMes(`Invalid function ${func.functionName}. Please check your input.`);
+      console.log("List of errors: ",errList);
+      
+      // Clear all existing errors for this function first
+      setInputErrors(prev => {
+        const newErrors = { ...prev };
+        // Remove all entries for this function (including part-specific errors)
+        Object.keys(newErrors).forEach(key => {
+          if (key === func.id || key.startsWith(`${func.id}_part_`)) {
+            delete newErrors[key];
+          }
+        });
+        return newErrors;
+      });
+      
+      if (errList.length > 0) {
+        // Process all errors, not just the first one
+        let functionErrors = [];
+        let conditionErrors = [];
+        let generalError = null;
+        
+        errList.forEach(([errMMsg, errPos]) => {
+          console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
+          
+          if (func.type === "piecewise_function") {
+            // Check if errPos is an array of positions (for overlap errors)
+            if (Array.isArray(errPos) && errPos.length > 0 && Array.isArray(errPos[0])) {
+              // Multiple positions (e.g., overlap errors: [[0,1],[1,1]])
+              errPos.forEach(([partIndex, fieldIndex]) => {
+                if (fieldIndex === 0) {
+                  // Function error
+                  if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                  functionErrors[partIndex].push(errMMsg);
+                } else {
+                  // Condition error
+                  if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                  conditionErrors[partIndex].push(errMMsg);
+                }
+              });
+            } else if (Array.isArray(errPos) && errPos.length === 2 && typeof errPos[0] === 'number') {
+              // Single specific part error: errPos = [partIndex, fieldIndex]
+              const [partIndex, fieldIndex] = errPos;
+              if (fieldIndex === 0) {
+                // Function error
+                if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                functionErrors[partIndex].push(errMMsg);
+              } else {
+                // Condition error
+                if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                conditionErrors[partIndex].push(errMMsg);
+              }
+            } else {
+              // General piecewise function error
+              generalError = errMMsg;
+            }
+          } else {
+            // Regular function error
+            generalError = errMMsg;
+          }
+        });
+        
+        // Build error object for this function
+        if (func.type === "piecewise_function") {
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              functionErrors: functionErrors,
+              conditionErrors: conditionErrors,
+              generalError: generalError
+            }
+          }));
+        } else {
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              generalError: generalError
+            }
+          }));
+        }
+        
+        hasError = true;
         expr = "0";
         graphFormula = 0;
+      } else {
+        // Clear errors if no issues found
+        setInputErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[func.id];
+          return newErrors;
+        });
+        
+        try {
+          graphFormula = board.jc.snippet(expr, true, "x", true);
+        } catch (err) {
+          console.error(`Error parsing expression for function ${func.id}: `, err);
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              generalError: "Invalid function. Please check your input."
+            }
+          }));
+          hasError = true;
+          expr = "0";
+          graphFormula = 0;
+        }
       }
 
       // Store the parsed expression
@@ -223,8 +355,20 @@ const GraphView = () => {
   
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const funcEndpoints = createEndPoints(func, board);
-        endpoints = [...endpoints, ...funcEndpoints];
+        try {
+          const funcEndpoints = createEndPoints(func, board);
+          endpoints = [...endpoints, ...funcEndpoints];
+        } catch (endpointErr) {
+          console.error(`Error creating endpoints for ${func.functionName}:`, endpointErr);
+          // Update error if endpoint creation fails
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: "Error creating piecewise endpoints. Please check your input.",
+              isGeneral: true
+            }
+          }));
+        }
       }
 
       // Find last known position for this function's cursor
@@ -252,6 +396,7 @@ const GraphView = () => {
         size: 5,
         fixed: true,
         highlight: false,
+        showInfobox: false,
         fillColor: func.color || "#0000FF",
         strokeColor: func.color || "#0000FF"
       });
@@ -281,10 +426,10 @@ const GraphView = () => {
       let l = [];
       activeFunctions.forEach(func => {
         func.pointOfInterests.forEach((point) =>{ 
-          console.log("New x of interest:", point.x); 
+          //console.log("New x of interest:", point.x); 
           l.push(point.x);
         }); 
-        console.log("Points of interest: (x-coordinates)  ", l.toString());
+        //console.log("Points of interest: (x-coordinates)  ", l.toString());
       });
       
       const sl = l.filter(e => Math.abs(e-x) < snapaccuracy);
@@ -376,7 +521,7 @@ const GraphView = () => {
 
       // --- X axis tick logic (track last ticked index, no epsilon, not reset on resume) ---
       if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled) {
-        let n = Math.floor((x - graphBounds.xMin) / stepSize);
+        let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
           // tickSynth.triggerAttackRelease("C6", "16n"); // Removed tick synth
           lastTickIndexRef.current = n;
@@ -425,9 +570,15 @@ const GraphView = () => {
         }
         
         // Use direction to determine movement direction
-        const actualSpeed = PlayFunction.source === "keyboard" 
-          ? Math.abs(PlayFunction.speed) * PlayFunction.direction 
-          : PlayFunction.speed;
+        let actualSpeed;
+        if (PlayFunction.source === "keyboard") {
+          actualSpeed = Math.abs(PlayFunction.speed) * PlayFunction.direction;
+        } else if (PlayFunction.source === "play") {
+          // For batch sonification, use the speed directly (positive = right, negative = left)
+          actualSpeed = PlayFunction.speed;
+        } else {
+          actualSpeed = PlayFunction.speed;
+        }
         PlayFunction.x += ((graphBounds.xMax - graphBounds.xMin) / (1000 / PlayFunction.interval)) * (actualSpeed / 100);
         
         // Clamp PlayFunction.x to prevent crossing boundaries
@@ -441,10 +592,25 @@ const GraphView = () => {
         updateCursors(PlayFunction.x);
         
         // Stop play function if we've reached the boundaries
-        if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
-          clearInterval(currentTimerRef.current);
-          currentTimerRef.current = null;
-          setPlayFunction(prev => ({ ...prev, active: false }));
+        // For batch sonification, only stop when reaching the opposite boundary
+        if (PlayFunction.source === "play") {
+          // For batch sonification, stop when reaching the right boundary (if speed > 0) or left boundary (if speed < 0)
+          const shouldStop = (PlayFunction.speed > 0 && PlayFunction.x >= graphBounds.xMax - tolerance) ||
+                           (PlayFunction.speed < 0 && PlayFunction.x <= graphBounds.xMin + tolerance);
+          if (shouldStop) {
+            clearInterval(currentTimerRef.current);
+            currentTimerRef.current = null;
+            setPlayFunction(prev => ({ ...prev, active: false }));
+            setExplorationMode("none");
+          }
+        } else {
+          // For keyboard exploration, stop at either boundary
+          if ((PlayFunction.x >= graphBounds.xMax - tolerance) || (PlayFunction.x <= graphBounds.xMin + tolerance)) {
+            clearInterval(currentTimerRef.current);
+            currentTimerRef.current = null;
+            setPlayFunction(prev => ({ ...prev, active: false }));
+            setExplorationMode("none");
+          }
         }
       }, PlayFunction.interval);
     } else {
@@ -463,11 +629,21 @@ const GraphView = () => {
     }
 
     const moveHandler = (event) => {
-      if (!playActiveRef.current && board && board.jc) {
-        const coords = board.getUsrCoordsOfMouse(event);
-        const x = coords[0];
-        const y = coords[1];
-        updateCursors(x, y);
+      if (board && board.jc) {
+        // Only handle mouse movement if not in keyboard exploration mode
+        if (!playActiveRef.current) {
+          setExplorationMode("mouse");
+          const coords = board.getUsrCoordsOfMouse(event);
+          const x = coords[0];
+          const y = coords[1];
+          updateCursors(x, y);
+          
+          // Reset exploration mode to "none" after a short delay when mouse stops moving
+          clearTimeout(mouseTimeoutRef.current);
+          mouseTimeoutRef.current = setTimeout(() => {
+            setExplorationMode("none");
+          }, 100); // 100ms delay
+        }
       }
     };
 
@@ -479,6 +655,20 @@ const GraphView = () => {
         clearInterval(currentTimerRef.current);
         currentTimerRef.current = null;
       }
+      // Clear mouse timeout
+      if (mouseTimeoutRef.current !== null) {
+        clearTimeout(mouseTimeoutRef.current);
+        mouseTimeoutRef.current = null;
+      }
+      // Remove event handlers
+      const container = document.getElementById('jxgbox');
+      if (container) {
+        container.removeEventListener('click', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mousedown', handlersRef.current.preventClickHandler, true);
+        container.removeEventListener('mouseup', handlersRef.current.preventClickHandler, true);
+      }
+      board.off('move', moveHandler);
+      
       board.unsuspendUpdate();
       JXG.JSXGraph.freeBoard(board);
     };
@@ -501,58 +691,85 @@ const GraphView = () => {
     }
   }, [graphBounds]);
 
+  // Focus the chart when component mounts
   useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-
-    const handleKeyDown = (e) => {
-      // only handle key events when the wrapper is focused
-      if (document.activeElement !== wrapper) return;
-
-      // ESCAPE to exit the application
-      if (e.key === 'Escape') {
-        wrapper.blur(); // Focus entfernen
-        return;
-      }
-      
-      // TAB to allow normal tabbing through elements
-      if (e.key === 'Tab') {
-        return; // Not preventing default to allow normal tabbing
-      }
-
-      // Only intercept graph-specific keys
-      const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
-      if (!graphKeys.includes(e.key)) {
-        return; // Other keys are passed through normally
-      }
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      switch (e.key) {
-        case 'ArrowLeft':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
-          break;
-        case 'ArrowRight':
-          setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
-          break;
-      }
-    };
-
-    wrapper.addEventListener('keydown', handleKeyDown);
-    return () => wrapper.removeEventListener('keydown', handleKeyDown);
+    if (wrapperRef.current) {
+      wrapperRef.current.focus();
+    }
   }, []);
+
+  // useEffect(() => {
+  //   const wrapper = wrapperRef.current;
+  //   if (!wrapper) return;
+
+  //   const handleKeyDown = (e) => {
+  //     // only handle key events when the wrapper is focused
+  //     if (document.activeElement !== wrapper) return;
+
+  //     // ESCAPE to exit the application
+  //     if (e.key === 'Escape') {
+  //       wrapper.blur(); // Focus entfernen
+  //       return;
+  //     }
+      
+  //     // TAB to allow normal tabbing through elements
+  //     if (e.key === 'Tab') {
+  //       return; // Not preventing default to allow normal tabbing
+  //     }
+
+
+
+  //     // Only intercept graph-specific keys
+  //     const graphKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',];
+  //     if (!graphKeys.includes(e.key)) {
+  //       return; // Other keys are passed through normally
+  //     }
+      
+  //     e.preventDefault();
+  //     e.stopPropagation();
+      
+  //     switch (e.key) {
+  //       case 'ArrowLeft':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: -1 }));
+  //         break;
+  //       case 'ArrowRight':
+  //         setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: 1 }));
+  //         break;
+  //     }
+  //   };
+
+  //   wrapper.addEventListener('keydown', handleKeyDown);
+  //   return () => wrapper.removeEventListener('keydown', handleKeyDown);
+  // }, []);
 
   return (
     <div 
       ref={wrapperRef}
+      id="chart"
       role="application"
       tabIndex={0}
       aria-label="Interactive graph."
-      style={{ outline: 'none', width: "100%", height: "100%" }}
+      style={{ 
+        outline: 'none', 
+        width: "100%", 
+        height: "100%",
+        border: '2px solid transparent',
+        borderRadius: '4px',
+        transition: 'border-color 0.2s ease'
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = 'var(--color-primary)';
+        e.target.style.boxShadow = '0 0 0 2px var(--color-primary)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'transparent';
+        e.target.style.boxShadow = 'none';
+      }}
     >
       <div 
         ref={graphContainerRef}
+        aria-hidden="true"
+        role="presentation"
         id="jxgbox" 
         style={{ width: "100%", height: "100%", outline: 'none' }}
       />

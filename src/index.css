@@ -166,7 +166,7 @@
     --color-elem-background: #0a0a0a; 
     --color-border: var(--color-hc-border);
     --color-hover-border: var(--color-hc-accent);
-    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 80%);
+    --color-hover-full: color-mix(in srgb, var(--color-hc-accent), transparent 0%);
     --color-focus-border: var(--color-hc-accent);
     --color-contrast-border: var(--color-hc-link); 
     
@@ -293,6 +293,12 @@ button:hover {
   outline-style: solid;
   outline-color: var(--color-contrast-border);
 }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .btn-secondary {
   background-color: var(--color-background);
@@ -349,6 +355,10 @@ button:hover {
   outline-width: var(--spacing-highlight-border);
   outline-color: var(--color-focus-border);
 }
+.text-input-outer:has(select:focus-within) {
+  outline-width: var(--spacing-highlight-border);
+  outline-color: var(--color-focus-border);
+}
 
 .text-input-inner {
   width: calc(var(--spacing) * 18);
@@ -377,12 +387,62 @@ button:hover {
   outline-style: solid;
   outline-offset: -5px !important;
   outline-color: var(--color-hc-link);
+  color: var(--color-hc-background) !important; /* Schwarze Schrift */
+  font-weight: 700 !important; /* Fette Schrift */
 }
 
+/* Icons und Shortcuts in gehighlighteten Elementen auch schwarz machen */
+[data-theme="high-contrast"] .high-contrast-highlight-border svg {
+  color: var(--color-hc-background) !important; /* Schwarze Icons */
+}
 
+[data-theme="high-contrast"] .high-contrast-highlight-border .opacity-70 {
+  opacity: 1 !important; /* Vollständige Deckkraft für bessere Sichtbarkeit */
+}
 
+[data-theme="high-contrast"] .high-contrast-highlight-border .text-txt-subtitle {
+  color: var(--color-hc-background) !important; /* Schwarze Shortcuts */
+}
 
+/* Error styles for input fields */
+.error-border {
+  outline-color: #ef4444;
+  border-color: #ef4444 !important;
+}
 
+.error-input {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #dc2626;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 0.375rem;
+}
+
+.error-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+/* Dark theme error styles */
+[data-theme="dark"] .error-input {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+[data-theme="dark"] .error-message {
+  color: #fca5a5;
+  background-color: rgba(239, 68, 68, 0.2);
+}
 /* -------------------------- */
 /* ------- graph view ------- */
 /* -------------------------- */
