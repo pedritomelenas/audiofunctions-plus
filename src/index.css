@@ -293,6 +293,12 @@ button:hover {
   outline-style: solid;
   outline-color: var(--color-contrast-border);
 }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .btn-secondary {
   background-color: var(--color-background);
@@ -383,10 +389,45 @@ button:hover {
   outline-color: var(--color-hc-link);
 }
 
+/* Error styles for input fields */
+.error-border {
+  outline-color: #ef4444;
+  border-color: #ef4444 !important;
+}
 
+.error-input {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
 
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #dc2626;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 0.375rem;
+}
 
+.error-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
 
+/* Dark theme error styles */
+[data-theme="dark"] .error-input {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+[data-theme="dark"] .error-message {
+  color: #fca5a5;
+  background-color: rgba(239, 68, 68, 0.2);
+}
 /* -------------------------- */
 /* ------- graph view ------- */
 /* -------------------------- */

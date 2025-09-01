@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import JXG from "jsxgraph";
 import { useGraphContext } from "../../context/GraphContext";
 import { create, all, forEach } from 'mathjs'
-import { checkMathSpell, transformAssingnments, transformMathConstants } from "../../utils/parse";
+import { checkMathSpell, transformAssingnments, transformMathConstants, functionDefPiecewiseToString } from "../../utils/parse";
 import { getActiveFunctions } from "../../utils/graphObjectOperations";
 import * as Tone from "tone";
 import { useAnnouncement } from '../../context/AnnouncementContext';
@@ -16,13 +16,21 @@ const X_AXIS_DIVISIONS = 10;
 // txtraw is a string of the form [[expr_1,ineq_1],[expr_2,ineq_2],..,[expr_n,ineq_n]]
 // where expr_i is an expression in the variable x that defines a function in the interval defined by ineq_i
 // for instance [[x+5,x < -4],[x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]
-// it should be previusly checked that it is a valid piecewise function or a math expression
+// it should be previously checked that it is a valid piecewise function or a math expression
 function createEndPoints(func,board){
     // we are allowing the use of the power operator **, so we replace it by ^ to be able to parse it
     // we are also transforming the math constants to be able to parse them
     // WARNING nthroot is not implemented in mathjs, we need nthRoot, so when using mathjs, we need to change nthroot to nthRoot
     console.log("Creating endpoints for function: ", func);
-    const txtraw= func.functionString
+    if (func.type === "function"){
+      return [[],[]];
+    }
+    if (func.type != "piecewise_function"){
+      console.error("createEndPoints: function type not recognized");
+      return [];
+    }
+    const  txtraw = functionDefPiecewiseToString(func.functionDef);
+    console.log("Raw piecewise function string:", txtraw);
     const parsed = transformMathConstants(math.parse(txtraw.replace("**","^").replace("nthroot","nthRoot"))); 
     const types_to_be_deleted= ["isolated", "unequal"]; // we remove these types of points of interest, since they will be redefined
     const filteredPoints = func.pointOfInterests.filter(
@@ -41,7 +49,7 @@ function createEndPoints(func,board){
         ineq = transformAssingnments(l[i].items[1]); // the inequality or equality of ith item, we change assignments to equalities
         if ("op" in ineq){ //that is a single inequality or an equality
             if (ineq.op == "<=" || ineq.op ==">=" || ineq.op =="=="){ //one of the arguments is the variable "x" 
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<=, >=, ==}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<=, >=, ==}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     p=board.create("point", [v,l[i].items[0].evaluate({x:v})], {cssClass: 'endpoint-closed', fixed:true, highlight:false, withLabel:false, size: 4});
                     endpoints.push(p);
@@ -70,7 +78,7 @@ function createEndPoints(func,board){
                 }
             }
             if (ineq.op == "<" || ineq.op ==">" || ineq.op=="!="){ // this we fill in white, since it is an strict inequality
-                if ("name" in ineq.args[1]){ // we have a op x, with op in {<,>}
+                if (("name" in ineq.args[1]) && (ineq.args[1].name == "x")){ // we have a op x, with op in {<,>}
                     v=ineq.args[0].evaluate(); // v is the value of a in a op x
                     let fv = l[i].items[0].evaluate({x:v});
                     if (ineq.op == "!="){ 
@@ -132,7 +140,7 @@ const GraphView = () => {
   const wrapperRef = useRef(null);
   const graphContainerRef = useRef(null);
   const boardRef = useRef(null);
-  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrorMes, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
+  const { functionDefinitions, cursorCoords, setCursorCoords, setInputErrors, graphBounds, PlayFunction, playActiveRef, updateCursor, setUpdateCursor, setPlayFunction, timerRef, stepSize, isAudioEnabled, setExplorationMode, explorationMode } = useGraphContext();
   const { announce } = useAnnouncement();
   let endpoints = [];
   let snapaccuracy;
@@ -155,8 +163,9 @@ const GraphView = () => {
       boundingbox: [graphBounds.xMin, graphBounds.yMax, graphBounds.xMax, graphBounds.yMin],
       grid: {
         cssClass: "grid",
-        gridX: stepSize, // Grid-Abstand für X-Achse
-        gridY: stepSize, // Grid-Abstand für Y-Achse
+        majorStep: stepSize
+        // gridX: stepSize, // Grid-Abstand für X-Achse
+        // gridY: stepSize, // Grid-Abstand für Y-Achse
       },      
       axis: {
         cssClass: "axis", 
@@ -220,16 +229,117 @@ const GraphView = () => {
     // Create graph objects and cursors for each active function
     activeFunctions.forEach(func => {
       let graphFormula;
-      let expr = checkMathSpell(func.functionString);
+      let expr;
+      let hasError = false;
+      
+      // Check math spell and syntax
+      let [exprResult, errList] = checkMathSpell(func);
+      expr = exprResult;
 
-      try {
-        graphFormula = board.jc.snippet(expr, true, "x", true);
-        setInputErrorMes(null);
-      } catch (err) {
-        console.error(`Error parsing expression for function ${func.id}: `, err);
-        setInputErrorMes(`Invalid function ${func.functionName}. Please check your input.`);
+      console.log("List of errors: ",errList);
+      
+      // Clear all existing errors for this function first
+      setInputErrors(prev => {
+        const newErrors = { ...prev };
+        // Remove all entries for this function (including part-specific errors)
+        Object.keys(newErrors).forEach(key => {
+          if (key === func.id || key.startsWith(`${func.id}_part_`)) {
+            delete newErrors[key];
+          }
+        });
+        return newErrors;
+      });
+      
+      if (errList.length > 0) {
+        // Process all errors, not just the first one
+        let functionErrors = [];
+        let conditionErrors = [];
+        let generalError = null;
+        
+        errList.forEach(([errMMsg, errPos]) => {
+          console.log("Error in ", func.functionName, ":", errMMsg, " in ", errPos.toString());
+          
+          if (func.type === "piecewise_function") {
+            // Check if errPos is an array of positions (for overlap errors)
+            if (Array.isArray(errPos) && errPos.length > 0 && Array.isArray(errPos[0])) {
+              // Multiple positions (e.g., overlap errors: [[0,1],[1,1]])
+              errPos.forEach(([partIndex, fieldIndex]) => {
+                if (fieldIndex === 0) {
+                  // Function error
+                  if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                  functionErrors[partIndex].push(errMMsg);
+                } else {
+                  // Condition error
+                  if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                  conditionErrors[partIndex].push(errMMsg);
+                }
+              });
+            } else if (Array.isArray(errPos) && errPos.length === 2 && typeof errPos[0] === 'number') {
+              // Single specific part error: errPos = [partIndex, fieldIndex]
+              const [partIndex, fieldIndex] = errPos;
+              if (fieldIndex === 0) {
+                // Function error
+                if (!functionErrors[partIndex]) functionErrors[partIndex] = [];
+                functionErrors[partIndex].push(errMMsg);
+              } else {
+                // Condition error
+                if (!conditionErrors[partIndex]) conditionErrors[partIndex] = [];
+                conditionErrors[partIndex].push(errMMsg);
+              }
+            } else {
+              // General piecewise function error
+              generalError = errMMsg;
+            }
+          } else {
+            // Regular function error
+            generalError = errMMsg;
+          }
+        });
+        
+        // Build error object for this function
+        if (func.type === "piecewise_function") {
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              functionErrors: functionErrors,
+              conditionErrors: conditionErrors,
+              generalError: generalError
+            }
+          }));
+        } else {
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              generalError: generalError
+            }
+          }));
+        }
+        
+        hasError = true;
         expr = "0";
         graphFormula = 0;
+      } else {
+        // Clear errors if no issues found
+        setInputErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[func.id];
+          return newErrors;
+        });
+        
+        try {
+          graphFormula = board.jc.snippet(expr, true, "x", true);
+        } catch (err) {
+          console.error(`Error parsing expression for function ${func.id}: `, err);
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              generalError: "Invalid function. Please check your input."
+            }
+          }));
+          hasError = true;
+          expr = "0";
+          graphFormula = 0;
+        }
       }
 
       // Store the parsed expression
@@ -245,8 +355,20 @@ const GraphView = () => {
   
       // Create endpoints for piecewise functions
       if (expr !== "0") {
-        const funcEndpoints = createEndPoints(func, board);
-        endpoints = [...endpoints, ...funcEndpoints];
+        try {
+          const funcEndpoints = createEndPoints(func, board);
+          endpoints = [...endpoints, ...funcEndpoints];
+        } catch (endpointErr) {
+          console.error(`Error creating endpoints for ${func.functionName}:`, endpointErr);
+          // Update error if endpoint creation fails
+          setInputErrors(prev => ({ 
+            ...prev, 
+            [func.id]: {
+              message: "Error creating piecewise endpoints. Please check your input.",
+              isGeneral: true
+            }
+          }));
+        }
       }
 
       // Find last known position for this function's cursor
@@ -274,6 +396,7 @@ const GraphView = () => {
         size: 5,
         fixed: true,
         highlight: false,
+        showInfobox: false,
         fillColor: func.color || "#0000FF",
         strokeColor: func.color || "#0000FF"
       });

@@ -2,27 +2,34 @@ import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Delete, Music, Wind, Zap, Guitar } from "lucide-react";
 import { useGraphContext } from "../../../context/GraphContext";
-import { useInstruments } from "../../../context/InstrumentsContext"; // Add this import
+import { useInstruments } from "../../../context/InstrumentsContext";
+import {useInfoToast} from "../../../context/InfoToastContext"
 import { 
   getFunctionCount, 
-  getFunctionStringN, 
+  getFunctionDefN,
   getFunctionTypeN,
   getFunctionInstrumentN,
   addFunction,
   removeFunctionN,
   updateFunctionN,
   isFunctionActiveN,
-  setFunctionInstrumentN // Add this import
+  setFunctionInstrumentN
 } from "../../../utils/graphObjectOperations";
 
+//import {separatingCommas } from "../../../utils/parse.js";
+
 const EditFunctionDialog = ({ isOpen, onClose }) => {
-  const { functionDefinitions, setFunctionDefinitions, graphSettings } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, graphSettings, focusChart, inputErrors, setInputErrors } = useGraphContext();
+  const {showInfoToast} = useInfoToast();
   const functionDefinitionsBackup = useRef(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [focusAfterAction, setFocusAfterAction] = useState(null);
 
   // Check if dialog should be read-only
   const isReadOnly = graphSettings?.restrictionMode === "read-only";
+
+  // Check if there are any errors that prevent saving
+  const hasErrors = Object.keys(inputErrors).length > 0;
 
   // Generate unique ID for new functions
   const generateUniqueId = () => {
@@ -41,13 +48,13 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
   };
 
   const addFunctionContainer = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly) return;
     
     const newFunction = {
       id: generateUniqueId(),
       functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
       type: "function",
-      functionString: "",
+      functionDef: "",  // String für regular functions
       isActive: true,
       instrument: "clarinet",
       pointOfInterests: [],
@@ -63,13 +70,13 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
   };
 
   const addPiecewiseFunctionContainer = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly) return;
     
     const newFunction = {
       id: generateUniqueId(),
       functionName: `Function ${getFunctionCount(functionDefinitions) + 1}`,
       type: "piecewise_function",
-      functionString: "[[,]]",
+      functionDef: [["", ""]],  // Array für piecewise functions
       isActive: true,
       instrument: "clarinet",
       pointOfInterests: [],
@@ -111,9 +118,9 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
     announceStatus(`${functionType} ${index + 1} deleted. Remaining functions: ${updatedDefinitions.length}`);
   };
 
-  const updateFunctionString = (index, newFunctionString) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    setFunctionDefinitions(updateFunctionN(functionDefinitions, index, { functionString: newFunctionString }));
+  const updateFunctionDef = (index, newFunctionDef) => {
+    if (isReadOnly) return;
+    setFunctionDefinitions(updateFunctionN(functionDefinitions, index, { functionDef: newFunctionDef }));
   };
   // Focus management
   useEffect(() => {
@@ -158,9 +165,39 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
     if (functionDefinitionsBackup.current !== null) {
       setFunctionDefinitions(functionDefinitionsBackup.current); // restore old function definitions
     }
+    
+    // Clear all input errors when canceling
+    setInputErrors({});
+    
     onClose();
-  };  return (
-    <Dialog open={isOpen} onClose={onClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+    showInfoToast("Changes discarded", 1500)
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleAccept = () => {
+    // Prevent saving if there are errors
+    if (hasErrors) {
+      announceStatus("Cannot save: Please fix all errors before saving.");
+      return;
+    }
+    
+    onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  const handleClose = () => {
+    if (hasErrors) {
+      announceStatus("Function definitions have errors. Changes discarded.");
+      handleCancel();
+      return;
+    }
+
+    onClose();
+    setTimeout(() => focusChart(), 100);
+  };
+
+  return (
+    <Dialog open={isOpen} onClose={handleClose} className="relative" aria-modal="true" role="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
       <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="w-full max-w-lg max-h-[90vh] bg-background rounded-lg shadow-lg flex flex-col">
@@ -193,22 +230,22 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
                 <PiecewiseFunctionContainer
                   key={functionDef.id}
                   index={index}
-                  value={getFunctionStringN(functionDefinitions, index)}
+                  value={getFunctionDefN(functionDefinitions, index)}
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
-                  onChange={(newValue) => updateFunctionString(index, newValue)}
+                  onChange={(newValue) => updateFunctionDef(index, newValue)}
                   onDelete={() => removeContainer(index)}
-                  onAccept={onClose}
+                  onAccept={handleAccept}
                   isReadOnly={isReadOnly}
                 />
               ) : (
                 <FunctionContainer
                   key={functionDef.id}
                   index={index}
-                  value={getFunctionStringN(functionDefinitions, index)}
+                  value={getFunctionDefN(functionDefinitions, index)}
                   instrument={getFunctionInstrumentN(functionDefinitions, index)}
-                  onChange={(newValue) => updateFunctionString(index, newValue)}
+                  onChange={(newValue) => updateFunctionDef(index, newValue)}
                   onDelete={() => removeContainer(index)}
-                  onAccept={onClose}
+                  onAccept={handleAccept}
                   isReadOnly={isReadOnly}
                 />
               )
@@ -243,8 +280,11 @@ const EditFunctionDialog = ({ isOpen, onClose }) => {
               </button>
 
               <button
-                onClick={onClose}
-                className="btn-primary sm:w-auto"
+                onClick={handleAccept}
+                className={`btn-primary sm:w-auto`}
+                disabled={hasErrors}
+                aria-disabled={hasErrors}
+                title={hasErrors ? "Please fix all errors before saving" : "Save changes and close"}
               >
                 Accept
               </button>
@@ -272,10 +312,35 @@ const getInstrumentIcon = (instrumentName) => {
   }
 };
 
+// Simplified helper function to get part-specific errors
+const getPartErrors = (inputErrors, functionId) => {
+  const errorInfo = inputErrors[functionId];
+  if (!errorInfo) return { functionErrors: [], conditionErrors: [] };
+  
+  return {
+    functionErrors: errorInfo.functionErrors || [],
+    conditionErrors: errorInfo.conditionErrors || []
+  };
+};
+
+// Simplified helper function to get general function errors
+const getGeneralError = (inputErrors, functionId) => {
+  const errorInfo = inputErrors[functionId];
+  return errorInfo?.generalError || null;
+};
+
 const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept, isReadOnly }) => {
-  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
   
+  const functionId = functionDefinitions[index]?.id;
+  
+  // Get error information for this function (only general errors for regular functions)
+  const generalError = getGeneralError(inputErrors, functionId);
+  
+  const hasError = functionId && generalError;
+  const errorMessage = generalError; // generalError ist bereits der String, nicht ein Objekt
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -341,68 +406,131 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
       >
         Function {index + 1}
       </label>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {/* Input-Feld */}
-        <div className="text-input-outer grow">
-          <div className="text-input-label" aria-hidden="true">
-            f(x)=
+      
+      <div className="mt-2">
+        <div className="flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <div 
+              className={`text-input-outer ${hasError ? 'error-border error-input' : ''}`}
+              aria-errormessage={hasError ? `function-${index}-error` : undefined}
+            >
+              <div className="text-input-label " aria-hidden="true">f(x)=</div>
+              <input
+                id={`function-${index}`}
+                type="text"
+                placeholder="e.g., x^2 + 2*x - 1"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={handleFocus}
+                className="text-input-inner flex-1"
+                aria-description={isReadOnly ? "Mathematical expression. Read-only mode active." : "Mathematical expression."}
+                readOnly={isReadOnly}
+                tabIndex={0}
+                aria-invalid={hasError ? 'true' : 'false'}
+                aria-errormessage={hasError ? `function-${index}-error` : undefined}
+              />
+            </div>
+            
+            {/* Error display for regular functions - moved inside the input container */}
+            {hasError && (
+              <div 
+                id={`function-${index}-error`}
+                className="error-message mt-1"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+              >
+                <span className="error-icon" aria-hidden="true">⚠️</span>
+                {errorMessage}
+              </div>
+            )}
           </div>
-          <input
-            id={`function-${index}`}
-            name="function"
-            type="text"
-            placeholder="e.g., x^2 + 2*x - 1"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            className="text-input-inner grow"
-            aria-label={`Function ${index + 1} mathematical expression${isReadOnly ? ' (read-only)' : ''}`}
-            aria-description={isReadOnly ? "Mathematical expression. Read-only mode active." : "Mathematical expression."}
-            readOnly={isReadOnly}
-            tabIndex={0}
-          />
-        </div>
 
-        {/* Buttons - only show in edit mode */}
-        {!isReadOnly && (
-          <div className="flex gap-2 sm:flex-row" role="group" aria-label={`Function ${index + 1} actions`}>
-            <button
-              type="button"
-              className="btn-neutral"
-              onClick={handleInstrumentChange}
-              onKeyDown={handleInstrumentKeyDown}
-              aria-label={`Change instrument for function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
-              title={`Change instrument for function ${index + 1}. Current: ${instrument}`}
-            >
-              {getInstrumentIcon(instrument)}
-              <span className="sr-only">{instrument}</span>
-            </button>
-            <button
-              type="button"
-              className="btn-neutral"
-              aria-label={`Delete function ${index + 1}`}
-              onClick={onDelete}
-            >
-              <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
-            </button>
-          </div>
-        )}
+          {/* Control buttons - only show in edit mode */}
+          {!isReadOnly && (
+          <div className="flex gap-2 flex-shrink-0" role="group" aria-label={`Function ${index + 1} actions`}>
+              <button
+                type="button"
+                className="btn-neutral"
+                onClick={handleInstrumentChange}
+                onKeyDown={handleInstrumentKeyDown}
+                aria-label={`Change instrument for function ${index + 1}. Current instrument: ${instrument}. Click to cycle to next instrument.`}
+                title={`Change instrument for function ${index + 1}. Current: ${instrument}`}
+              >
+                {getInstrumentIcon(instrument)}
+                <span className="sr-only">{instrument}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-neutral"
+                aria-label={`Delete function ${index + 1}`}
+                onClick={onDelete}
+              >
+                <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDelete, onAccept, isReadOnly }) => {
-  const { functionDefinitions, setFunctionDefinitions } = useGraphContext();
+  const { functionDefinitions, setFunctionDefinitions, inputErrors } = useGraphContext();
   const { availableInstruments } = useInstruments();
   const needsUpdateRef = useRef(false);
   
+  // Get error information for this function
+  const functionId = functionDefinitions[index]?.id;
+  const { functionErrors, conditionErrors } = getPartErrors(inputErrors, functionId);
+  const generalError = getGeneralError(inputErrors, functionId);
+  
+  console.log("=== Piecewise Function Error Debug ===");
+  console.log("Function ID:", functionId);
+  console.log("Function errors:", functionErrors);
+  console.log("Condition errors:", conditionErrors);
+  console.log("General error:", generalError);
+  console.log("=======================================");
+
+  // Parse the piecewise function string or initialize with one empty part
+  const [parts, setParts] = useState(() => {
+    // Jetzt ist value ein Array statt String
+    if (value && Array.isArray(value)) {
+      return value.map(([func, condition]) => ({ 
+        function: func || '', 
+        condition: condition || '' 
+      }));
+    }
+    return [{ function: '', condition: '' }];
+  });
+
+  // Sync parts with parent value changes
+  useEffect(() => {
+    if (value && Array.isArray(value)) {
+      const newParts = value.map(([func, condition]) => ({ 
+        function: func || '', 
+        condition: condition || '' 
+      }));
+      setParts(newParts);
+    }
+  }, [value]);
+
+  // Update parent when parts change
+  useEffect(() => {
+    if (needsUpdateRef.current) {
+      const newValue = parts.map(part => [part.function, part.condition]);
+      onChange(newValue);
+      needsUpdateRef.current = false;
+    }
+  }, [parts, onChange]);
+
+  // Event handlers
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      // Call the accept function directly
       if (onAccept) {
         onAccept();
       }
@@ -410,8 +538,8 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   };
 
   const handleFocus = () => {
-    if (isReadOnly) return; // Prevent focus changes in read-only mode
-    // Set this function as active when any of its inputs is focused
+    if (isReadOnly) return;
+    // Set this function as active when any input is focused
     const updatedDefinitions = functionDefinitions.map((func, i) => ({
       ...func,
       isActive: i === index
@@ -420,17 +548,15 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   };
 
   const handleInstrumentChange = (e) => {
-    e.stopPropagation(); // Prevent triggering other events
+    if (isReadOnly) return;
+    e.stopPropagation();
     
-    const currentInstrument = instrument || "clarinet"; // Default to clarinet
+    const currentInstrument = instrument || "clarinet";
     
-    // Only allow switching between clarinet and guitar
-    // If current instrument is not clarinet or guitar, default to guitar
     let nextInstrument;
     if (currentInstrument === "clarinet") {
       nextInstrument = "guitar";
     } else {
-      // For any other instrument (including guitar), switch to clarinet
       nextInstrument = "clarinet";
     }
 
@@ -441,7 +567,7 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
   };
 
   const handleInstrumentKeyDown = (e) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+    if (isReadOnly) return;
     
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -450,121 +576,146 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
     }
   };
 
-  // Parse the piecewise function string or initialize with one empty part
-  const [parts, setParts] = useState(() => {
-    if (value && typeof value === 'string' && value.startsWith('[')) {
-      try {
-        // Parse the piecewise function format: "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],...]"
-        // Remove outer brackets and split by ],[
-        const innerContent = value.slice(1, -1); // Remove outer [ ]
-        if (innerContent.trim() === '') {
-          return [{ function: '', condition: '' }];
-        }
-        
-        const parts = [];
-        let currentPart = '';
-        let bracketCount = 0;
-        
-        for (let i = 0; i < innerContent.length; i++) {
-          const char = innerContent[i];
-          if (char === '[') {
-            bracketCount++;
-            if (bracketCount === 1) {
-              currentPart = '';
-              continue;
-            }
-          } else if (char === ']') {
-            bracketCount--;
-            if (bracketCount === 0) {
-              // End of a part - find the last comma to split function from condition
-              // This is more reliable than using the first comma
-              const lastCommaIndex = currentPart.lastIndexOf(',');
-              if (lastCommaIndex !== -1) {
-                const func = currentPart.substring(0, lastCommaIndex).trim();
-                const condition = currentPart.substring(lastCommaIndex + 1).trim();
-                parts.push({ function: func, condition: condition });
-              }
-              continue;
-            }
-          }
-          
-          if (bracketCount > 0) {
-            currentPart += char;
-          }
-        }
-        
-        return parts.length > 0 ? parts : [{ function: '', condition: '' }];
-      } catch (e) {
-        return [{ function: '', condition: '' }];
-      }
-    }
-    return [{ function: '', condition: '' }];
-  });
-  
-  const addPart = () => {
-    if (isReadOnly) return; // Prevent action in read-only mode
+  // Part management functions
+  const updatePart = (partIndex, field, newValue) => {
+    if (isReadOnly) return;
     
-    setParts(prev => {
-      const newParts = [...prev, { function: '', condition: '' }];
-      // Announce to screen readers
-      setTimeout(() => {
-        const newPartIndex = newParts.length - 1;
-        const functionInput = document.getElementById(`piecewise-function-${index}-part-${newPartIndex}-function`);
-        if (functionInput) {
-          functionInput.focus();
-        }
-        // Announce the addition
-        const statusDiv = document.querySelector('[aria-live="polite"]');
-        if (statusDiv) {
-          statusDiv.textContent = `Part ${newPartIndex + 1} added to piecewise function ${index + 1}. Total parts: ${newParts.length}`;
-        }
-      }, 100);
-      return newParts;
-    });
-  };
-
-  const removePart = (partIndex) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
-    if (parts.length > 1) {
-      setParts(prev => {
-        const newParts = prev.filter((_, i) => i !== partIndex);
-        needsUpdateRef.current = true;
-        
-        // Announce the removal
-        setTimeout(() => {
-          const statusDiv = document.querySelector('[aria-live="polite"]');
-          if (statusDiv) {
-            statusDiv.textContent = `Part ${partIndex + 1} removed from piecewise function ${index + 1}. Remaining parts: ${newParts.length}`;
-          }
-        }, 100);
-        return newParts;
-      });
-    }
-  };
-  
-  const updatePart = (partIndex, field, value) => {
-    if (isReadOnly) return; // Prevent action in read-only mode
-    
-    setParts(prev => {
-      const newParts = [...prev];
-      newParts[partIndex] = { ...newParts[partIndex], [field]: value };
+    setParts(prevParts => {
+      const newParts = [...prevParts];
+      newParts[partIndex] = { ...newParts[partIndex], [field]: newValue };
       needsUpdateRef.current = true;
       return newParts;
     });
   };
 
-  // Handle onChange calls after render is complete
-  useEffect(() => {
-    if (needsUpdateRef.current && parts.length > 0) {
-      // Convert back to the required format and call onChange
-      const partsArray = parts.map(part => `[${part.function},${part.condition}]`);
-      const formatted = `[${partsArray.join(',')}]`;
-      onChange(formatted);
-      needsUpdateRef.current = false;
-    }
-  }, [parts, onChange]);
-  
+  const addPart = () => {
+    if (isReadOnly) return;
+    
+    setParts(prevParts => {
+      const newParts = [...prevParts, { function: '', condition: '' }];
+      needsUpdateRef.current = true;
+      return newParts;
+    });
+  };
+
+  const removePart = (partIndex) => {
+    if (isReadOnly || parts.length <= 1) return;
+    
+    setParts(prevParts => {
+      const newParts = prevParts.filter((_, index) => index !== partIndex);
+      needsUpdateRef.current = true;
+      return newParts;
+    });
+  };
+
+  // Enhanced part component with specific error highlighting
+  const renderPart = (part, partIndex) => {
+    const functionHasError = functionErrors[partIndex] && functionErrors[partIndex].length > 0;
+    const conditionHasError = conditionErrors[partIndex] && conditionErrors[partIndex].length > 0;
+
+    return (
+      <div 
+        key={partIndex} 
+        className="mb-4 last:mb-0"
+        role="group"
+        aria-label={`Part ${partIndex + 1} of ${parts.length}`}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Function input with error highlighting */}
+          <div 
+            className={`text-input-outer flex-1 min-w-0 ${functionHasError ? 'error-border error-input' : ''}`}
+            aria-errormessage={functionHasError ? `piecewise-${index}-part-${partIndex}-function-error` : undefined}
+          >
+            <div className="text-input-label" aria-hidden="true">
+              f(x)=
+            </div>
+            <input
+              id={`piecewise-function-${index}-part-${partIndex}-function`}
+              type="text"
+              value={part.function}
+              onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`text-input-inner w-full grow`}
+              placeholder="e.g., x^2 + 1"
+              onFocus={handleFocus}
+              aria-label={`Function expression for part ${partIndex + 1}`}
+              aria-invalid={functionHasError ? 'true' : 'false'}
+              aria-describedby={isReadOnly ? "Function expression. Read-only mode active." : "Function expression."}
+              aria-errormessage={functionHasError ? `piecewise-${index}-part-${partIndex}-function-error` : undefined}
+              readOnly={isReadOnly}
+              tabIndex={0}
+            />
+          </div>
+
+          {/* Condition input with error highlighting */}
+          <div 
+            className={`text-input-outer flex-1 min-w-0 ${conditionHasError ? 'error-border error-input' : ''}`}
+            aria-errormessage={conditionHasError ? `piecewise-${index}-part-${partIndex}-condition-error` : undefined}
+          >
+            <div className="text-input-label" aria-hidden="true">
+              if
+            </div>
+            <input
+              id={`piecewise-function-${index}-part-${partIndex}-condition`}
+              type="text"
+              value={part.condition}
+              onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`text-input-inner w-full grow`}
+              placeholder="e.g., x < 0 or x >= 1"
+              onFocus={handleFocus}
+              aria-label={`Condition for part ${partIndex + 1}${isReadOnly ? ' (read-only)' : ''}`}
+              aria-description={isReadOnly ? "Condition when this part applies. Read-only mode active." : "Condition when this part applies."}
+              readOnly={isReadOnly}
+              tabIndex={0}
+              aria-invalid={conditionHasError ? 'true' : 'false'}
+              aria-errormessage={conditionHasError ? `piecewise-${index}-part-${partIndex}-condition-error` : undefined}
+            />
+          </div>
+
+          {/* Remove part button */}
+          {!isReadOnly && parts.length > 1 && (
+            <button
+              type="button"
+              className="btn-neutral"
+              aria-label={`Remove part ${partIndex + 1} of piecewise function ${index + 1}`}
+              onClick={() => removePart(partIndex)}
+            >
+              <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        
+        {/* Part-specific error messages */}
+        {functionHasError && (
+          <div 
+            id={`piecewise-${index}-part-${partIndex}-function-error`}
+            className="error-message mt-1"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <span className="error-icon" aria-hidden="true">⚠️</span>
+            <strong>Function:</strong> {functionErrors[partIndex].join('. ')}
+          </div>
+        )}
+        
+        {conditionHasError && (
+          <div 
+            id={`piecewise-${index}-part-${partIndex}-condition-error`}
+            className="error-message mt-1"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <span className="error-icon" aria-hidden="true">⚠️</span>
+            <strong>Condition:</strong> {conditionErrors[partIndex].join('. ')}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div 
       className={`mb-4 ${isReadOnly ? 'opacity-60' : ''}`} 
@@ -582,74 +733,11 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
       
       {/* Bordered container for piecewise function parts */}
       <div 
-        className="mt-2 border border-gray-mddk rounded-lg p-4 bg-background"
+        className={`mt-2 border rounded-lg p-4 bg-background ${generalError || functionErrors.some(e => e && e.length > 0) || conditionErrors.some(e => e && e.length > 0) ? 'border-red-500' : 'border-gray-mddk'}`}
         role="group"
         aria-label={`Piecewise function ${index + 1} parts`}
       >
-        {parts.map((part, partIndex) => (
-          <div 
-            key={partIndex} 
-            className="mb-4 last:mb-0"
-            role="group"
-            aria-label={`Part ${partIndex + 1} of ${parts.length}`}
-          >
-            <div className={`flex flex-wrap items-center gap-3`}>
-              {/* Function input */}
-              <div className="text-input-outer flex-1 min-w-0">
-                <div className="text-input-label" aria-hidden="true">
-                  f(x)=
-                </div>
-                <input
-                  id={`piecewise-function-${index}-part-${partIndex}-function`}
-                  type="text"
-                  value={part.function}
-                  onChange={(e) => updatePart(partIndex, 'function', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={handleFocus}
-                  className="text-input-inner w-full grow"
-                  placeholder="e.g., x^2 + 1"
-                  aria-label={`Function expression for part ${partIndex + 1}${isReadOnly ? ' (read-only)' : ''}`}
-                  aria-description={isReadOnly ? "Function expression. Read-only mode active." : "Function expression."}
-                  readOnly={isReadOnly}
-                  tabIndex={0}
-                />
-              </div>
-
-              {/* Condition input */}
-              <div className="text-input-outer flex-1 min-w-0">
-                <div className="text-input-label" aria-hidden="true">
-                  if
-                </div>
-                <input
-                  id={`piecewise-function-${index}-part-${partIndex}-condition`}
-                  type="text"
-                  value={part.condition}
-                  onChange={(e) => updatePart(partIndex, 'condition', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={handleFocus}
-                  className="text-input-inner w-full grow"
-                  placeholder="e.g., x < 0 or x >= 1"
-                  aria-label={`Condition for part ${partIndex + 1}${isReadOnly ? ' (read-only)' : ''}`}
-                  aria-description={isReadOnly ? "Condition when this part applies. Read-only mode active." : "Condition when this part applies."}
-                  readOnly={isReadOnly}
-                  tabIndex={0}
-                />
-              </div>
-
-              {/* Remove part button - only show in edit mode and when more than 1 part */}
-              {!isReadOnly && parts.length > 1 && (
-                <button
-                  type="button"
-                  className="btn-neutral"
-                  aria-label={`Remove part ${partIndex + 1} of piecewise function ${index + 1}`}
-                  onClick={() => removePart(partIndex)}
-                >
-                  <Delete className="w-4 h-4 text-icon" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+        {parts.map((part, partIndex) => renderPart(part, partIndex))}
         
         {/* Add part button and control buttons - only show in edit mode */}
         {!isReadOnly && (
@@ -690,6 +778,19 @@ const PiecewiseFunctionContainer = ({ index, value, instrument, onChange, onDele
           </div>
         )}
       </div>
+
+      {/* General piecewise function error display */}
+      {generalError && (
+        <div 
+          className="error-message mt-2"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <span className="error-icon" aria-hidden="true">⚠️</span>
+          <strong>General Error:</strong> {generalError}
+        </div>
+      )}
     </div>
   );
 };

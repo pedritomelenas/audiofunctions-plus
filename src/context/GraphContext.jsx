@@ -9,9 +9,9 @@ export const GraphContextProvider = ({ children }) => {
   const [graphSettings, setGraphSettings] = useState(initGraphObject.graphSettings);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]");
+  const [functionInput, setFunctionInput] = useState("[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]"); // TODO delete
   const [cursorCoords, setCursorCoords] = useState([]);
-  const [inputErrorMes, setInputErrorMes] = useState(null);
+  const [inputErrorMes, setInputErrorMes] = useState(null); // TODO delete
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [graphBounds, setGraphBounds] = useState({
     xMin: -10,
@@ -30,6 +30,8 @@ export const GraphContextProvider = ({ children }) => {
     function: useRef(null),
     speed: useRef(null),
   };
+
+  const [inputErrors, setInputErrors] = useState({});
 
   // Load data from URL hash on component mount
   useEffect(() => {
@@ -97,6 +99,8 @@ export const GraphContextProvider = ({ children }) => {
         setCursorCoords,
         inputErrorMes,
         setInputErrorMes,
+        inputErrors,
+        setInputErrors,
         isAudioEnabled,
         setIsAudioEnabled,
         graphBounds,
@@ -131,7 +135,8 @@ const initGraphObject = {
       "id": "f1",
       "functionName": "Function 1",
       "type": "function",
-      "functionString": "sin(x)",
+      // "functionString": "sin(x)",
+      "functionDef": "sin(x)",
       "isActive": true,
       "instrument": "clarinet",
       "color": "#0000FF",           // optional
@@ -164,7 +169,8 @@ const initGraphObject = {
       "id": "f2",
       "functionName": "Pieces",
       "type": "piecewise_function",
-      "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
+      // "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
+      "functionDef": [["x+5","x < -4"],["1/2*x^2","-4<=x < 1"],["x-2","1<=x < 3"],["5","x==3"],["x-2","3 < x < 5"],["3","5<= x"]],
       "isActive": false,
       "instrument": "clarinet",
       "color": "#FF0000",           // optional
