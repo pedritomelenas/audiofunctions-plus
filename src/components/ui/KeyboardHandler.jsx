@@ -95,15 +95,15 @@ export default function KeyboardHandler() {
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
 
         // Handle "b" key for batch exploration
-        if (event.key === "b" || event.key === "B") {
-            setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
-            if (!PlayFunction.active) {
-                setExplorationMode("batch");
-            } else {
-                setExplorationMode("none");
-            }
-            return;
-        }
+        // if (event.key === "b" || event.key === "B") {
+        //     setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+        //     if (!PlayFunction.active) {
+        //         setExplorationMode("batch");
+        //     } else {
+        //         setExplorationMode("none");
+        //     }
+        //     return;
+        // }
 
         switch (event.key) {
             case "a": case "A":
