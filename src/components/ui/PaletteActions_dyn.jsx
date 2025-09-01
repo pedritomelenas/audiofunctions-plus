@@ -200,7 +200,7 @@ export const useDynamicKBarActions = () => {
     {
       id: "play-function",
       name: "Play Function",
-      // shortcut: ["b"], // Removed to avoid conflict with keyboard handler
+      shortcut: ["b"], // Removed to avoid conflict with keyboard handler
       keywords: "play, run, complete, automatic, auto, autoplay",
       parent: "quick-options",
       perform: () => {setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active })); setTimeout(() => focusChart(), 100);},
@@ -433,24 +433,7 @@ export const useDynamicKBarActions = () => {
         name: "Import/Export",
         keywords: "import, export, json, file, save, load, share",
         icon: <Import className="size-5 shrink-0 opacity-70" />,
-      },
-      {
-        id: "import-json",
-        name: "Import JSON",
-        shortcut: [""],
-        keywords: "import, json, upload, file",
-        parent: "import-export",
-        perform: () => openDialog("import-json"),
-        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
-      },
-      {
-        id: "export-json",
-        name: "Export as JSON",
-        shortcut: [""],
-        keywords: "export, json, download, save, file",
-        parent: "import-export",
-        perform: () => openDialog("export-json"),
-        icon: <FileDown className="size-5 shrink-0 opacity-70" />,
+        priority: Priority.LOW      
       },
       {
         id: "share",
@@ -460,6 +443,24 @@ export const useDynamicKBarActions = () => {
         parent: "import-export",
         perform: () => openDialog("share"),
         icon: <Share2 className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "import-json",
+        name: "Import from file",
+        shortcut: [""],
+        keywords: "import, json, upload, file",
+        parent: "import-export",
+        perform: () => openDialog("import-json"),
+        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
+      },
+      {
+        id: "export-json",
+        name: "Export as file",
+        shortcut: [""],
+        keywords: "export, json, download, save, file",
+        parent: "import-export",
+        perform: () => openDialog("export-json"),
+        icon: <FileDown className="size-5 shrink-0 opacity-70" />,
       }
     ] : []),
 

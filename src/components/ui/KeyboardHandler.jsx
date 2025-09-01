@@ -76,7 +76,7 @@ export default function KeyboardHandler() {
     const pressedKeys = useRef(new Set());
     const lastKeyDownTime = useRef(null);
     const HOLD_THRESHOLD = 1000; // Time in ms before allowing continuous movement
-    const KEYPRESS_THRESHOLD = 50; // Time in ms to filter out false positive keyup events (typical key repeat delay is ~30ms)
+    const KEYPRESS_THRESHOLD = 15; // Time in ms to filter out false positive keyup events (typical key repeat delay is ~30ms)
 
     // Use the exported zoom function
     const ZoomBoard = useZoomBoard();
@@ -95,15 +95,15 @@ export default function KeyboardHandler() {
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
 
         // Handle "b" key for batch exploration
-        if (event.key === "b" || event.key === "B") {
-            setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
-            if (!PlayFunction.active) {
-                setExplorationMode("batch");
-            } else {
-                setExplorationMode("none");
-            }
-            return;
-        }
+        // if (event.key === "b" || event.key === "B") {
+        //     setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+        //     if (!PlayFunction.active) {
+        //         setExplorationMode("batch");
+        //     } else {
+        //         setExplorationMode("none");
+        //     }
+        //     return;
+        // }
 
         switch (event.key) {
             case "a": case "A":
@@ -123,7 +123,7 @@ export default function KeyboardHandler() {
                 ZoomBoard(event.shiftKey, pressedKeys.current.has("x"), pressedKeys.current.has("y"));
                 break;
 
-            case "ArrowLeft": case "ArrowRight":
+            case "ArrowLeft": case "ArrowRight": case "j": case "J": case "l": case "L":
                 // If batch sonification is active, stop it and keep cursor at current position
                 if (PlayFunction.active && PlayFunction.source === "play") {
                     setPlayFunction(prev => ({ ...prev, active: false }));
@@ -138,12 +138,12 @@ export default function KeyboardHandler() {
                     event.stopPropagation();
                     
                     const bounds = graphSettings?.defaultView || [-10, 10, 10, -10];
-                    if (event.key === "ArrowLeft") {
-                        // Go to beginning with Cmd/Ctrl + Left
+                    if (event.key === "ArrowLeft" || event.key === "j" || event.key === "J") {
+                        // Go to beginning with Cmd/Ctrl + Left or J
                         const [xMin] = bounds;
                         updateCursor(xMin);
                     } else {
-                        // Go to end with Cmd/Ctrl + Right
+                        // Go to end with Cmd/Ctrl + Right or L
                         const [, xMax] = bounds;
                         updateCursor(xMax);
                     }
@@ -151,7 +151,7 @@ export default function KeyboardHandler() {
                 }
 
                 let direction = 1;                               //right by default
-                if (event.key === "ArrowLeft") direction = -1;   //left if left arrow pressed
+                if (event.key === "ArrowLeft" || event.key === "j" || event.key === "J") direction = -1;   //left if left arrow or J pressed
                 // First, stop any active smooth movement
                 if (PlayFunction.active && PlayFunction.source === "keyboard") {
                     setPlayFunction(prev => ({ ...prev, active: false }));
@@ -239,8 +239,8 @@ export default function KeyboardHandler() {
         }
 
         pressedKeys.current.delete(e.key.toLowerCase());
-        // If the arrow keys are released, stop move but maintain the last cursor position
-        if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+        // If the arrow keys or J/L keys are released, stop move but maintain the last cursor position
+        if (["ArrowLeft", "ArrowRight", "j", "J", "l", "L"].includes(e.key)) {
           setPlayFunction(prev => {
             if (prev.source === "keyboard") {
               // Keep the current x position and just set active to false
