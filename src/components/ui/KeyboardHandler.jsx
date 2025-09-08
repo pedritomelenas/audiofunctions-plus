@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useGraphContext } from "../../context/GraphContext";
-import { getActiveFunctions } from "../../utils/graphObjectOperations";
+import { getActiveFunctions, getFunctionNameN } from "../../utils/graphObjectOperations";
 import audioSampleManager from "../../utils/audioSamples";
+import { useAnnouncement } from '../../context/AnnouncementContext';
+import { useInfoToast } from '../../context/InfoToastContext';
 
 // Export the ZoomBoard function so it can be used in other components
 export const useZoomBoard = () => {
@@ -67,11 +69,15 @@ export default function KeyboardHandler() {
         updateCursor,
         stepSize,
         functionDefinitions,
+        setFunctionDefinitions,
         setExplorationMode,
         PlayFunction,
         mouseTimeoutRef,
         isAudioEnabled
     } = useGraphContext();
+
+    const { announce } = useAnnouncement();
+    const { showInfoToast } = useInfoToast();
 
     const pressedKeys = useRef(new Set());
     const lastKeyDownTime = useRef(null);
@@ -80,6 +86,25 @@ export default function KeyboardHandler() {
 
     // Use the exported zoom function
     const ZoomBoard = useZoomBoard();
+
+    // Function to switch to specific function by index
+    const switchToFunction = (targetIndex) => {
+        if (!functionDefinitions || targetIndex < 0 || targetIndex >= functionDefinitions.length) return;
+        
+        const updatedDefinitions = functionDefinitions.map((func, index) => ({
+            ...func,
+            isActive: index === targetIndex
+        }));
+        
+        setFunctionDefinitions(updatedDefinitions);
+        
+        // Announce the switch
+        const functionName = getFunctionNameN(functionDefinitions, targetIndex) || `Function ${targetIndex + 1}`;
+        announce(`Switched to ${functionName}`);
+        showInfoToast(`${functionName}`, 1500);
+        
+        console.log(`Switched to function ${targetIndex + 1}`);
+    };
   
     useEffect(() => {
       const handleKeyDown = async (event) => {
@@ -94,16 +119,26 @@ export default function KeyboardHandler() {
         const activeFunctions = getActiveFunctions(functionDefinitions);
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
 
-        // Handle "b" key for batch exploration
-        // if (event.key === "b" || event.key === "B") {
-        //     setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
-        //     if (!PlayFunction.active) {
-        //         setExplorationMode("batch");
-        //     } else {
-        //         setExplorationMode("none");
-        //     }
-        //     return;
-        // }
+        // Handle Czech keyboard shortcuts for function switching (1-9 alternatives)
+        const czechFunctionKeyMap = {
+            '+': 0,  // Czech 1
+            'ě': 1,  // Czech 2
+            'š': 2,  // Czech 3
+            'č': 3,  // Czech 4
+            'ř': 4,  // Czech 5
+            'ž': 5,  // Czech 6
+            'ý': 6,  // Czech 7
+            'á': 7,  // Czech 8
+            'í': 8   // Czech 9
+        };
+        
+        const targetIndex = czechFunctionKeyMap[event.key];
+        if (targetIndex !== undefined) {
+            event.preventDefault();
+            event.stopPropagation();
+            switchToFunction(targetIndex);
+            return;
+        }
 
         switch (event.key) {
             case "a": case "A":
@@ -267,7 +302,7 @@ export default function KeyboardHandler() {
         document.removeEventListener("keydown", handleKeyDown);
         document.removeEventListener("keyup", handleKeyUp);
       };
-    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, ZoomBoard]);
+    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setFunctionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, ZoomBoard]);
   
     return null;
 }
