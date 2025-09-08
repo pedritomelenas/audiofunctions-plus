@@ -197,6 +197,6 @@ const initGraphObject = {
       "showAxes": true,
       "gridColor": "#CCCCCC",
       
-      "restrictionMode": "none" // "none", "read-only"
+      "restrictionMode": "none" // "none", "read-only", "full-restriction"
   }
 };
