@@ -8,6 +8,7 @@ import SpeedAdjustmentDialog from "../components/ui/dialogs/SpeedAdjustmentDialo
 import ShareDialog from "../components/ui/dialogs/shareDialog";
 import ExportJsonDialog from "../components/ui/dialogs/ExportJsonDialog";
 import ImportJsonDialog from "../components/ui/dialogs/ImportJsonDialog";
+import WelcomeDialog from "../components/ui/dialogs/WelcomeDialog";
 
 const DialogContext = createContext();
 
@@ -70,6 +71,12 @@ export function DialogProvider({ children }) {
 
       <ExportJsonDialog
         isOpen={dialog.type === "export-json"}
+        onClose={closeDialog}
+        {...dialog.props}
+      />
+
+      <WelcomeDialog
+        isOpen={dialog.type === "welcome"}
         onClose={closeDialog}
         {...dialog.props}
       />
