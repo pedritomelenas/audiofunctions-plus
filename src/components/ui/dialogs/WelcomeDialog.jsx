@@ -1,139 +1,194 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Download } from "lucide-react";
 
 const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const contentRef = useRef(null);
+  const hasAnnouncedRef = useRef(false);
+  const timeoutRef = useRef(null);
 
   // Tutorial pages content
   const pages = [
     {
       title: "Welcome to AudioFunctions+",
       content: (
-        <div className="space-y-4">
+        <div className="space-y-4" tabIndex={-1}>
           <p className="text-descriptions">
-            Welcome to AudioFunctions+, an innovative tool for exploring mathematical functions through interactive visualization and audio feedback.
+            Welcome to AudioFunctions+, an innovative tool for exploring mathematical functions through interactive sonification.
           </p>
           <p className="text-descriptions">
             This tutorial will guide you through the main features and help you get started with creating and exploring mathematical functions.
           </p>
-          <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
-            <p className="text-sm text-descriptions">
-              <strong>Tip:</strong> You can always access this tutorial again through the Help section in the command palette (Ctrl+K or Cmd+K).
+          <div className="info-box" role="note" aria-label="Helpful tip">
+            <p className="text-descriptions">
+              <strong>Tip:</strong> You can always access this tutorial again through the Help section in the command palette (<kbd className="kbd">Ctrl+K</kbd> or <kbd className="kbd">Cmd+K</kbd>) or by pressing <kbd className="kbd">F1</kbd>
             </p>
           </div>
         </div>
       )
     },
     {
-      title: "Creating Functions",
+      title: "Navigation and Sonification",
       content: (
-        <div className="space-y-4">
-          <p className="text-descriptions">
-            You can create mathematical functions using the Edit Functions dialog. Access it by pressing <kbd className="px-2 py-1 bg-surface border border-border rounded text-sm text-titles font-mono">F</kbd> or through the command palette.
-          </p>
-          <div className="space-y-2">
-            <h4 className="font-semibold text-titles">Function Types:</h4>
-            <ul className="list-disc list-inside space-y-1 text-descriptions">
-              <li><strong>Regular Functions:</strong> Standard mathematical expressions like x^2 + 2*x - 1</li>
-              <li><strong>Piecewise Functions:</strong> Functions with different expressions for different conditions</li>
-            </ul>
-          </div>
-          <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
-            <p className="text-sm text-descriptions">
-              <strong>Example:</strong> Try entering "sin(x)" or "x^2" to see how functions are visualized and sonified.
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Navigation and Audio",
-      content: (
-        <div className="space-y-4">
+        <div className="space-y-4" tabIndex={-1}>
           <p className="text-descriptions">
             AudioFunctions+ offers multiple ways to explore your functions with both visual and audio feedback.
           </p>
           <div className="space-y-3">
             <div>
-              <h4 className="font-semibold text-titles">Keyboard Navigation:</h4>
-              <ul className="list-disc list-inside space-y-1 text-descriptions text-sm">
-                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">←</kbd> / <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">→</kbd> or <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">J</kbd> / <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">L</kbd> - Move cursor step by step</li>
-                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">Shift</kbd> + arrows - Smooth continuous movement</li>
-                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">A/D/W/S</kbd> - Pan the view</li>
-                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">Z</kbd> - Zoom in/out</li>
+              <h2 className="text-titles font-semibold">Keyboard Navigation:</h2>
+              <ul className="list-disc list-inside space-y-1 text-descriptions text-sm" role="list">
+                <li><kbd className="kbd">←</kbd> / <kbd className="kbd">→</kbd> or <kbd className="kbd">J</kbd> / <kbd className="kbd">L</kbd> - Move cursor step by step</li>
+                <li><kbd className="kbd">Shift</kbd> + (<kbd className="kbd">←</kbd> / <kbd className="kbd">→</kbd> or <kbd className="kbd">J</kbd> / <kbd className="kbd">L</kbd>) - Smooth continuous movement</li>
+                <li><kbd className="kbd">A/D/W/S</kbd> - Pan the view</li>
+                <li><kbd className="kbd">Z</kbd> - Zoom in</li>
+                <li><kbd className="kbd">Shift</kbd> + <kbd className="kbd">Z</kbd> - Zoom out</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-titles">Audio Features:</h4>
-              <p className="text-descriptions text-sm">
+              <h2 className="text-titles font-semibold">Audio Features:</h2>
+              <p className="text-descriptions">
                 Each function has its own instrument sound. As you navigate, you'll hear the function values as musical tones, making it easier to understand the mathematical relationships.
               </p>
             </div>
           </div>
         </div>
       )
+    },
+    {
+      title: "Other Actions",
+      content: (
+        <div className="space-y-4" tabIndex={-1}>
+          <p className="text-descriptions">
+            Beyond navigating functions, AudioFunctions+ offers many additional features through the <strong>Command Palette</strong>.
+          </p>
+          
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-titles font-semibold">Opening the Command Palette:</h2>
+              <kbd className="kbd">Ctrl+K</kbd> / <kbd className="kbd">Cmd+K</kbd> - Opens the Command Palette
+              <p className="text-descriptions text-sm mt-2">
+                The Command Palette is your central hub for all functions like "show current coordinates" or "switch sonification instrument". Many actions also have direct keyboard shortcuts (hotkeys).
+              </p>
+            </div>
+
+            <div className="info-box" role="note" aria-label="Command Palette tip">
+              <p className="text-descriptions">
+                <strong>Tip:</strong> In the Command Palette, you can simply type part of a function name (e.g. "instrument", "coordinates") - you don't need to know the exact name!
+              </p>
+            </div>
+          </div>
+
+          {/* Shortcuts reference section */}
+          <div className="shortcut-reference-box">
+            <h2 className="text-titles font-semibold mb-2">Complete Shortcuts Reference</h2>
+            <p className="text-descriptions text-sm mb-3">
+              Download a comprehensive list of all keyboard shortcuts and hotkeys for quick reference.
+            </p>
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = '/Audiofunctions+ Hotkeys.odt';
+                link.download = 'Audiofunctions+ Hotkeys.odt';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="btn-primary flex items-center gap-2"
+              aria-label="Download keyboard shortcuts reference document"
+            >
+              <Download className="w-4 h-4" />
+              Download Reference
+            </button>
+          </div>
+        </div>
+      )
     }
+    // {
+    //   title: "Creating Functions",
+    //   content: (
+    //     <div className="space-y-4" tabIndex={-1}>
+    //       <p className="text-descriptions">
+    //         You can create mathematical functions using the Edit Functions dialog. Access it by pressing <kbd className="kbd">F</kbd> or through the command palette.
+    //       </p>
+    //       <div className="space-y-2">
+    //         <h2 className="text-titles font-semibold">Function Types:</h2>
+    //         <ul className="list-disc list-inside space-y-1 text-descriptions" role="list">
+    //           <li><strong>Regular Functions:</strong> Standard mathematical expressions like x squared plus 2 times x minus 1</li>
+    //           <li><strong>Piecewise Functions:</strong> Functions with different expressions for different conditions</li>
+    //         </ul>
+    //       </div>
+    //       <div className="info-box" role="note" aria-label="Example">
+    //         <p className="text-descriptions">
+    //           <strong>Example:</strong> Try entering "sin(x)" or "x^2" to see how functions are visualized and sonified.
+    //         </p>
+    //       </div>
+    //     </div>
+    //   )
+    // }
   ];
 
   const isLastPage = currentPage === pages.length - 1;
   const isFirstPage = currentPage === 0;
 
-  // Announce status changes to screen readers
+  // Announce status changes to screen readers - simplified
   const announceStatus = (message) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
     setStatusMessage(message);
-    setTimeout(() => setStatusMessage(''), 3000);
+    timeoutRef.current = setTimeout(() => {
+      setStatusMessage('');
+      timeoutRef.current = null;
+    }, 3000);
   };
 
-  // Reset to first page when dialog opens
+  // Simplified effect - only for dialog opening
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasAnnouncedRef.current) {
+      hasAnnouncedRef.current = true;
       setCurrentPage(0);
-      announceStatus('Welcome tutorial opened. Use Next and Previous buttons to navigate.');
+      setTimeout(() => {
+        announceStatus('Welcome tutorial opened. Use arrow keys or buttons to navigate.');
+      }, 600);
+    } else if (!isOpen) {
+      hasAnnouncedRef.current = false;
     }
   }, [isOpen]);
 
-  // Announce page changes
+  // Separate effect for page changes only
   useEffect(() => {
-    if (isOpen) {
-      announceStatus(`Page ${currentPage + 1} of ${pages.length}: ${pages[currentPage].title}`);
+    if (isOpen && hasAnnouncedRef.current) {
+      // Update the dialog's accessible description
+      const dialogDescription = document.getElementById('dialog-description');
+      if (dialogDescription) {
+        dialogDescription.textContent = `Page ${currentPage + 1} of ${pages.length}`;
+      }
+    }
+  }, [currentPage, isOpen, pages.length]);
+
+  // Focus management for page changes  
+  useEffect(() => {
+    if (isOpen && contentRef.current) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        contentRef.current?.focus();
+      }, 100);
     }
   }, [currentPage, isOpen]);
 
-  // Keyboard shortcuts
+  // Cleanup on unmount
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
-      // Only allow Escape to close if not auto-opened
-      if (e.key === 'Escape' && !isAutoOpened) {
-        e.preventDefault();
-        handleClose();
-      }
-      // Right arrow or Enter: Next page
-      if (e.key === 'ArrowRight' || e.key === 'Enter') {
-        e.preventDefault();
-        if (isLastPage) {
-          handleClose();
-        } else {
-          handleNext();
-        }
-      }
-      // Left arrow: Previous page
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        if (!isFirstPage) {
-          handlePrevious();
-        }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, currentPage, isLastPage, isFirstPage, isAutoOpened]);
+  }, []);
 
   const handleNext = () => {
     if (currentPage < pages.length - 1) {
@@ -146,6 +201,16 @@ const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
       setCurrentPage(prev => prev - 1);
     }
   };
+
+  // Focus management for page changes
+  useEffect(() => {
+    if (isOpen && contentRef.current) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        contentRef.current?.focus();
+      }, 100);
+    }
+  }, [currentPage, isOpen]);
 
   const handleClose = () => {
     // Mark as seen in localStorage so it doesn't show again on startup
@@ -169,43 +234,51 @@ const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <DialogPanel className="w-full max-w-2xl max-h-[90vh] bg-background border border-border rounded-lg shadow-lg flex flex-col">
           <div className="p-6 pb-4">
-            <DialogTitle id="dialog-title" className="text-lg font-bold text-titles">
+            <DialogTitle id="dialog-title" className="text-lg font-bold text-titles" aria-live="off">
               {currentPageData.title}
             </DialogTitle>
-            <Description id="dialog-description" className="text-descriptions">
+            <Description id="dialog-description" className="text-descriptions" aria-live="polite">
               Page {currentPage + 1} of {pages.length}
             </Description>
           </div>
           
-          {/* Live region for status announcements */}
-          <div 
-            aria-live="polite" 
-            aria-atomic="true" 
-            className="sr-only"
-            role="status"
-          >
-            {statusMessage}
-          </div>
+          {/* Status announcements only when needed */}
+          {statusMessage && (
+            <div 
+              aria-live="polite" 
+              aria-atomic="true" 
+              className="sr-only"
+              role="status"
+            >
+              {statusMessage}
+            </div>
+          )}
 
           {/* Content area */}
-          <div className="flex-1 overflow-y-auto px-6" role="main" aria-label="Tutorial content">
+          <div 
+            ref={contentRef}
+            className="pb-4 flex-1 overflow-y-auto px-6 focus:outline-none" 
+            role="main" 
+            aria-label={`Tutorial content: ${currentPageData.title}`}
+            tabIndex={-1}
+          >
             {currentPageData.content}
-            <br />
           </div>
 
           {/* Navigation and controls */}
           <div className="px-6 py-4 border-t border-border" role="group" aria-label="Tutorial navigation">
             {/* Page indicators */}
-            <div className="flex justify-center mb-4" role="group" aria-label="Page indicators">
+            <div className="flex justify-center mb-4" role="tablist" aria-label="Tutorial pages">
               {pages.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full mx-1 transition-colors duration-200 ${
+                  className={`w-2 h-2 rounded-full mx-1 transition-colors duration-200 page-indicator ${
                     index === currentPage 
-                      ? "bg-primary" 
-                      : "bg-border"
+                      ? "page-indicator-active" 
+                      : "page-indicator-inactive"
                   }`}
-                  aria-hidden="true"
+                  role="tab"
+                  aria-hidden={true}
                 />
               ))}
             </div>

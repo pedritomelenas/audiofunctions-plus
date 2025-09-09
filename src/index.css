@@ -509,3 +509,231 @@ text.JXGtext {
   stroke-width: 4px;
 
 }
+
+/* -------------------------- */
+/* ------- Welcome Dialog ---- */
+/* -------------------------- */
+
+/* Keyboard key styling */
+.kbd {
+  display: inline-block;
+  padding: 0.125rem 0.375rem; /* px-1 py-0.5 */
+  background-color: var(--color-elem-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.875rem; /* text-sm */
+  color: var(--color-txt-title);
+  font-weight: 500;
+}
+
+/* Info boxes */
+.info-box {
+  padding: 1rem; /* p-4 */
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--color-primary), transparent 90%);
+  border: 1px solid color-mix(in srgb, var(--color-primary), transparent 80%);
+}
+
+/* Shortcut reference box */
+.shortcut-reference-box {
+  padding: 1rem; /* p-4 */
+  border-radius: var(--radius-md);
+  background-color: var(--color-elem-background);
+  border: 1px solid var(--color-border);
+}
+
+/* Remove link underline for download button */
+.no-underline {
+  text-decoration: none;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .shortcut-reference-box {
+  background-color: var(--color-elem-background);
+  border-color: var(--color-border);
+}
+
+/* High contrast theme adjustments */
+[data-theme="high-contrast"] .shortcut-reference-box {
+  background-color: var(--color-hc-background);
+  border-color: var(--color-hc-border);
+  border-width: 2px;
+}
+
+/* Page indicators */
+.page-indicator {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.page-indicator-active {
+  background-color: var(--color-primary);
+}
+
+.page-indicator-inactive {
+  background-color: var(--color-border);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .kbd {
+  background-color: var(--color-elem-background);
+  border-color: var(--color-border);
+  color: var(--color-txt-title);
+}
+
+[data-theme="dark"] .info-box {
+  background-color: color-mix(in srgb, var(--color-primary), transparent 92%);
+  border-color: color-mix(in srgb, var(--color-primary), transparent 85%);
+}
+
+[data-theme="dark"] .shortcut-reference-box {
+  background: linear-gradient(135deg, var(--color-elem-background), color-mix(in srgb, var(--color-elem-background), var(--color-primary) 3%));
+}
+
+/* High contrast theme adjustments */
+[data-theme="high-contrast"] .kbd {
+  background-color: var(--color-hc-background);
+  border-color: var(--color-hc-border);
+  color: var(--color-hc-foreground);
+  border-width: 2px;
+}
+
+[data-theme="high-contrast"] .info-box {
+  background-color: var(--color-hc-background);
+  border-color: var(--color-hc-accent);
+  border-width: 2px;
+}
+
+[data-theme="high-contrast"] .shortcut-reference-box {
+  background: var(--color-hc-background);
+  border: 2px solid var(--color-hc-border);
+}
+
+[data-theme="high-contrast"] .page-indicator-active {
+  background-color: var(--color-hc-accent);
+}
+
+[data-theme="high-contrast"] .page-indicator-inactive {
+  background-color: var(--color-hc-border);
+}
+
+/* Download button styling */
+.download-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.75rem 1rem; /* py-3 px-4 */
+  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary), #000 10%));
+  color: white;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  border: none;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary), transparent 70%);
+  position: relative;
+  overflow: hidden;
+}
+
+.download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary), transparent 60%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary), #fff 10%), var(--color-primary));
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary), transparent 70%);
+}
+
+.download-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* gap-2 */
+  font-weight: 600;
+  font-size: 0.875rem; /* text-sm */
+}
+
+.download-btn-subtitle {
+  font-size: 0.75rem; /* text-xs */
+  opacity: 0.9;
+  margin-top: 0.125rem; /* mt-0.5 */
+  font-weight: 400;
+}
+
+/* Hover effect shimmer */
+.download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease-in-out;
+}
+
+.download-btn:hover::before {
+  left: 100%;
+}
+
+/* Shortcut reference box improvements */
+.shortcut-reference-box {
+  padding: 1.5rem; /* p-6 */
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-elem-background), color-mix(in srgb, var(--color-elem-background), var(--color-primary) 2%));
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.shortcut-reference-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  opacity: 0.3;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .download-btn {
+  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary), #000 20%));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .download-btn:hover {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary), #fff 15%), var(--color-primary));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .shortcut-reference-box {
+  background: linear-gradient(135deg, var(--color-elem-background), color-mix(in srgb, var(--color-elem-background), var(--color-primary) 3%));
+}
+
+/* High contrast theme adjustments */
+[data-theme="high-contrast"] .download-btn {
+  background: var(--color-hc-accent);
+  color: var(--color-hc-background);
+  border: 2px solid var(--color-hc-foreground);
+  box-shadow: none;
+}
+
+[data-theme="high-contrast"] .download-btn:hover {
+  background: var(--color-hc-foreground);
+  color: var(--color-hc-background);
+  transform: none;
+}
+
+[data-theme="high-contrast"] .download-btn::before {
+  display: none;
+}
+
+[data-theme="high-contrast"] .shortcut-reference-box {
+  background: var(--color-hc-background);
+  border: 2px solid var(--color-hc-border);
+}
+
+[data-theme="high-contrast"] .shortcut-reference-box::before {
+  display: none;
+}

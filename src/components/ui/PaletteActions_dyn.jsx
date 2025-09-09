@@ -521,6 +521,7 @@ export const useDynamicKBarActions = () => {
       shortcut: ["F1"],
       perform: () => openDialog("welcome"),
       icon: <HelpCircle className="size-5 shrink-0 opacity-70" />,
+      priority: Priority.LOW,
     },
 
   ], [isAudioEnabled, cursorCoords, functionDefinitions, isReadOnly, focusChart]);
