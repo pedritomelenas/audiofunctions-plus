@@ -78,6 +78,7 @@ export function DialogProvider({ children }) {
       <WelcomeDialog
         isOpen={dialog.type === "welcome"}
         onClose={closeDialog}
+        isAutoOpened={dialog.props?.isAutoOpened || false}
         {...dialog.props}
       />
     </DialogContext.Provider>

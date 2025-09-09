@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 
-const WelcomeDialog = ({ isOpen, onClose }) => {
+const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -18,7 +18,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
           <p className="text-descriptions">
             This tutorial will guide you through the main features and help you get started with creating and exploring mathematical functions.
           </p>
-          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+          <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
             <p className="text-sm text-descriptions">
               <strong>Tip:</strong> You can always access this tutorial again through the Help section in the command palette (Ctrl+K or Cmd+K).
             </p>
@@ -31,7 +31,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
       content: (
         <div className="space-y-4">
           <p className="text-descriptions">
-            You can create mathematical functions using the Edit Functions dialog. Access it by pressing <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-sm">F</kbd> or through the command palette.
+            You can create mathematical functions using the Edit Functions dialog. Access it by pressing <kbd className="px-2 py-1 bg-surface border border-border rounded text-sm text-titles font-mono">F</kbd> or through the command palette.
           </p>
           <div className="space-y-2">
             <h4 className="font-semibold text-titles">Function Types:</h4>
@@ -40,7 +40,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
               <li><strong>Piecewise Functions:</strong> Functions with different expressions for different conditions</li>
             </ul>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
             <p className="text-sm text-descriptions">
               <strong>Example:</strong> Try entering "sin(x)" or "x^2" to see how functions are visualized and sonified.
             </p>
@@ -59,10 +59,10 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
             <div>
               <h4 className="font-semibold text-titles">Keyboard Navigation:</h4>
               <ul className="list-disc list-inside space-y-1 text-descriptions text-sm">
-                <li><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">←</kbd> / <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">→</kbd> or <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">J</kbd> / <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">L</kbd> - Move cursor step by step</li>
-                <li><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Shift</kbd> + arrows - Smooth continuous movement</li>
-                <li><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">A/D/W/S</kbd> - Pan the view</li>
-                <li><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Z</kbd> - Zoom in/out</li>
+                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">←</kbd> / <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">→</kbd> or <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">J</kbd> / <kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">L</kbd> - Move cursor step by step</li>
+                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">Shift</kbd> + arrows - Smooth continuous movement</li>
+                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">A/D/W/S</kbd> - Pan the view</li>
+                <li><kbd className="px-1 py-0.5 bg-surface border border-border rounded text-xs text-titles font-mono">Z</kbd> - Zoom in/out</li>
               </ul>
             </div>
             <div>
@@ -106,8 +106,8 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
 
-      // Escape: Close dialog
-      if (e.key === 'Escape') {
+      // Only allow Escape to close if not auto-opened
+      if (e.key === 'Escape' && !isAutoOpened) {
         e.preventDefault();
         handleClose();
       }
@@ -133,7 +133,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, currentPage, isLastPage, isFirstPage]);
+  }, [isOpen, currentPage, isLastPage, isFirstPage, isAutoOpened]);
 
   const handleNext = () => {
     if (currentPage < pages.length - 1) {
@@ -158,7 +158,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
   return (
     <Dialog 
       open={isOpen} 
-      onClose={handleClose} 
+      onClose={isAutoOpened ? () => {} : handleClose} // Disable click-outside close if auto-opened
       className="relative" 
       aria-modal="true" 
       role="dialog"
@@ -167,7 +167,7 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
     >
       <div className="fixed inset-0 bg-overlay" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
-        <DialogPanel className="w-full max-w-2xl max-h-[90vh] bg-background rounded-lg shadow-lg flex flex-col">
+        <DialogPanel className="w-full max-w-2xl max-h-[90vh] bg-background border border-border rounded-lg shadow-lg flex flex-col">
           <div className="p-6 pb-4">
             <DialogTitle id="dialog-title" className="text-lg font-bold text-titles">
               {currentPageData.title}
@@ -190,19 +190,20 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
           {/* Content area */}
           <div className="flex-1 overflow-y-auto px-6" role="main" aria-label="Tutorial content">
             {currentPageData.content}
+            <br />
           </div>
 
           {/* Navigation and controls */}
-          <div className="px-6 py-4" role="group" aria-label="Tutorial navigation">
+          <div className="px-6 py-4 border-t border-border" role="group" aria-label="Tutorial navigation">
             {/* Page indicators */}
             <div className="flex justify-center mb-4" role="group" aria-label="Page indicators">
               {pages.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full mx-1 ${
+                  className={`w-2 h-2 rounded-full mx-1 transition-colors duration-200 ${
                     index === currentPage 
                       ? "bg-primary" 
-                      : "bg-gray-300 dark:bg-gray-600"
+                      : "bg-border"
                   }`}
                   aria-hidden="true"
                 />
@@ -214,20 +215,23 @@ const WelcomeDialog = ({ isOpen, onClose }) => {
               <button
                 onClick={handlePrevious}
                 disabled={isFirstPage}
-                className="btn-secondary flex items-center gap-2"
+                className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Go to previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
               </button>
 
-              <button
-                onClick={handleClose}
-                className="btn-secondary"
-                aria-label="Skip tutorial and close"
-              >
-                Skip
-              </button>
+              {/* Only show Skip button if not auto-opened */}
+              {!isAutoOpened && (
+                <button
+                  onClick={handleClose}
+                  className="btn-secondary"
+                  aria-label="Skip tutorial and close"
+                >
+                  Skip
+                </button>
+              )}
 
               <button
                 onClick={isLastPage ? handleClose : handleNext}

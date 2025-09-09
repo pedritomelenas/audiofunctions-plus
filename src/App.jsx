@@ -44,7 +44,7 @@ const AppContent = () => {
     if (!hasSeenWelcome) {
       // Small delay to ensure everything is loaded
       setTimeout(() => {
-        openDialog('welcome');
+        openDialog('welcome', { isAutoOpened: true });
       }, 1000);
     }
   }, [openDialog]);

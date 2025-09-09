@@ -518,6 +518,7 @@ export const useDynamicKBarActions = () => {
       id: "help",
       name: "Help",
       keywords: "help, tutorial, guide, welcome",
+      shortcut: ["F1"],
       perform: () => openDialog("welcome"),
       icon: <HelpCircle className="size-5 shrink-0 opacity-70" />,
     },
