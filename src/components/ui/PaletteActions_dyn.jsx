@@ -463,6 +463,18 @@ export const useDynamicKBarActions = () => {
         icon: <FileDown className="size-5 shrink-0 opacity-70" />,
       }
     ] : []),
+    // Only Import if in read-only or fully restricted mode
+    ...(isReadOnly || isFullyRestricted ? [
+      {
+        id: "import-json",
+        name: "Import from file",
+        shortcut: [""],
+        keywords: "import, json, upload, file",
+        perform: () => openDialog("import-json"),
+        icon: <FileUp className="size-5 shrink-0 opacity-70" />,
+        priority: Priority.LOW
+      }
+    ] : []),
 
 
 
