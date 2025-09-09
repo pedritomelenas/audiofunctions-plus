@@ -191,13 +191,8 @@
     /* special cases */
     --color-text-input-background: var(--color-hc-background);
 
-
-
     /* dimensions */
     --spacing-highlight-border: 5px;
-
-
-    
 
     /* Further accessibility changes -- not used right now */
     --font-size-base: 1.1rem; 
@@ -205,6 +200,65 @@
     --shadow-standard: 0 0 0 2px var(--color-hc-border);
     
     color-scheme: dark;
+  }
+
+  [data-theme="deuteranopia-protanopia-friendly"] {
+    /* Deuteranopia/Protanopia-friendly colors - avoiding red/green confusion */
+    --color-dpf-background: #f8f9fa;
+    --color-dpf-dark-background: #2c3e50;
+    --color-dpf-foreground: #2c3e50;
+    --color-dpf-primary: #3498db; /* Blue - easily distinguishable */
+    --color-dpf-secondary: #f39c12; /* Orange - good contrast to blue */
+    --color-dpf-accent: #9b59b6; /* Purple - distinct from other colors */
+    --color-dpf-warning: #f39c12; /* Orange instead of yellow */
+    --color-dpf-error: #e74c3c; /* Red (but used sparingly) */
+    --color-dpf-success: #3498db; /* Blue instead of green */
+    --color-dpf-border: #bdc3c7;
+    --color-dpf-gray-light: #ecf0f1;
+    --color-dpf-gray-medium: #95a5a6;
+    --color-dpf-gray-dark: #7f8c8d;
+    
+    /* General */
+    --color-primary: var(--color-dpf-primary);
+    --color-background: var(--color-white);
+    --color-overlay: color-mix(in srgb, var(--color-black), transparent 30%);
+
+    /* Text */
+    --color-txt: var(--color-gray-dk);
+    --color-txt-title: var(--color-gray-darker);
+    --color-txt-subtitle: var(--color-gray-mddk);
+    --color-txt-label: var(--color-gray-mddk);
+
+    /* Basic elements */
+    --color-elem-background: var(--color-gray-li);
+    --color-border: var(--color-dpf-border);
+    --color-hover-border: var(--color-dpf-primary);
+    --color-hover-full: color-mix(in srgb, var(--color-dpf-primary), transparent 45%);
+    --color-focus-border: var(--color-dpf-primary);
+    --color-contrast-border: var(--color-dpf-accent);
+
+    /* Graph */
+    --color-axis: var(--color-dpf-gray-medium);
+    --color-grid: var(--color-dpf-border);
+
+    /* Graph elements */
+    --color-curve-primary: var(--color-dpf-primary);
+    --color-curve-secondary: var(--color-dpf-secondary);
+
+    --color-isolated-point: var(--color-dpf-accent);
+    --color-isolated-point-border: var(--color-dpf-accent);
+    --color-endpoint-closed: var(--color-dpf-accent);
+    --color-endpoint-closed-border: var(--color-dpf-accent);
+    --color-endpoint-open: var(--color-dpf-background);
+    --color-endpoint-open-border: var(--color-dpf-accent);
+
+    --color-cursor-primary: var(--color-dpf-warning);
+    --color-cursor-primary-border: var(--color-dpf-warning);
+
+    /* special cases */
+    --color-text-input-background: var(--color-white);
+
+    color-scheme: light;
   }
 
 }
@@ -615,125 +669,4 @@ text.JXGtext {
 
 [data-theme="high-contrast"] .page-indicator-inactive {
   background-color: var(--color-hc-border);
-}
-
-/* Download button styling */
-.download-btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0.75rem 1rem; /* py-3 px-4 */
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary), #000 10%));
-  color: white;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: all 0.2s ease-in-out;
-  border: none;
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary), transparent 70%);
-  position: relative;
-  overflow: hidden;
-}
-
-.download-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary), transparent 60%);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary), #fff 10%), var(--color-primary));
-}
-
-.download-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary), transparent 70%);
-}
-
-.download-btn-content {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem; /* gap-2 */
-  font-weight: 600;
-  font-size: 0.875rem; /* text-sm */
-}
-
-.download-btn-subtitle {
-  font-size: 0.75rem; /* text-xs */
-  opacity: 0.9;
-  margin-top: 0.125rem; /* mt-0.5 */
-  font-weight: 400;
-}
-
-/* Hover effect shimmer */
-.download-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s ease-in-out;
-}
-
-.download-btn:hover::before {
-  left: 100%;
-}
-
-/* Shortcut reference box improvements */
-.shortcut-reference-box {
-  padding: 1.5rem; /* p-6 */
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-elem-background), color-mix(in srgb, var(--color-elem-background), var(--color-primary) 2%));
-  border: 1px solid var(--color-border);
-  position: relative;
-}
-
-.shortcut-reference-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
-  opacity: 0.3;
-}
-
-/* Dark theme adjustments */
-[data-theme="dark"] .download-btn {
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary), #000 20%));
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .download-btn:hover {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary), #fff 15%), var(--color-primary));
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .shortcut-reference-box {
-  background: linear-gradient(135deg, var(--color-elem-background), color-mix(in srgb, var(--color-elem-background), var(--color-primary) 3%));
-}
-
-/* High contrast theme adjustments */
-[data-theme="high-contrast"] .download-btn {
-  background: var(--color-hc-accent);
-  color: var(--color-hc-background);
-  border: 2px solid var(--color-hc-foreground);
-  box-shadow: none;
-}
-
-[data-theme="high-contrast"] .download-btn:hover {
-  background: var(--color-hc-foreground);
-  color: var(--color-hc-background);
-  transform: none;
-}
-
-[data-theme="high-contrast"] .download-btn::before {
-  display: none;
-}
-
-[data-theme="high-contrast"] .shortcut-reference-box {
-  background: var(--color-hc-background);
-  border: 2px solid var(--color-hc-border);
-}
-
-[data-theme="high-contrast"] .shortcut-reference-box::before {
-  display: none;
 }

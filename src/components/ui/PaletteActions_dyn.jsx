@@ -511,6 +511,15 @@ export const useDynamicKBarActions = () => {
       perform: () => {setTheme("high-contrast"); announce("Theme set to high contrast mode");},
       icon: <Contrast className="size-5 shrink-0 opacity-70" />,
     },
+    {
+      id: "deuteranopia-protanopia-friendly-theme",
+      name: "Deuteranopia/Protanopia Friendly Theme",
+      // shortcut: [""],
+      keywords: "theme deuteranopia protanopia colorblind accessibility vision",
+      parent: "change-theme",
+      perform: () => {setTheme("deuteranopia-protanopia-friendly"); announce("Theme set to deuteranopia/protanopia friendly mode");},
+      icon: <Eye className="size-5 shrink-0 opacity-70" />,
+    },
 
 
     // Help section
