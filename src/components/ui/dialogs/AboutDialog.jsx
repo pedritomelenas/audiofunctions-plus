@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Description, Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { ExternalLink, Heart, Globe, Github } from "lucide-react";
+import packageJson from '../../../../package.json'; // Import package.json
 
 const AboutDialog = ({ isOpen, onClose }) => {
   const [statusMessage, setStatusMessage] = useState('');
@@ -418,7 +419,7 @@ const AboutDialog = ({ isOpen, onClose }) => {
             <div>
               <h2 className="font-semibold text-titles mb-3">Version Information</h2>
               <div className="text-sm pb-4 text-descriptions space-y-1">
-                <p><strong>Version:</strong> 1.0.0 Beta</p>
+                <p><strong>Version:</strong> {packageJson.version}</p>
                 <p><strong>Build Date:</strong> {new Date().toLocaleDateString()}</p>
               </div>
             </div>
