@@ -1,7 +1,7 @@
 import { useRegisterActions, Priority } from "kbar";
 import { Volume2, VolumeX, MapPin, Eye, Play, SquareActivity, ChartSpline, CircleGauge, List, ZoomIn, ZoomOut, 
   SwatchBook, Sun, Moon, SunMoon, Contrast,
-  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music, Ruler, HelpCircle, BookOpen } from "lucide-react"
+  ChartArea, FileChartLine, Import, Share2, FileUp, FileDown, ListRestart, RotateCcw, Music, Ruler, HelpCircle, BookOpen, Info } from "lucide-react"
 import { useGraphContext } from "../../context/GraphContext";
 import { getFunctionNameN, updateFunctionN, setFunctionInstrumentN, getFunctionInstrumentN } from "../../utils/graphObjectOperations";
 import { useDialog } from "../../context/DialogContext";
@@ -542,6 +542,14 @@ export const useDynamicKBarActions = () => {
       shortcut: ["F1"],
       perform: () => openDialog("welcome"),
       icon: <HelpCircle className="size-5 shrink-0 opacity-70" />,
+      priority: Priority.LOW,
+    },
+    {
+      id: "about",
+      name: "About AudioFunctions+",
+      keywords: "about, info, copyright, license, developers, version",
+      perform: () => openDialog("about"),
+      icon: <Info className="size-5 shrink-0 opacity-70" />,
       priority: Priority.LOW,
     },
 

@@ -9,6 +9,7 @@ import ShareDialog from "../components/ui/dialogs/shareDialog";
 import ExportJsonDialog from "../components/ui/dialogs/ExportJsonDialog";
 import ImportJsonDialog from "../components/ui/dialogs/ImportJsonDialog";
 import WelcomeDialog from "../components/ui/dialogs/WelcomeDialog";
+import AboutDialog from "../components/ui/dialogs/AboutDialog";
 
 const DialogContext = createContext();
 
@@ -79,6 +80,12 @@ export function DialogProvider({ children }) {
         isOpen={dialog.type === "welcome"}
         onClose={closeDialog}
         isAutoOpened={dialog.props?.isAutoOpened || false}
+        {...dialog.props}
+      />
+
+      <AboutDialog
+        isOpen={dialog.type === "about"}
+        onClose={closeDialog}
         {...dialog.props}
       />
     </DialogContext.Provider>
