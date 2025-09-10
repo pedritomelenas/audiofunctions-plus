@@ -441,21 +441,21 @@ button:hover {
   outline-style: solid;
   outline-offset: -5px !important;
   outline-color: var(--color-hc-link);
-  color: var(--color-hc-background) !important; /* Schwarze Schrift */
-  font-weight: 700 !important; /* Fette Schrift */
+  color: var(--color-hc-background) !important; /* Black text */
+  font-weight: 700 !important; /* Bold text */
 }
 
-/* Icons und Shortcuts in gehighlighteten Elementen auch schwarz machen */
+/* Make icons and shortcuts in highlighted elements also black */
 [data-theme="high-contrast"] .high-contrast-highlight-border svg {
-  color: var(--color-hc-background) !important; /* Schwarze Icons */
+  color: var(--color-hc-background) !important; /* Black icons */
 }
 
 [data-theme="high-contrast"] .high-contrast-highlight-border .opacity-70 {
-  opacity: 1 !important; /* Vollständige Deckkraft für bessere Sichtbarkeit */
+  opacity: 1 !important; /* Full opacity for better visibility */
 }
 
 [data-theme="high-contrast"] .high-contrast-highlight-border .text-txt-subtitle {
-  color: var(--color-hc-background) !important; /* Schwarze Shortcuts */
+  color: var(--color-hc-background) !important; /* Black shortcuts */
 }
 
 /* Error styles for input fields */

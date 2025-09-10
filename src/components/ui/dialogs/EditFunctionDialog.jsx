@@ -339,7 +339,7 @@ const FunctionContainer = ({ index, value, instrument, onChange, onDelete, onAcc
   const generalError = getGeneralError(inputErrors, functionId);
   
   const hasError = functionId && generalError;
-  const errorMessage = generalError; // generalError ist bereits der String, nicht ein Objekt
+  const errorMessage = generalError; // generalError is already the string, not an object
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
