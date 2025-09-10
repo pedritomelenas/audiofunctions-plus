@@ -131,8 +131,31 @@ export default function KeyboardHandler() {
             'á': 7,  // Czech 8
             'í': 8   // Czech 9
         };
+
+        // Handle Czech keyboard shortcuts with Shift (uppercase variants)
+        const czechFunctionKeyMapShift = {
+            '1': 0,  // Czech Shift + 1 (might produce different character)
+            '2': 1,  // Czech Shift + 2
+            '3': 2,  // Czech Shift + 3
+            '4': 3,  // Czech Shift + 4
+            '5': 4,  // Czech Shift + 5
+            '6': 5,  // Czech Shift + 6
+            '7': 6,  // Czech Shift + 7
+            '8': 7,  // Czech Shift + 8
+            '9': 8   // Czech Shift + 9
+        };
         
-        const targetIndex = czechFunctionKeyMap[event.key];
+        let targetIndex;
+        
+        // Check for Shift + Czech keys first
+        if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            targetIndex = czechFunctionKeyMapShift[event.key];
+        }
+        // Then check for regular Czech keys (without any modifier keys)
+        else if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+            targetIndex = czechFunctionKeyMap[event.key];
+        }
+        
         if (targetIndex !== undefined) {
             event.preventDefault();
             event.stopPropagation();
