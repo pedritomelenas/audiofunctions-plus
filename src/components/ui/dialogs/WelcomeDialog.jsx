@@ -70,13 +70,13 @@ const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
               <h2 className="text-titles font-semibold">Opening the Command Palette:</h2>
               <kbd className="kbd">Ctrl+K</kbd> / <kbd className="kbd">Cmd+K</kbd> - Opens the Command Palette
               <p className="text-descriptions text-sm mt-2">
-                The Command Palette is your central hub for all functions like "show current coordinates" or "switch sonification instrument". Many actions also have direct keyboard shortcuts (hotkeys).
+                The Command Palette is your central hub for all actions like "show current coordinates" or "switch sonification instrument". Many actions also have direct keyboard shortcuts (hotkeys).
               </p>
             </div>
 
             <div className="info-box" role="note" aria-label="Command Palette tip">
               <p className="text-descriptions">
-                <strong>Tip:</strong> In the Command Palette, you can simply type part of a function name (e.g. "instrument", "coordinates") - you don't need to know the exact name!
+                <strong>Tip:</strong> In the Command Palette, you can simply type part of a action name (e.g. "instrument", "coordinates") - you don't need to know the exact name!
               </p>
             </div>
           </div>
