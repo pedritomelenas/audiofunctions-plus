@@ -751,12 +751,12 @@ export function validateGridColor(gridColor) {
  * @returns {Array} - [isValid: boolean, errorMessage: string]
  */
 export function validateRestrictionMode(restrictionMode) {
-  const validModes = ['none', 'read-only'];
+  const validModes = ['none', 'read-only', 'full-restriction'];
   if (typeof restrictionMode !== 'string') {
     return [false, 'Restriction mode must be a string'];
   }
   if (!validModes.includes(restrictionMode)) {
-    return [false, `Restriction mode must be one of: ${validModes.join(', ')}`];
+    return [false, `Restriction mode must be one of: ${validModes.join(', ')}`];a
   }
   return [true, ''];
 }
