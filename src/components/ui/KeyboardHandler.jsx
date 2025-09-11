@@ -270,6 +270,10 @@ export default function KeyboardHandler() {
                     setPlayFunction(prev => ({ ...prev, source: "keyboard", active: true, direction: direction }));   // smooth move
                 }
                 break;
+            case " ": // Spacebar plays batch sonification
+                setPlayFunction(prev => ({ ...prev, source: "play", active: !prev.active }));
+                event.preventDefault();
+                event.stopPropagation();
             case "ArrowUp":
                 // if (event.shiftKey) {
                 //     setPlayFunction(prev => ({ ...prev, speed: prev.speed + (Math.abs(prev.speed+0.5) >= 10 ? 10 : 1) })); // Increase speed with Ctrl + Up
