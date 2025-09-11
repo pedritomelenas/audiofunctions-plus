@@ -42,7 +42,7 @@ const WelcomeDialog = ({ isOpen, onClose, isAutoOpened = false }) => {
               <ul className="list-disc list-inside space-y-1 text-descriptions text-sm" role="list">
                 <li><kbd className="kbd">←</kbd> / <kbd className="kbd">→</kbd> or <kbd className="kbd">J</kbd> / <kbd className="kbd">L</kbd> - Move cursor step by step</li>
                 <li><kbd className="kbd">Shift</kbd> + (<kbd className="kbd">←</kbd> / <kbd className="kbd">→</kbd> or <kbd className="kbd">J</kbd> / <kbd className="kbd">L</kbd>) - Smooth continuous movement</li>
-                <li><kbd className="kbd">A/D/W/S</kbd> - Pan the view</li>
+                <li><kbd className="kbd">W/A/S/D</kbd> - Pan the view</li>
                 <li><kbd className="kbd">Z</kbd> - Zoom in</li>
                 <li><kbd className="kbd">Shift</kbd> + <kbd className="kbd">Z</kbd> - Zoom out</li>
               </ul>

@@ -139,50 +139,50 @@ const initGraphObject = {
       "functionDef": "sin(x)",
       "isActive": true,
       "instrument": "clarinet",
-      "color": "#0000FF",           // optional
+      // "color": "#0000FF",           // optional
       "pointOfInterests": [
-        {
-          "x": 10,
-          "y": 10,
-          "type": "isolated",
-          "label": "iso 1",         // optional
-          "color": "#FF0000",       // optional
-          "earcon": "earcon 1"      // optional
-        },
+        // {
+        //   "x": 10,
+        //   "y": 10,
+        //   "type": "isolated",
+        //   "label": "iso 1",         // optional
+        //   "color": "#FF0000",       // optional
+        //   "earcon": "earcon 1"      // optional
+        // },
       ],
 
       "landmarks": [
-        {
-          "x": 0,
-          "y": 0,
-          "label": "landmark",      // optional
-          "color": "#FF0000",       // optional
-          "earcon": "earcon2",
-          "message": "user defined message",  // optional
-          "shortcut": "a"           // set by app or user
-        },
+        // {
+        //   "x": 0,
+        //   "y": 0,
+        //   "label": "landmark",      // optional
+        //   "color": "#FF0000",       // optional
+        //   "earcon": "earcon2",
+        //   "message": "user defined message",  // optional
+        //   "shortcut": "a"           // set by app or user
+        // },
       ]
     },
 
 
     {
       "id": "f2",
-      "functionName": "Pieces",
+      "functionName": "Function 2",
       "type": "piecewise_function",
       // "functionString": "[[x+5,x < -4],[1/2*x^2,-4<=x < 1],[x-2,1<=x < 3],[5,x==3],[x-2,3 < x < 5],[3,5<= x]]",
-      "functionDef": [["x+5","x < -4"],["1/2*x^2","-4<=x < 1"],["x-2","1<=x < 3"],["5","x==3"],["x-2","3 < x < 5"],["3","5<= x"]],
+      "functionDef": [["x^2","x <= 0"],["x + 1"," 0 < x"]],
       "isActive": false,
       "instrument": "clarinet",
-      "color": "#FF0000",           // optional
+      // "color": "#FF0000",           // optional
       "pointOfInterests": [
-        {
-          "x": 3,
-          "y": 5,
-          "type": "isolated",
-          "label": "iso 1",         // optional
-          "color": "#FF0000",       // optional
-          "earcon": "earcon 1"      // optional
-        },
+        // {
+        //   "x": 3,
+        //   "y": 5,
+        //   "type": "isolated",
+        //   "label": "iso 1",         // optional
+        //   "color": "#FF0000",       // optional
+        //   "earcon": "earcon 1"      // optional
+        // },
       ],
       "landmarks": []
     }
@@ -192,7 +192,6 @@ const initGraphObject = {
       "defaultView": [-10, 10, 10, -10],
       "minBoundDifference": 0.1, // minimum difference between xMin and xMax, and yMin and yMax
       "maxBoundDifference": 100, // maximum difference between xMin and xMax, and yMin and yMax
-      // should we differ between x and y Diffs?
       "showGrid": true,
       "showAxes": true,
       "gridColor": "#CCCCCC",
