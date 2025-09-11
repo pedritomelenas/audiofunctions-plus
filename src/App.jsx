@@ -2,10 +2,10 @@ import './App.css';
 import { KBarProvider, useKBar } from 'kbar';
 import CommandBar from './components/ui/CommandPalette';
 import GraphView from './components/graph/GraphView';
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { GraphContextProvider } from "./context/GraphContext";
 import GraphSonification from './components/graph/GraphSonification';
-import { DialogProvider } from './context/DialogContext';
+import { DialogProvider, useDialog } from './context/DialogContext';
 import Header from './components/ui/Header';
 import { InstrumentsProvider } from './context/InstrumentsContext';
 import KeyboardHandler from "./components/ui/KeyboardHandler";
@@ -21,7 +21,7 @@ function App() {
           <InfoToastProvider>
             <KeyboardHandler />
             <DialogProvider>
-              <KBarWrapper />
+              <AppContent />
             </DialogProvider>
           </InfoToastProvider>
         </AnnouncementProvider>
@@ -29,6 +29,28 @@ function App() {
     </InstrumentsProvider>
   );
 }
+
+const AppContent = () => {
+  const { openDialog } = useDialog();
+  const hasCheckedWelcome = useRef(false);
+
+  // Check if this is the first visit and show welcome dialog
+  useEffect(() => {
+    // Prevent double execution
+    if (hasCheckedWelcome.current) return;
+    hasCheckedWelcome.current = true;
+
+    const hasSeenWelcome = localStorage.getItem('audiofunctions-welcome-seen');
+    if (!hasSeenWelcome) {
+      // Small delay to ensure everything is loaded
+      setTimeout(() => {
+        openDialog('welcome', { isAutoOpened: true });
+      }, 1000);
+    }
+  }, [openDialog]);
+
+  return <KBarWrapper />;
+};
 
 const KBarWrapper = () => {
   // needed to wrap actions into GraphContextProvider

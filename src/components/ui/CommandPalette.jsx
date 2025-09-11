@@ -119,7 +119,7 @@ const LiveRegion = () => {
         const firstResult = results.find((item) => typeof item !== "string");
         const message = firstResult 
             ? `${firstResult.name}` 
-            : "Keine Ergebnisse gefunden";
+            : "No results found";
     
         // console.log("prev: ", prevMessage.current);
         // console.log("message: ", message);

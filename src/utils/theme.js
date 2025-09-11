@@ -15,6 +15,8 @@ export function initializeTheme() {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else if (savedTheme === 'high-contrast') {
     document.documentElement.setAttribute('data-theme', 'high-contrast');
+  } else if (savedTheme === 'deuteranopia-protanopia-friendly') {
+    document.documentElement.setAttribute('data-theme', 'deuteranopia-protanopia-friendly');
   } else if (savedTheme === 'light') {
     document.documentElement.removeAttribute('data-theme');
   } else {
@@ -57,7 +59,7 @@ function handleSystemThemeChange(e) {
 
 /**
  * Set theme and save preference to localStorage
- * @param {string} theme - Theme name ('light', 'dark', or 'system')
+ * @param {string} theme - Theme name ('light', 'dark', 'high-contrast', 'colorblind-friendly', or 'system')
  */
 export function setTheme(theme) {
   console.log("Setting theme to:", theme);
@@ -69,6 +71,10 @@ export function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', 'high-contrast');
     localStorage.setItem('theme', 'high-contrast');
   } 
+  else if (theme === 'deuteranopia-protanopia-friendly') {
+    document.documentElement.setAttribute('data-theme', 'deuteranopia-protanopia-friendly');
+    localStorage.setItem('theme', 'deuteranopia-protanopia-friendly');
+  }
   else if (theme === 'light') {
     document.documentElement.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
