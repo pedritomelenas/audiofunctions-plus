@@ -471,13 +471,17 @@ const GraphSonification = () => {
     }
 
     // Reset pitch classes when batch exploration starts
-    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play" && !batchResetDoneRef.current) {
-      console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
-      lastPitchClassesRef.current.clear();
-      batchTickCountRef.current = 0;
-      batchResetDoneRef.current = true;
-    } else if (explorationMode !== "batch") {
-      // Reset flags when not in batch mode
+    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play") {
+      // Reset last pitch classes every time batch exploration starts
+      // This ensures that even if the same pitch would be played, it gets played again in a new batch
+      if (!batchResetDoneRef.current) {
+        console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
+        lastPitchClassesRef.current.clear();
+        batchTickCountRef.current = 0;
+        batchResetDoneRef.current = true;
+      }
+    } else {
+      // Reset flags when not in batch mode or when batch stops
       batchResetDoneRef.current = false;
       batchTickCountRef.current = 0;
     }
