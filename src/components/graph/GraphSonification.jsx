@@ -702,16 +702,25 @@ const GraphSonification = () => {
     const prevXSign = prevXSignRef.current.get(functionId);
     const currentXSign = Math.sign(x);
     
-    // Check if we crossed the y-axis (x coordinate sign changed)
-    // Only trigger if we have a valid previous sign (not null/undefined) and signs are different
-    if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && currentXSign !== 0) {
+    let shouldTriggerEarcon = false;
+    
+    // Case 1: Reached x=0 (y-axis) - play earcon regardless of previous position
+    if (currentXSign === 0) {
+      shouldTriggerEarcon = true;
+    }
+    // Case 2: Crossed the y-axis (x coordinate sign changed) - but not if we're leaving x=0
+    else if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && prevXSign !== 0) {
+      shouldTriggerEarcon = true;
+    }
+    
+    if (shouldTriggerEarcon) {
       const lastTriggered = yAxisTriggeredRef.current.get(functionId);
       const now = Date.now();
       
       if (!lastTriggered || (now - lastTriggered) > 300) { // 300ms cooldown
         await playAudioSample("y_axis_intersection", { volume: -12 });
         yAxisTriggeredRef.current.set(functionId, now);
-        console.log(`Y-axis intersection event triggered for function ${functionId}`);
+        console.log(`Y-axis intersection event triggered for function ${functionId} at x=${x}`);
       }
     }
     
