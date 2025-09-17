@@ -26,6 +26,7 @@ export const GraphContextProvider = ({ children }) => {
   const [updateCursor, setUpdateCursor] = useState(null);
   const [stepSize, setStepSize] = useState(0.5); // Default value 0.5
   const [explorationMode, setExplorationMode] = useState("none"); // "none", "mouse", "keyboard_stepwise", "keyboard_smooth", "batch"
+  const [isShiftPressed, setIsShiftPressed] = useState(false); // Track Shift key state
   const inputRefs = {
     function: useRef(null),
     speed: useRef(null),
@@ -117,6 +118,8 @@ export const GraphContextProvider = ({ children }) => {
         setStepSize,
         explorationMode,
         setExplorationMode,
+        isShiftPressed,
+        setIsShiftPressed,
         focusChart,
       }}
     >

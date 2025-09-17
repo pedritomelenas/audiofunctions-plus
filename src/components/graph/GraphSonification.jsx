@@ -21,7 +21,8 @@ const GraphSonification = () => {
     functionDefinitions,
     stepSize, // <-- get stepSize from context
     PlayFunction, // <-- get PlayFunction to detect exploration mode
-    explorationMode // <-- get exploration mode for robust detection
+    explorationMode, // <-- get exploration mode for robust detection
+    isShiftPressed // <-- get Shift key state
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -576,8 +577,8 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
-      // Handle tick sound with panning - only in smooth exploration modes (keyboard smooth, mouse, or batch)
-      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && 
+      // Handle tick sound with panning - only when Shift is pressed, regardless of exploration mode
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && isShiftPressed &&
           (explorationMode === "keyboard_smooth" || explorationMode === "mouse" || explorationMode === "batch")) {
         let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
