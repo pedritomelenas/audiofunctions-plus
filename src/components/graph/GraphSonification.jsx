@@ -21,7 +21,8 @@ const GraphSonification = () => {
     functionDefinitions,
     stepSize, // <-- get stepSize from context
     PlayFunction, // <-- get PlayFunction to detect exploration mode
-    explorationMode // <-- get exploration mode for robust detection
+    explorationMode, // <-- get exploration mode for robust detection
+    isShiftPressed // <-- get Shift key state
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -471,13 +472,17 @@ const GraphSonification = () => {
     }
 
     // Reset pitch classes when batch exploration starts
-    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play" && !batchResetDoneRef.current) {
-      console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
-      lastPitchClassesRef.current.clear();
-      batchTickCountRef.current = 0;
-      batchResetDoneRef.current = true;
-    } else if (explorationMode !== "batch") {
-      // Reset flags when not in batch mode
+    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play") {
+      // Reset last pitch classes every time batch exploration starts
+      // This ensures that even if the same pitch would be played, it gets played again in a new batch
+      if (!batchResetDoneRef.current) {
+        console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
+        lastPitchClassesRef.current.clear();
+        batchTickCountRef.current = 0;
+        batchResetDoneRef.current = true;
+      }
+    } else {
+      // Reset flags when not in batch mode or when batch stops
       batchResetDoneRef.current = false;
       batchTickCountRef.current = 0;
     }
@@ -572,8 +577,8 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
-      // Handle tick sound with panning - only in smooth exploration modes (keyboard smooth, mouse, or batch)
-      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && 
+      // Handle tick sound with panning - only when Shift is pressed, regardless of exploration mode
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && isShiftPressed &&
           (explorationMode === "keyboard_smooth" || explorationMode === "mouse" || explorationMode === "batch")) {
         let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
@@ -702,16 +707,25 @@ const GraphSonification = () => {
     const prevXSign = prevXSignRef.current.get(functionId);
     const currentXSign = Math.sign(x);
     
-    // Check if we crossed the y-axis (x coordinate sign changed)
-    // Only trigger if we have a valid previous sign (not null/undefined) and signs are different
-    if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && currentXSign !== 0) {
+    let shouldTriggerEarcon = false;
+    
+    // Case 1: Reached x=0 (y-axis) - play earcon regardless of previous position
+    if (currentXSign === 0) {
+      shouldTriggerEarcon = true;
+    }
+    // Case 2: Crossed the y-axis (x coordinate sign changed) - but not if we're leaving x=0
+    else if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && prevXSign !== 0) {
+      shouldTriggerEarcon = true;
+    }
+    
+    if (shouldTriggerEarcon) {
       const lastTriggered = yAxisTriggeredRef.current.get(functionId);
       const now = Date.now();
       
       if (!lastTriggered || (now - lastTriggered) > 300) { // 300ms cooldown
         await playAudioSample("y_axis_intersection", { volume: -12 });
         yAxisTriggeredRef.current.set(functionId, now);
-        console.log(`Y-axis intersection event triggered for function ${functionId}`);
+        console.log(`Y-axis intersection event triggered for function ${functionId} at x=${x}`);
       }
     }
     
