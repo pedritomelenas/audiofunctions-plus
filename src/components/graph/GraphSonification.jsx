@@ -21,7 +21,8 @@ const GraphSonification = () => {
     functionDefinitions,
     stepSize, // <-- get stepSize from context
     PlayFunction, // <-- get PlayFunction to detect exploration mode
-    explorationMode // <-- get exploration mode for robust detection
+    explorationMode, // <-- get exploration mode for robust detection
+    isShiftPressed // <-- get Shift key state
   } = useGraphContext();
   
   // Refs to track previous states for event detection
@@ -471,13 +472,20 @@ const GraphSonification = () => {
     }
 
     // Reset pitch classes when batch exploration starts
-    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play" && !batchResetDoneRef.current) {
-      console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
-      lastPitchClassesRef.current.clear();
-      batchTickCountRef.current = 0;
-      batchResetDoneRef.current = true;
-    } else if (explorationMode !== "batch") {
-      // Reset flags when not in batch mode
+    if (explorationMode === "batch" && PlayFunction.active && PlayFunction.source === "play") {
+      // Reset last pitch classes every time batch exploration starts
+      // This ensures that even if the same pitch would be played, it gets played again in a new batch
+      if (!batchResetDoneRef.current) {
+        console.log("Batch exploration started - resetting last pitch classes for discrete sonification");
+        lastPitchClassesRef.current.clear();
+        // Reset y-axis intersection tracking for batch mode
+        prevXSignRef.current.clear();
+        yAxisTriggeredRef.current.clear();
+        batchTickCountRef.current = 0;
+        batchResetDoneRef.current = true;
+      }
+    } else {
+      // Reset flags when not in batch mode or when batch stops
       batchResetDoneRef.current = false;
       batchTickCountRef.current = 0;
     }
@@ -540,7 +548,7 @@ const GraphSonification = () => {
         // Stop all tones before playing the earcon
         stopAllTones();
         
-        playAudioSample("no_y", { volume: -10 });
+        playAudioSample("no_y", { volume: -25 });
         boundaryTriggeredRef.current.set('no_visible_functions', now);
         console.log(`No visible functions in current interval, playing no_y.mp3. cursorCoords:`, cursorCoords);
       }
@@ -554,7 +562,7 @@ const GraphSonification = () => {
         const now = Date.now();
         
         if (!lastTriggered || (now - lastTriggered) > 200) { // 200ms cooldown
-          playAudioSample("no_y", { volume: -10 });
+          playAudioSample("no_y", { volume: -25 });
           boundaryTriggeredRef.current.set('some_out_of_bounds', now);
           console.log(`Some functions out of bounds, playing no_y.mp3 while continuing sonification of visible functions. cursorCoords:`, cursorCoords);
         }
@@ -572,8 +580,8 @@ const GraphSonification = () => {
       const mouseY = coord.mouseY ? parseFloat(coord.mouseY) : null;
       const pan = calculatePan(x);
 
-      // Handle tick sound with panning - only in smooth exploration modes (keyboard smooth, mouse, or batch)
-      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && 
+      // Handle tick sound with panning - only when Shift is pressed, regardless of exploration mode
+      if (stepSize && stepSize > 0 && typeof x === 'number' && !isNaN(x) && isAudioEnabled && isShiftPressed &&
           (explorationMode === "keyboard_smooth" || explorationMode === "mouse" || explorationMode === "batch")) {
         let n = Math.floor(x / stepSize);
         if (n !== lastTickIndexRef.current) {
@@ -592,12 +600,15 @@ const GraphSonification = () => {
       }
 
       // Check for special events first (this sets the boundary state)
-      // Skip boundary detection for the first 5 ticks of batch exploration
-      const shouldSkipBoundaryDetection = explorationMode === "batch" && batchTickCountRef.current <= 5;
+      // Skip chart boundary detection for the first 5 ticks of batch exploration
+      // but always allow y-axis intersection detection as it's important for navigation
+      const shouldSkipChartBoundaryDetection = explorationMode === "batch" && batchTickCountRef.current <= 5;
       
-      if (!shouldSkipBoundaryDetection) {
+      // Always check y-axis intersection events (important for navigation)
+      await checkYAxisIntersectionEvents(functionId, coord);
+      
+      if (!shouldSkipChartBoundaryDetection) {
         await checkChartBoundaryEvents(functionId, coord);
-        await checkYAxisIntersectionEvents(functionId, coord);
         await checkDiscontinuityEvents(functionId, coord);
       } else {
         // Reset boundary state during skipped detection to prevent false positives
@@ -702,16 +713,31 @@ const GraphSonification = () => {
     const prevXSign = prevXSignRef.current.get(functionId);
     const currentXSign = Math.sign(x);
     
-    // Check if we crossed the y-axis (x coordinate sign changed)
-    // Only trigger if we have a valid previous sign (not null/undefined) and signs are different
-    if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && currentXSign !== 0) {
+    let shouldTriggerEarcon = false;
+    
+    // Case 1: Reached x=0 (y-axis) - play earcon regardless of previous position
+    if (currentXSign === 0) {
+      shouldTriggerEarcon = true;
+    }
+    // Case 2: Crossed the y-axis (x coordinate sign changed) - but not if we're leaving x=0
+    else if (prevXSign !== null && prevXSign !== undefined && prevXSign !== currentXSign && prevXSign !== 0) {
+      shouldTriggerEarcon = true;
+    }
+    // Case 3: Special case for batch mode - if we start very close to y-axis and cross it
+    else if (explorationMode === "batch" && prevXSign === null && Math.abs(x) < 0.1) {
+      // If this is the first tick in batch mode and we're very close to y-axis, 
+      // treat it as a potential y-axis intersection
+      shouldTriggerEarcon = true;
+    }
+    
+    if (shouldTriggerEarcon) {
       const lastTriggered = yAxisTriggeredRef.current.get(functionId);
       const now = Date.now();
       
       if (!lastTriggered || (now - lastTriggered) > 300) { // 300ms cooldown
         await playAudioSample("y_axis_intersection", { volume: -12 });
         yAxisTriggeredRef.current.set(functionId, now);
-        console.log(`Y-axis intersection event triggered for function ${functionId}`);
+        console.log(`Y-axis intersection event triggered for function ${functionId} at x=${x} (batch mode: ${explorationMode === "batch"})`);
       }
     }
     
@@ -747,7 +773,7 @@ const GraphSonification = () => {
         stopTone(functionId);
         console.log(`Stopping tone for function ${functionId} due to ${isInvalid ? 'discontinuity' : 'out of bounds'} at x=${coords.x}, y=${coords.y}`);
         
-        await playAudioSample("no_y", { volume: -10 });
+        await playAudioSample("no_y", { volume: -35 });
         boundaryTriggeredRef.current.set(`${functionId}_discontinuity`, now);
         console.log(`${isInvalid ? 'Discontinuity' : 'Out of bounds'} event triggered for function ${functionId} at x=${coords.x}, y=${coords.y}`);
       }

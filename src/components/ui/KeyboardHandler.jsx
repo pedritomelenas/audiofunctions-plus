@@ -73,7 +73,8 @@ export default function KeyboardHandler() {
         setExplorationMode,
         PlayFunction,
         mouseTimeoutRef,
-        isAudioEnabled
+        isAudioEnabled,
+        setIsShiftPressed
     } = useGraphContext();
 
     const { announce } = useAnnouncement();
@@ -116,6 +117,12 @@ export default function KeyboardHandler() {
         }
 
         pressedKeys.current.add(event.key.toLowerCase());   // Store the pressed key in the set
+        
+        // Track Shift key state
+        if (event.key === "Shift") {
+          setIsShiftPressed(true);
+        }
+        
         const activeFunctions = getActiveFunctions(functionDefinitions);
         const step = event.shiftKey ? 5 : 1; // if shift is pressed, change step size
 
@@ -301,6 +308,12 @@ export default function KeyboardHandler() {
         }
 
         pressedKeys.current.delete(e.key.toLowerCase());
+        
+        // Track Shift key state
+        if (e.key === "Shift") {
+          setIsShiftPressed(false);
+        }
+        
         // If the arrow keys or J/L keys are released, stop move but maintain the last cursor position
         if (["ArrowLeft", "ArrowRight", "j", "J", "l", "L"].includes(e.key)) {
           setPlayFunction(prev => {
@@ -329,7 +342,7 @@ export default function KeyboardHandler() {
         document.removeEventListener("keydown", handleKeyDown);
         document.removeEventListener("keyup", handleKeyUp);
       };
-    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setFunctionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, ZoomBoard]);
+    }, [setPlayFunction, setIsAudioEnabled, setGraphBounds, setGraphSettings, inputRefs, cursorCoords, updateCursor, stepSize, functionDefinitions, setFunctionDefinitions, setExplorationMode, PlayFunction, mouseTimeoutRef, isAudioEnabled, setIsShiftPressed, ZoomBoard]);
   
     return null;
 }

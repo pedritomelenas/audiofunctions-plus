@@ -540,6 +540,14 @@ const GraphView = () => {
 
     if (PlayFunction.active) {
       console.log("Play mode activated!");
+      
+      // Set exploration mode based on the source
+      if (PlayFunction.source === "play") {
+        setExplorationMode("batch");
+      } else if (PlayFunction.source === "keyboard") {
+        setExplorationMode("keyboard_smooth");
+      }
+      
       let startX;
       if (PlayFunction.source === "play") {
         startX = PlayFunction.speed > 0 ? graphBounds.xMin : graphBounds.xMax;

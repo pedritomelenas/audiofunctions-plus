@@ -238,7 +238,7 @@ export const createInstruments = () => [
   {
     name: "guitar",
     createInstrument: () => new Tone.PluckSynth({
-      volume: -6,
+      volume: -2,
       attackNoise: 1,
       dampening: 500,
       resonance: 0.99,

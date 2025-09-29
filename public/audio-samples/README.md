@@ -71,8 +71,11 @@ The system automatically detects and plays audio samples for these events:
 - Each boundary (left, right, top, bottom) is tracked independently
 
 ### Y-Axis Intersection Events  
-- **`y-axis-intersection.wav`** - Plays when the cursor crosses the y-axis (x coordinate sign changes)
-- Detects when moving from positive to negative x values or vice versa
+- **`y-axis-intersection.wav`** - Plays when the cursor reaches or crosses the y-axis (x=0)
+- Triggers when:
+  - Reaching exactly x=0 (y-axis) from any direction
+  - Crossing the y-axis (moving from positive to negative x values or vice versa)
+- Prevents double triggers when leaving x=0 after reaching it
 - Has a 300ms cooldown to prevent spam
 - No false triggers on first cursor movement
 
