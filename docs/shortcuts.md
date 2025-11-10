@@ -21,3 +21,10 @@
 | edit function(s) | activate form for editing one or more functions | F |
 | next function | switch to next defined function | N |
 | choose specific function | switch to a specific function (max 10 functions—if more functions defined, use command palette) | 1‒9 |
+
+
+::: {.column-margin}
+
+![](eu-funding.png)
+
+:::
