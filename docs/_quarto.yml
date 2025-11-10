@@ -20,8 +20,9 @@ website:
         href: shortcuts.qmd
  
   page-footer: 
-    left: Produced with [Quarto](https://quarto.org/)
-    right: "Maintained by the SONAIRGRAPH dev team"
+    left: Produced with [Quarto](https://quarto.org/)<br> Maintained by the SONAIRGRAPH dev team
+    right: |
+       ![](eu-funding.png){width=50%} 
 
 format:
   html:

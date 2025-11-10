@@ -1,4 +1,9 @@
-## Earcons
+---
+title: "Earcons"
+toc: false
+---
+
+
 
 Audiofunctions uses several earcons (audio icons) to provide auditory feedback to the user. Below are the earcons used in the application:
 
@@ -14,8 +19,3 @@ Audiofunctions uses several earcons (audio icons) to provide auditory feedback t
   <source src="earcons/bell.mp3" type="audio/wav"/>
 </audio>
 
-::: {.column-margin}
-
-![](eu-funding.png)
-
-:::

@@ -3,9 +3,6 @@
 Audiofunctions+ is a web app designed to facilitate visually impaired students’ learning of mathematical functions. Audiofunctions+ allows users to interpret the shape of a function’s graph by listening to its sonification.  
 Audiofunctions+ is one of the deliverables of the [SONAIRGRAPH](https://sonairgraph.unito.it/) Erasmus+ project.
 
-## Shortcuts
-
-A list of keyboard shortcuts available in Audiofunctions+ can be found [here](shortcuts.md).
 
 ## Funding
 

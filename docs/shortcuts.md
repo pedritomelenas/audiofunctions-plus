@@ -1,4 +1,7 @@
-## Keyboard shortcuts
+---
+title: "Keyboard Shortcuts"
+toc: false
+---
 
 | Command | Action | Keyboard shortcut |
 | :---- | :---- | :---- |
@@ -23,8 +26,3 @@
 | choose specific function | switch to a specific function (max 10 functions—if more functions defined, use command palette) | 1‒9 |
 
 
-::: {.column-margin}
-
-![](eu-funding.png)
-
-:::
